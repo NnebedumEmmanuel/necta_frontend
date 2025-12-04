@@ -1,18 +1,26 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import HeroSlider from './components/home/Hero'
 import Footer from './components/layout/footer'
 import DiscountPage from './components/home/Discount'
+import CategoryTab from './components/home/CategoryTab'
+import ProductTabs from './components/home/home-products/ProductTab'
+import BigSummerSale from './components/home/SummerSale'
+import Header from './components/layout/Header'
+import ScrollToTopButton from './components/shared/ScrollToTop'
+// import GridLayout from './components/home/GridLayout'
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <>
+    <Header/>
    <HeroSlider/>
+   <CategoryTab/>
+   <ProductTabs/>
+   {/* <GridLayout/> */}
    <DiscountPage/>
+   <BigSummerSale/>
+   <ScrollToTopButton/>
    <Footer/>
    
     </>
