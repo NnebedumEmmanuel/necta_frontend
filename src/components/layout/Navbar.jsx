@@ -3,7 +3,7 @@ import { Search, Heart, ShoppingCart, User, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 
-const Logo = "../../../public/img6.png"; // Adjust this path
+const Logo = "/public/logo.png"; // Adjust this path
 const categoryIcons = {
   phones: "/icons/Phones.png",
   computers: "/icons/Computers.png",

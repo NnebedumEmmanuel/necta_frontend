@@ -6,48 +6,40 @@ const DiscountPage = () => {
       id: 1,
       name: "T&G TG659 Trending High Quality Audio",
       image: "/public/img1.jpg",
-      description: "El JBL PartyBox Music Player Extreme Wireless Radio Speaker Popular Sound...",
       originalPrice: "₦10,000.00",
       discountedPrice: "₦7,500.00",
       rating: 5,
       reviewCount: 239,
-      installmentText: "Hasta 6 cuotas sin interés",
       badge: "New"
     },
     {
       id: 2,
       name: "T&G TG691 Bluetooth Speaker Outdoor",
       image: "/public/img2.jpg",
-      description: "Portable Card FM Radio BT TWS Fabric Heavy Subwoofer...",
       originalPrice: "₦8,500",
       discountedPrice: null,
       rating: 5,
       reviewCount: 131,
-      installmentText: "Hasta 6 cuotas sin interés",
       badge: null
     },
     {
       id: 3,
       name: "T&G TG689 Bluetooth Speaker Outdoor",
       image: "/public/img3.jpg",
-      description: "Portable Card FM Radio BT TWS Fabric Heavy Subwoofer...",
       originalPrice: "₦12,000",
       discountedPrice: "₦6,800",
       rating: 5,
       reviewCount: 27,
-      installmentText: "Hasta 6 cuotas sin interés",
       badge: "New"
     },
     {
       id: 4,
       name: "T&G TG-676 Wireless Portable Stereo Woofer",
       image: "/public/img4.jpg",
-      description: "IPX5 Waterproof Speaker HIFI Active Bass Outdoor Party...",
       originalPrice: "₦43,000",
       discountedPrice: "₦35,000",
       rating: 5,
       reviewCount: 269,
-      installmentText: "Hasta 6 cuotas sin interés",
       badge: "New"
     }
   ];
@@ -103,13 +95,13 @@ const DiscountPage = () => {
               </div>
             )}
 
-            {/* Image Container */}
+            {/* Image */}
             <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 h-56">
               <img
                 src={speaker.image}
                 alt={speaker.name}
                 className="
-                  w-full h-full object-contain p-4
+                  w-full h-full object-cover
                   transition-transform duration-500 
                   group-hover:scale-110
                 "
@@ -129,18 +121,16 @@ const DiscountPage = () => {
                 {speaker.description}
               </p>
 
-              {/* Price Section - Hides on hover */}
+              {/* Price Section */}
               <div className="mb-3 transition-opacity duration-300 group-hover:opacity-0">
                 {speaker.discountedPrice ? (
                   <div className="flex items-center gap-3">
                     <span className="text-gray-400 line-through text-sm">
                       {speaker.originalPrice}
                     </span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold text-gray-900">
-                        {speaker.discountedPrice}
-                      </span>
-                    </div>
+                    <span className="text-2xl font-bold text-gray-900">
+                      {speaker.discountedPrice}
+                    </span>
                   </div>
                 ) : (
                   <span className="text-2xl font-bold text-gray-900">
@@ -149,12 +139,7 @@ const DiscountPage = () => {
                 )}
               </div>
 
-              {/* Installment - Hides on hover */}
-              <p className="text-emerald-600 font-semibold text-sm mb-4 transition-opacity duration-300 group-hover:opacity-0">
-                {speaker.installmentText}
-              </p>
-
-              {/* Rating - Hides on hover */}
+              {/* Rating */}
               <div className="flex items-center gap-2 mb-4 transition-opacity duration-300 group-hover:opacity-0">
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
@@ -168,16 +153,16 @@ const DiscountPage = () => {
                 </span>
               </div>
 
-              {/* Buttons - Shows only on hover */}
+              {/* Buttons */}
               <div className="
                 mt-auto opacity-0 group-hover:opacity-100 
-                translate-y-4 group-hover:translate-y-0
+                translate-y-3 group-hover:translate-y-0
                 transition-all duration-300
               ">
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <button className="
-                    flex-1 py-3 text-sm font-semibold rounded-xl
-                    border-2 border-gray-200 text-gray-700
+                    flex-1 py-2 text-sm font-semibold rounded-lg
+                    border border-gray-200 text-gray-700
                     hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900
                     active:scale-95 transition-all duration-200
                   ">
@@ -185,16 +170,17 @@ const DiscountPage = () => {
                   </button>
                   
                   <button className="
-                    flex-1 py-3 text-sm font-semibold rounded-xl
+                    flex-1 py-2 text-sm font-semibold rounded-lg
                     bg-gradient-to-r from-orange-500 to-red-500 text-white
                     hover:from-orange-600 hover:to-red-600
                     active:scale-95 transition-all duration-200
-                    shadow-lg shadow-orange-200 hover:shadow-orange-300
+                    shadow-md shadow-orange-200 hover:shadow-orange-300
                   ">
                     Add to Cart
                   </button>
                 </div>
               </div>
+
             </div>
           </div>
         ))}

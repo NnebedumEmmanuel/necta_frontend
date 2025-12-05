@@ -79,10 +79,11 @@ export default function Footer() {
       </div>
 
       {/* BOTTOM COPYRIGHT BAR */}
-      <div className="bg-orange-500 text-white text-center text-sm py-3">
-        ©2024 Shantou Meili Technology Co. | 粤ICP备2021128626号-1 | 
-        Powered by www.300.cn Shantou | SEO Tags | Business License
-      </div>
+     <div className="bg-orange-500 text-white text-center text-sm py-3">
+  ©2025 Shantou Meili Technology Co. | Guangdong ICP No. 2021128626-1 |
+  Powered by www.300.cn Shantou | SEO Tags | Business License
+</div>
+
     </footer>
   );
 }
