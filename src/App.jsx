@@ -7,7 +7,7 @@ import ProductTabs from './components/home/home-products/ProductTab'
 import BigSummerSale from './components/home/SummerSale'
 import Header from './components/layout/Header'
 import ScrollToTopButton from './components/shared/ScrollToTop'
-// import GridLayout from './components/home/GridLayout'
+import Marquee from './components/home/Advert'
 
 function App() {
 
@@ -17,9 +17,9 @@ function App() {
    <HeroSlider/>
    <CategoryTab/>
    <ProductTabs/>
-   {/* <GridLayout/> */}
    <DiscountPage/>
    <BigSummerSale/>
+   <Marquee/>
    <ScrollToTopButton/>
    <Footer/>
    
