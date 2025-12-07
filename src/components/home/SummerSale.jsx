@@ -166,7 +166,7 @@ const BigSummerSale = ({
 
         <button
           onClick={handleShopNow}
-          className="border border-gray-400 px-6 py-2 [border-radius:6px] hover:bg-white hover:text-black transition"
+          className="border border-gray-400 px-6 py-2 [border-radius:6px] hover:bg-orange-500 hover:border-none hover:text-black transition"
         >
           Shop Now
         </button>
