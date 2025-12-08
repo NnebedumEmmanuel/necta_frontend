@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const DiscountPage = () => {
+  const navigate = useNavigate();
+  
   const speakers = [
     {
       id: 1,
@@ -44,6 +47,23 @@ const DiscountPage = () => {
     }
   ];
 
+  const handleViewDetails = (productId, e) => {
+    e.stopPropagation();
+    window.scrollTo(0, 0); // Scroll to top before navigation
+    navigate(`/shop/products/${productId}`);
+  };
+
+  const handleAddToCart = (product, e) => {
+    e.stopPropagation();
+    console.log("Add to cart:", product);
+    // Add to cart logic here
+  };
+
+  const handleProductClick = (product) => {
+    window.scrollTo(0, 0); // Scroll to top before navigation
+    navigate(`/shop/products/${product.id}`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-16">
       
@@ -60,11 +80,12 @@ const DiscountPage = () => {
         {speakers.map((speaker) => (
           <div
             key={speaker.id}
+            onClick={() => handleProductClick(speaker)}
             className="
               group relative bg-white rounded-2xl overflow-hidden 
               border border-gray-100 shadow-lg hover:shadow-2xl
               transition-all duration-300 hover:-translate-y-2
-              flex flex-col h-full
+              flex flex-col h-full cursor-pointer
             "
           >
             {/* Badge */}
@@ -117,10 +138,6 @@ const DiscountPage = () => {
                 {speaker.name}
               </h3>
 
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-grow">
-                {speaker.description}
-              </p>
-
               {/* Price Section */}
               <div className="mb-3 transition-opacity duration-300 group-hover:opacity-0">
                 {speaker.discountedPrice ? (
@@ -160,27 +177,32 @@ const DiscountPage = () => {
                 transition-all duration-300
               ">
                 <div className="flex gap-2">
-                  <button className="
-                    flex-1 py-2 text-sm font-semibold rounded-lg
-                    border border-gray-200 text-gray-700
-                    hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900
-                    active:scale-95 transition-all duration-200
-                  ">
+                  <button 
+                    onClick={(e) => handleViewDetails(speaker.id, e)}
+                    className="
+                      flex-1 py-2 text-sm font-semibold rounded-lg
+                      border border-gray-200 text-gray-700
+                      hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900
+                      active:scale-95 transition-all duration-200
+                    "
+                  >
                     Details
                   </button>
                   
-                  <button className="
-                    flex-1 py-2 text-sm font-semibold rounded-lg
-                    bg-gradient-to-r from-orange-500 to-red-500 text-white
-                    hover:from-orange-600 hover:to-red-600
-                    active:scale-95 transition-all duration-200
-                    shadow-md shadow-orange-200 hover:shadow-orange-300
-                  ">
+                  <button 
+                    onClick={(e) => handleAddToCart(speaker, e)}
+                    className="
+                      flex-1 py-2 text-sm font-semibold rounded-lg
+                      bg-gradient-to-r from-orange-500 to-red-500 text-white
+                      hover:from-orange-600 hover:to-red-600
+                      active:scale-95 transition-all duration-200
+                      shadow-md shadow-orange-200 hover:shadow-orange-300
+                    "
+                  >
                     Add to Cart
                   </button>
                 </div>
               </div>
-
             </div>
           </div>
         ))}

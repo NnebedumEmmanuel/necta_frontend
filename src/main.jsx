@@ -1,13 +1,13 @@
+// main.jsx or App.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App';
-import './index.css';
+import { WishlistProvider } from '../context/WishlistContext';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Router>
+    <WishlistProvider>
       <App />
-    </Router>
+    </WishlistProvider>
   </React.StrictMode>
 );

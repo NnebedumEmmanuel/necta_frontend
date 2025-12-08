@@ -2,29 +2,24 @@ import React from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 
-import px4 from "../../../public/px4.png";
-import px5 from "../../../public/px5.png";
-import px6 from "../../../public/px6.png";
-import px7 from "../../../public/px7.png";
-
 const images = [
   {
-    src: px4,
+    src: "/px4.png",
     title: "Title 1",
     subtitle: "Subtitle for Image 1",
   },
   {
-    src: px5,
+    src: "/px5.png",
     title: "Title 2",
     subtitle: "Subtitle for Image 2",
   },
   {
-    src: px6,
+    src: "/px6.png",
     title: "Title 3",
     subtitle: "Subtitle for Image 3",
   },
   {
-    src: px7,
+    src: "/px7.png",
     title: "Title 4",
     subtitle: "Subtitle for Image 4",
   },

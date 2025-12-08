@@ -2,19 +2,19 @@ import React from 'react';
 
 const BigSummerSale = ({
   // Desktop images (leave exactly as before)
-  topFarLeftImage = '../../../public/px16.png',
-  topLeftImage = '../../../public/px10.png',
-  topRightImage = '../../../public/px11.png',
-  topRightImage2 = '../../../public/px10.png',
-  bottomLeftImage = '../../../public/px9.png',
-  bottomRightImage = '../../../public/px12.png',
+  topFarLeftImage = '/images/px16.png',
+  topLeftImage = '/images/px10.png',
+  topRightImage = '/images/px11.png',
+  topRightImage2 = '/images/px10.png',
+  bottomLeftImage = '/images/px9.png',
+  bottomRightImage = '/images/px12.png',
 
   // Mobile images (you can set your own)
-  mobileTopFarLeftImage = '../../../public/px16.png',
-  mobileTopLeftImage = '../../../public/px10.png',
-  mobileTopRightImage = '../../../public/px11.png',
-  mobileBottomLeftImage = '../../../public/px9.png',
-  mobileBottomRightImage = '../../../public/px12.png',
+  mobileTopFarLeftImage = '/images/px16.png',
+  mobileTopLeftImage = '/images/px10.png',
+  mobileTopRightImage = '/images/px11.png',
+  mobileBottomLeftImage = '/images/px9.png',
+  mobileBottomRightImage = '/images/px12.png',
 }) => {
   const handleShopNow = () => {
     // Simple navigation without Next.js router

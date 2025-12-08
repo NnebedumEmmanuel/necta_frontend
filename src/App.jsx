@@ -1,30 +1,34 @@
-import './App.css'
-import HeroSlider from './components/home/Hero'
-import Footer from './components/layout/footer'
-import DiscountPage from './components/home/Discount'
-import CategoryTab from './components/home/CategoryTab'
-import ProductTabs from './components/home/home-products/ProductTab'
-import BigSummerSale from './components/home/SummerSale'
-import Header from './components/layout/Header'
-import ScrollToTopButton from './components/shared/ScrollToTop'
-import Marquee from './components/home/Advert'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './index.css';
+import Header from './components/layout/Header';
+import HomePage from './pages/home/HomePage';
+import ShopPage from './pages/shop/page';
+import ProductPage from './pages/shop/products/[id]/page';
+import WishlistPage from './pages/wishlist/page';
+import Footer from './components/layout/Footer';
+import { WishlistProvider } from '../context/WishlistContext';
+
 
 function App() {
-
   return (
-    <>
-    <Header/>
-   <HeroSlider/>
-   <CategoryTab/>
-   <ProductTabs/>
-   <DiscountPage/>
-   <BigSummerSale/>
-   <Marquee/>
-   <ScrollToTopButton/>
-   <Footer/>
-   
-    </>
-  )
+    <Router>
+      <WishlistProvider>
+        <div className="min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/shop" element={<ShopPage />} />
+              <Route path="/shop/products/:id" element={<ProductPage />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
+              {/* Add more routes as needed */}
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </WishlistProvider>
+    </Router>
+  );
 }
 
-export default App
+export default App;
