@@ -10,6 +10,8 @@ import Footer from './components/layout/Footer';
 import { WishlistProvider } from '../context/WishlistContext';
 import { CartProvider } from '../context/CartContext';
 import ScrollToTopButton from './components/shared/ScrollToTop';
+import AboutPage from './pages/about/AboutPage';
+import ContactPage from './pages/Contact/ContactPage';
 
 
 function App() {
@@ -26,6 +28,9 @@ function App() {
                 <Route path="/shop/products/:id" element={<ProductPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/cart" element={<CartPage />} />
+                <Route path="/about" element={<AboutPage/>} />
+                <Route path="/contact" element={<ContactPage/>} />
+
                 {/* Add more routes as needed */}
               </Routes>
             </main>
