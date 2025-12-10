@@ -5,12 +5,14 @@ import DetailsSection from "../../../../components/shop/shopdetails/DetailsSecti
 import ReviewsSection from "../../../../components/shop/shopdetails/ReviewSection";
 import RelatedProducts from "../../../../components/shop/shopdetails/RelatedProducts";
 import { useWishlist } from "../../../../../context/WishlistContext";
+import { useCart } from "../../../../../context/useCartHook";
 import { Heart } from "lucide-react";
 
 export default function ProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist();
+  const { addToCart } = useCart();
   
   const product = allProducts.find((p) => p.id.toString() === id);
 
@@ -136,8 +138,17 @@ export default function ProductPage() {
                   "4323 mAh";
 
   const handleAddToCart = () => {
-    console.log("Add to cart:", { product, color: activeColor, storage: activeStorage });
-    // Add to cart logic here
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      brand: product.brand,
+      color: activeColor,
+      storage: activeStorage,
+      quantity: 1
+    });
+    navigate("/cart");
   };
 
   const handleToggleWishlist = () => {

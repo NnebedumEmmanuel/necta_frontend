@@ -5,28 +5,35 @@ import HomePage from './pages/home/HomePage';
 import ShopPage from './pages/shop/page';
 import ProductPage from './pages/shop/products/[id]/page';
 import WishlistPage from './pages/wishlist/page';
+import CartPage from './pages/cart/CartPage';
 import Footer from './components/layout/Footer';
 import { WishlistProvider } from '../context/WishlistContext';
+import { CartProvider } from '../context/CartContext';
+import ScrollToTopButton from './components/shared/ScrollToTop';
 
 
 function App() {
   return (
     <Router>
-      <WishlistProvider>
-        <div className="min-h-screen flex flex-col">
-          <Header />
-          <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/shop" element={<ShopPage />} />
-              <Route path="/shop/products/:id" element={<ProductPage />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-              {/* Add more routes as needed */}
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </WishlistProvider>
+      <CartProvider>
+        <WishlistProvider>
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-grow">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/shop" element={<ShopPage />} />
+                <Route path="/shop/products/:id" element={<ProductPage />} />
+                <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                {/* Add more routes as needed */}
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+      <ScrollToTopButton />
+        </WishlistProvider>
+      </CartProvider>
     </Router>
   );
 }

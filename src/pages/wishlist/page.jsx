@@ -1,10 +1,12 @@
-import React from "react";
+// import React from "";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, Trash2, ShoppingCart } from "lucide-react";
 import { useWishlist } from "../../../context/WishlistContext";
+import { useCart } from "../../../context/useCartHook";
 
 export default function WishlistPage() {
   const { state, dispatch } = useWishlist();
+  const { addToCart } = useCart();
   const navigate = useNavigate();
 
   const handleRemoveFromWishlist = (productId) => {
@@ -12,8 +14,11 @@ export default function WishlistPage() {
   };
 
   const handleAddToCart = (product) => {
-    console.log("Add to cart:", product);
-    // Add to cart logic here
+    addToCart({
+      ...product,
+      quantity: 1
+    });
+    navigate("/cart");
   };
 
   return (

@@ -18,7 +18,6 @@ function HomePage() {
       <DiscountPage />
       <BigSummerSale />
       <SpeakerMarquee />
-      <ScrollToTopButton />
     </>
   );
 }

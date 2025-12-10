@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Search, Heart, ShoppingCart, User, Menu } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useWishlist } from "../../../context/WishlistContext";
+import { useCart } from "../../../context/useCartHook";
 
 const Logo = "/logo.png"; // Adjust this path
 const categoryIcons = {
@@ -18,9 +19,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { state: wishlistState } = useWishlist();
-  
-  // Mock context data
-  const cartState = { itemCount: 0 };
+  const { getTotalItems } = useCart();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -105,9 +104,9 @@ export default function Header() {
             
             <Link to="/cart" className="relative">
               <ShoppingCart size={22} className="cursor-pointer text-gray-800 hover:text-black transition" />
-              {cartState.itemCount > 0 && (
+              {getTotalItems() > 0 && (
                 <span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartState.itemCount}
+                  {getTotalItems()}
                 </span>
               )}
             </Link>

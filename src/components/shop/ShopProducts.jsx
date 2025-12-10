@@ -1,59 +1,119 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Heart } from "lucide-react";
+import { Heart, ShoppingBag, Tag } from "lucide-react";
+import StarRating from "./StarRating";
 
-const ProductGrid = ({ products, wishlistState, toggleWishlist }) => {
-  if (!products || products.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">No products found.</p>
-      </div>
-    );
-  }
+const ProductCard = ({ 
+  product, 
+  isInWishlist = false, 
+  onWishlistToggle,
+  onAddToCart
+ }) => {
+  const {
+    image,
+    brand,
+    name,
+    price,
+    oldPrice,
+    rating = 4.5,
+    reviewCount = 0,
+    discount,
+    isNew
+  } = product;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {products.map((product) => {
-        const isInWishlist = wishlistState?.items?.some(item => item.id === product.id) || false;
+    <div className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
+      {/* Product Image Container */}
+      <div className="relative h-64 bg-gray-50 overflow-hidden">
+        <img
+          src={image}
+          alt={name}
+          className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+        />
         
-        return (
-          <Link key={product.id} to={`/shop/products/${product.id}`} className="block">
-            <div className="border border-gray-200 rounded-lg p-4 relative text-center hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-[#F6F6F6]">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-40 object-contain mb-4 mx-auto"
-              />
-              <h3 className="text-sm font-medium mb-2 line-clamp-2 h-10 overflow-hidden">
-                {product.name}
-              </h3>
-              <p className="text-lg font-semibold mb-3 text-gray-900">
-                {product.price}
-              </p>
-              <button className="bg-black text-white px-4 py-2 text-sm rounded hover:bg-gray-800 transition-colors w-full">
-                Buy Now
-              </button>
-              <div className="absolute top-3 right-3">
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleWishlist(product);
-                  }}
-                  className="p-1 hover:scale-110 transition-transform bg-white rounded-full shadow-md"
-                >
-                  <Heart 
-                    size={20} 
-                    className={isInWishlist ? "fill-red-500 text-red-500" : "text-gray-400"} 
-                  />
-                </button>
-              </div>
-            </div>
-          </Link>
-        );
-      })}
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
+          {isNew && (
+            <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+              New
+            </span>
+          )}
+          {discount && (
+            <span className="bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+              -{discount}%
+            </span>
+          )}
+        </div>
+
+        {/* Wishlist Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onWishlistToggle?.(product);
+          }}
+          className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+          aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <Heart
+            size={20}
+            className={isInWishlist ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"}
+          />
+        </button>
+      </div>
+
+      {/* Product Info */}
+      <div className="p-5">
+        {/* Brand */}
+        <div className="mb-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {brand}
+          </span>
+        </div>
+
+        {/* Product Name */}
+        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 h-14">
+          {name}
+        </h3>
+
+        {/* Rating */}
+        <div className="flex items-center mb-4">
+          <StarRating 
+            rating={rating} 
+            totalStars={5} 
+            size={16}
+          />
+          <span className="text-sm text-gray-600 ml-2">
+            {rating.toFixed(1)} ({reviewCount})
+          </span>
+        </div>
+
+        {/* Price Section */}
+        <div className="mb-5">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl font-bold text-gray-900">
+              {price}
+            </span>
+            {oldPrice && (
+              <>
+                <span className="text-lg text-gray-400 line-through">
+                  {oldPrice}
+                </span>
+
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Add to Cart Button */}
+        <button
+          onClick={() => onAddToCart?.(product)}
+          className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 group-hover:shadow-lg"
+        >
+          <ShoppingBag size={18} />
+          Add to Cart
+        </button>
+      </div>
     </div>
   );
 };
 
-export default ProductGrid;
+export default ProductCard;

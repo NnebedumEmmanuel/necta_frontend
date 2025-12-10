@@ -37,8 +37,19 @@ export const WishlistProvider = ({ children }) => {
     items: []
   });
 
+  // Add toggleWishlist function
+  const toggleWishlist = (product) => {
+    const isInWishlist = state.items.find(item => item.id === product.id);
+    
+    if (isInWishlist) {
+      dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
+    } else {
+      dispatch({ type: 'ADD_TO_WISHLIST', payload: product });
+    }
+  };
+
   return (
-    <WishlistContext.Provider value={{ state, dispatch }}>
+    <WishlistContext.Provider value={{ state, dispatch, toggleWishlist }}>
       {children}
     </WishlistContext.Provider>
   );
