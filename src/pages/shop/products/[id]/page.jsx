@@ -5,14 +5,16 @@ import DetailsSection from "../../../../components/shop/shopdetails/DetailsSecti
 import ReviewsSection from "../../../../components/shop/shopdetails/ReviewSection";
 import RelatedProducts from "../../../../components/shop/shopdetails/RelatedProducts";
 import { useWishlist } from "../../../../../context/WishlistContext";
-import { useCart } from "../../../../../context/useCartHook";
 import { Heart } from "lucide-react";
+import { useCart } from "../../../../../context/useCartHook";
+import { useToast } from "../../../../context/useToastHook";
 
 export default function ProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist();
   const { addToCart } = useCart();
+  const { showToast } = useToast();
   
   const product = allProducts.find((p) => p.id.toString() === id);
 
@@ -148,14 +150,17 @@ export default function ProductPage() {
       storage: activeStorage,
       quantity: 1
     });
+    showToast(`${product.name} added to cart`, { type: 'success' });
     navigate("/cart");
   };
 
   const handleToggleWishlist = () => {
     if (isInWishlist) {
       wishlistDispatch({ type: "REMOVE_FROM_WISHLIST", payload: product.id });
+      showToast(`${product.name} removed from wishlist`, { type: 'info' });
     } else {
       wishlistDispatch({ type: "ADD_TO_WISHLIST", payload: product });
+      showToast(`${product.name} added to wishlist`, { type: 'success' });
     }
   };
 

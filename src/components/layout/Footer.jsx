@@ -87,7 +87,7 @@ export default function Footer() {
             (ONLY CODE VISIBLE)
         =========================== */}
         <div className="flex flex-col items-center">
-          <div className="w-28 h-28 bg-white p-1 rounded overflow-hidden flex items-center justify-center">
+          <div className="w-28 h-28 bg-white  rounded overflow-hidden flex items-center justify-center">
 
             {/* 
               QR Code fits perfectly:
@@ -97,7 +97,7 @@ export default function Footer() {
             <img
               src="/public/QR code img.jpeg"
               alt="QR Code"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
           </div>
 

@@ -14,7 +14,7 @@ export default function HeroSlider() {
       title: "TG-676 Wireless Stereo Speaker",
       titleAccent: "Beats+",
       subtitle: "Blazing speed and all-day performance.",
-      img: "/public/slide-img1.png",
+      img: "/images/slide-img1.png",
       cta: "View Speaker",
     },
     {
@@ -23,7 +23,7 @@ export default function HeroSlider() {
       title: "TG653 Portable Wireless Speaker",
       titleAccent: "Beats+",
       subtitle: "Track health and stay connected in style.",
-      img: "/public/slide-img2.png",
+      img: "/images/slide-img2.png",
       cta: "View Speaker",
     },
     {
@@ -32,7 +32,7 @@ export default function HeroSlider() {
       title: "TG659 Premium Wireless Speaker",
       titleAccent: "Beats+",
       subtitle: "Immersive audio with deep bass clarity.",
-      img: "/public/slide-img3.png",
+      img: "/images/slide-img3.png",
       cta: "Shop Audio",
     },
   ];

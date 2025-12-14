@@ -1,5 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../context/useToastHook';
+import { useCart } from '../../../context/useCartHook';
 
 const DiscountPage = () => {
   const navigate = useNavigate();
@@ -8,7 +10,7 @@ const DiscountPage = () => {
     {
       id: 1,
       name: "T&G TG659 Trending High Quality Audio",
-      image: "/public/img1.jpg",
+      image: "/images/img1.png",
       originalPrice: "₦10,000.00",
       discountedPrice: "₦7,500.00",
       rating: 5,
@@ -18,7 +20,7 @@ const DiscountPage = () => {
     {
       id: 2,
       name: "T&G TG691 Bluetooth Speaker Outdoor",
-      image: "/public/img2.jpg",
+      image: "/images/img2.png",
       originalPrice: "₦8,500",
       discountedPrice: null,
       rating: 5,
@@ -38,7 +40,7 @@ const DiscountPage = () => {
     {
       id: 4,
       name: "T&G TG-676 Wireless Portable Stereo Woofer",
-      image: "/public/img4.jpg",
+      image: "/images/img4.png",
       originalPrice: "₦43,000",
       discountedPrice: "₦35,000",
       rating: 5,
@@ -53,10 +55,13 @@ const DiscountPage = () => {
     navigate(`/shop/products/${productId}`);
   };
 
+  const { addToCart } = useCart();
+  const { showToast } = useToast();
+
   const handleAddToCart = (product, e) => {
     e.stopPropagation();
-    console.log("Add to cart:", product);
-    // Add to cart logic here
+    addToCart({ ...product, quantity: 1 });
+    showToast(`${product.name} added to cart`, { type: 'success' });
   };
 
   const handleProductClick = (product) => {

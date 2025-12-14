@@ -1,21 +1,67 @@
+// Header.jsx
 import React, { useState } from "react";
-import { Search, Heart, ShoppingCart, User, Menu } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { 
+  Search, 
+  Heart, 
+  ShoppingCart, 
+  User, 
+  Menu,
+  Smartphone,
+  Speaker,
+  Sun,
+  Zap,
+  Tv,
+  Headphones
+} from "lucide-react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useWishlist } from "../../../context/WishlistContext";
 import { useCart } from "../../../context/useCartHook";
 
-const Logo = "/logo.png"; // Adjust this path
-const categoryIcons = {
-  phones: "/icons/Phones.png",
-  computers: "/icons/Computers.png",
-  smartWatches: "/icons/Gaming.png",
-  cameras: "/icons/Cameras.png",
-  headphones: "/icons/Headphones.png",
-  gaming: "/icons/Gaming.png",
-};
+const Logo = "/logo.png";
+
+// Category configuration with Lucide icons
+const categories = [
+  { 
+    label: "phones", 
+    display: "Phones", 
+    icon: <Smartphone size={18} />,
+    available: false
+  },
+  { 
+    label: "speakers", 
+    display: "Speakers", 
+    icon: <Speaker size={18} />,
+    available: true
+  },
+  { 
+    label: "solar", 
+    display: "Solar", 
+    icon: <Sun size={18} />,
+    available: false
+  },
+  { 
+    label: "inverter", 
+    display: "Inverter", 
+    icon: <Zap size={18} />,
+    available: false
+  },
+  { 
+    label: "tv", 
+    display: "TV", 
+    icon: <Tv size={18} />,
+    available: false
+  },
+  { 
+    label: "headphones", 
+    display: "Headphones", 
+    icon: <Headphones size={18} />,
+    available: false
+  },
+];
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { state: wishlistState } = useWishlist();
@@ -32,6 +78,14 @@ export default function Header() {
     if (e.key === 'Enter') {
       handleSearch(e);
     }
+  };
+
+  // Function to check if a nav link is active
+  const isActive = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
   };
 
   return (
@@ -75,26 +129,53 @@ export default function Header() {
           </form>
 
           <nav className="hidden lg:flex items-center gap-8 text-sm">
-            <Link to="/" className="font-medium text-black hover:text-gray-700">
+            <Link 
+              to="/" 
+              className={`font-medium hover:text-gray-700 transition-colors ${
+                isActive('/') ? 'text-black' : 'text-gray-600'
+              }`}
+            >
               Home
             </Link>
-            <Link to="/shop" className="text-gray-600 hover:text-black">
+            <Link 
+              to="/shop" 
+              className={`font-medium hover:text-black transition-colors ${
+                isActive('/shop') ? 'text-black' : 'text-gray-600'
+              }`}
+            >
               Shop
             </Link>
-            <Link to="/about" className="text-gray-600 hover:text-black">
+            <Link 
+              to="/about" 
+              className={`font-medium hover:text-black transition-colors ${
+                isActive('/about') ? 'text-black' : 'text-gray-600'
+              }`}
+            >
               About
             </Link>
-            <Link to="/contact" className="text-gray-600 hover:text-black">
+            <Link 
+              to="/contact" 
+              className={`font-medium hover:text-black transition-colors ${
+                isActive('/contact') ? 'text-black' : 'text-gray-600'
+              }`}
+            >
               Contact Us
             </Link>
-            <Link to="/blog" className="text-gray-600 hover:text-black">
+            <Link 
+              to="/blog" 
+              className={`font-medium hover:text-black transition-colors ${
+                isActive('/blog') ? 'text-black' : 'text-gray-600'
+              }`}
+            >
               Blog
             </Link>
           </nav>
 
           <div className="hidden md:flex items-center gap-6">
             <Link to="/wishlist" className="relative">
-              <Heart size={22} className="cursor-pointer text-gray-800 hover:text-black transition" />
+              <Heart size={22} className={`cursor-pointer hover:text-black transition ${
+                isActive('/wishlist') ? 'text-black' : 'text-gray-800'
+              }`} />
               {wishlistState.items.length > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {wishlistState.items.length}
@@ -103,7 +184,9 @@ export default function Header() {
             </Link>
             
             <Link to="/cart" className="relative">
-              <ShoppingCart size={22} className="cursor-pointer text-gray-800 hover:text-black transition" />
+              <ShoppingCart size={22} className={`cursor-pointer hover:text-black transition ${
+                isActive('/cart') ? 'text-black' : 'text-gray-800'
+              }`} />
               {getTotalItems() > 0 && (
                 <span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {getTotalItems()}
@@ -112,25 +195,29 @@ export default function Header() {
             </Link>
             
             <Link to="/account">
-              <User size={22} className="cursor-pointer text-gray-800 hover:text-black transition" />
+              <User size={22} className={`cursor-pointer hover:text-black transition ${
+                isActive('/account') ? 'text-black' : 'text-gray-800'
+              }`} />
             </Link>
           </div>
         </div>
       </div>
 
       {/* ===== Bottom Categories ===== */}
-      <div className="hidden lg:flex items-center justify-center gap-8 bg-[#2E2E2E] text-white py-2 text-sm">
-        <CategoryItem icon={categoryIcons.phones} label="phones" />
-        <Divider />
-        <CategoryItem icon={categoryIcons.computers} label="computers" />
-        <Divider />
-        <CategoryItem icon={categoryIcons.smartWatches} label="smartWatches" />
-        <Divider />
-        <CategoryItem icon={categoryIcons.cameras} label="cameras" />
-        <Divider />
-        <CategoryItem icon={categoryIcons.headphones} label="headphones" />
-        <Divider />
-        <CategoryItem icon={categoryIcons.gaming} label="gaming" />
+      <div className="hidden lg:flex items-center justify-center gap-8 bg-[#2E2E2E] text-white py-3 text-sm">
+        {categories.map((category, index) => (
+          <React.Fragment key={category.label}>
+            <CategoryItem 
+              icon={category.icon}
+              label={category.label}
+              display={category.display}
+              available={category.available}
+              isActive={location.pathname === '/shop' && 
+                new URLSearchParams(location.search).get('category') === category.label}
+            />
+            {index < categories.length - 1 && <Divider />}
+          </React.Fragment>
+        ))}
       </div>
 
       {/* Mobile Menu */}
@@ -150,35 +237,133 @@ export default function Header() {
             </form>
             
             <nav className="flex flex-col space-y-3">
-              <Link to="/" className="font-medium text-black hover:text-gray-700 py-2">
+              <Link 
+                to="/" 
+                className={`py-2 transition-colors ${
+                  isActive('/') 
+                    ? 'font-medium text-black' 
+                    : 'text-gray-600 hover:text-black'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Home
               </Link>
-              <Link to="/shop" className="text-gray-600 hover:text-black py-2">
+              <Link 
+                to="/shop" 
+                className={`py-2 transition-colors ${
+                  isActive('/shop') 
+                    ? 'font-medium text-black' 
+                    : 'text-gray-600 hover:text-black'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Shop
               </Link>
-              <Link to="/about" className="text-gray-600 hover:text-black py-2">
+              <Link 
+                to="/about" 
+                className={`py-2 transition-colors ${
+                  isActive('/about') 
+                    ? 'font-medium text-black' 
+                    : 'text-gray-600 hover:text-black'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 About
               </Link>
-              <Link to="/contact" className="text-gray-600 hover:text-black py-2">
+              <Link 
+                to="/contact" 
+                className={`py-2 transition-colors ${
+                  isActive('/contact') 
+                    ? 'font-medium text-black' 
+                    : 'text-gray-600 hover:text-black'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Contact Us
               </Link>
-              <Link to="/blog" className="text-gray-600 hover:text-black py-2">
+              <Link 
+                to="/blog" 
+                className={`py-2 transition-colors ${
+                  isActive('/blog') 
+                    ? 'font-medium text-black' 
+                    : 'text-gray-600 hover:text-black'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Blog
               </Link>
             </nav>
             
+            {/* Mobile Categories */}
+            <div className="pt-4 border-t">
+              <h3 className="font-medium text-gray-700 mb-3">Categories</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {categories.map((category) => {
+                  const isCategoryActive = location.pathname === '/shop' && 
+                    new URLSearchParams(location.search).get('category') === category.label;
+                  
+                  return (
+                    <Link
+                      key={category.label}
+                      to={`/shop?category=${encodeURIComponent(category.label)}`}
+                      className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
+                        category.available 
+                          ? isCategoryActive
+                            ? 'bg-gray-200'
+                            : 'hover:bg-gray-100'
+                          : 'opacity-60'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <div className="text-gray-600">
+                        {category.icon}
+                      </div>
+                      <span className={`text-sm ${
+                        isCategoryActive ? 'text-black font-medium' : 'text-gray-700'
+                      }`}>
+                        {category.display}
+                      </span>
+                      {!category.available && (
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded ml-auto">
+                          Soon
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+            
             <div className="flex items-center justify-around pt-4 border-t">
-              <Link to="/wishlist" className="flex flex-col items-center">
-                <Heart size={22} className="text-gray-800" />
-                <span className="text-xs mt-1">Wishlist</span>
+              <Link 
+                to="/wishlist" 
+                className="flex flex-col items-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Heart size={22} className={isActive('/wishlist') ? 'text-black' : 'text-gray-800'} />
+                <span className={`text-xs mt-1 ${isActive('/wishlist') ? 'text-black font-medium' : 'text-gray-600'}`}>
+                  Wishlist
+                </span>
               </Link>
-              <Link to="/cart" className="flex flex-col items-center">
-                <ShoppingCart size={22} className="text-gray-800" />
-                <span className="text-xs mt-1">Cart</span>
+              <Link 
+                to="/cart" 
+                className="flex flex-col items-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <ShoppingCart size={22} className={isActive('/cart') ? 'text-black' : 'text-gray-800'} />
+                <span className={`text-xs mt-1 ${isActive('/cart') ? 'text-black font-medium' : 'text-gray-600'}`}>
+                  Cart
+                </span>
               </Link>
-              <Link to="/account" className="flex flex-col items-center">
-                <User size={22} className="text-gray-800" />
-                <span className="text-xs mt-1">Account</span>
+              <Link 
+                to="/account" 
+                className="flex flex-col items-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <User size={22} className={isActive('/account') ? 'text-black' : 'text-gray-800'} />
+                <span className={`text-xs mt-1 ${isActive('/account') ? 'text-black font-medium' : 'text-gray-600'}`}>
+                  Account
+                </span>
               </Link>
             </div>
           </div>
@@ -188,18 +373,25 @@ export default function Header() {
   );
 }
 
-// Update CategoryItem to use Link for proper navigation
-function CategoryItem({ icon, label }) {
-  const formattedLabel = label.charAt(0).toUpperCase() + label.slice(1);
-  
+function CategoryItem({ icon, label, display, available, isActive }) {
   return (
     <Link 
       to={`/shop?category=${encodeURIComponent(label)}`}
-      className="flex items-center gap-2 cursor-pointer hover:text-gray-300 transition"
-      aria-label={`Browse ${formattedLabel}`}
+      className={`flex items-center gap-2 cursor-pointer transition group ${
+        available 
+          ? isActive
+            ? "text-white font-medium"
+            : "hover:text-gray-300 text-white"
+          : "text-gray-500 opacity-70 cursor-not-allowed"
+      }`}
+      aria-label={`Browse ${display}`}
     >
-      <img src={icon} alt={formattedLabel} width={18} height={18} />
-      <span>{formattedLabel}</span>
+      <div className={`transition-transform group-hover:scale-110 ${
+        isActive ? 'scale-110' : ''
+      }`}>
+        {icon}
+      </div>
+      <span>{display}</span>
     </Link>
   );
 }

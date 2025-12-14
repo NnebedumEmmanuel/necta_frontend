@@ -3,10 +3,12 @@ import { Heart, ShoppingBag, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useWishlist } from "../../../../context/WishlistContext";
 import { useCart } from "../../../../context/useCartHook";
+import { useToast } from "../../../context/useToastHook";
 
 const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlistState: externalWishlistState }) => {
   const { state: localWishlistState, toggleWishlist: localToggleWishlist } = useWishlist();
   const { addToCart } = useCart();
+  const { showToast } = useToast();
   
   // Use external props if provided, otherwise use local context
   const wishlistState = externalWishlistState || localWishlistState;
@@ -27,6 +29,7 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
       ...product,
       quantity: 1
     });
+    showToast(`${product.name} added to cart`, { type: 'success' });
   };
 
   return (
@@ -119,6 +122,11 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
                 e.preventDefault();
                 e.stopPropagation();
                 toggleWishlist(product);
+                if (isInWishlist) {
+                  showToast(`${product.name} removed from wishlist`, { type: 'info' });
+                } else {
+                  showToast(`${product.name} added to wishlist`, { type: 'success' });
+                }
               }}
               className="absolute top-5 right-5 bg-white rounded-full p-1.5 shadow hover:shadow-md transition-all duration-200 hover:scale-110 z-10"
               type="button"

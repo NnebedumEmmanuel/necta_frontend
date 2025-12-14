@@ -3,14 +3,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { Heart, Trash2, ShoppingCart } from "lucide-react";
 import { useWishlist } from "../../../context/WishlistContext";
 import { useCart } from "../../../context/useCartHook";
+import { useToast } from "../../context/useToastHook";
+
 
 export default function WishlistPage() {
   const { state, dispatch } = useWishlist();
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const handleRemoveFromWishlist = (productId) => {
     dispatch({ type: "REMOVE_FROM_WISHLIST", payload: productId });
+    showToast(`Removed item from wishlist`, { type: 'info' });
   };
 
   const handleAddToCart = (product) => {
@@ -18,6 +22,7 @@ export default function WishlistPage() {
       ...product,
       quantity: 1
     });
+    showToast(`${product.name} added to cart`, { type: 'success' });
     navigate("/cart");
   };
 

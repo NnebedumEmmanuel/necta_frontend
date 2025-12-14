@@ -1,11 +1,14 @@
 import React from "react";
 import { Heart } from "lucide-react";
-import { discountProducts } from "../../../../data/Products";
+import { relatedProducts } from "../../../../data/Products";
 import { useWishlist } from "../../../../context/WishlistContext";
+import { useToast } from "../../../context/useToastHook";
 
 const RelatedProducts = () => {
-  const products = discountProducts;
+  const products = relatedProducts;
   const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist();
+
+  const { showToast } = useToast();
 
   const toggleWishlist = (product, e) => {
     e.preventDefault();
@@ -13,8 +16,10 @@ const RelatedProducts = () => {
 
     if (wishlistState.items.some((item) => item.id === product.id)) {
       wishlistDispatch({ type: "REMOVE_FROM_WISHLIST", payload: product.id });
+      showToast(`${product.name} removed from wishlist`, { type: 'info' });
     } else {
       wishlistDispatch({ type: "ADD_TO_WISHLIST", payload: product });
+      showToast(`${product.name} added to wishlist`, { type: 'success' });
     }
   };
 

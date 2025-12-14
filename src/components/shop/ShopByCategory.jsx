@@ -1,3 +1,4 @@
+// ShopByCategoryDropdown.jsx
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Grid } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -6,14 +7,12 @@ const ShopByCategoryDropdown = () => {
   const [isOpen, setIsOpen] = useState(true); // Open by default
 
   const categories = [
-    { name: "Smartphones", count: 156, href: "/shop?category=phones" },
-    { name: "Laptops & Computers", count: 89, href: "/shop?category=computers" },
-    { name: "Smart Watches", count: 42, href: "/shop?category=smartwatches" },
-    { name: "Cameras", count: 31, href: "/shop?category=cameras" },
-    { name: "Headphones", count: 67, href: "/shop?category=headphones" },
-    { name: "Gaming", count: 54, href: "/shop?category=gaming" },
-    { name: "Home Appliances", count: 78, href: "/shop?category=home" },
-    { name: "Accessories", count: 123, href: "/shop?category=accessories" },
+    { name: "Speakers", count: 24, href: "/shop?category=speakers", available: true },
+    { name: "Smartphones", count: 0, href: "/shop?category=phones", available: false },
+    { name: "Solar Products", count: 0, href: "/shop?category=solar", available: false },
+    { name: "Inverters", count: 0, href: "/shop?category=inverter", available: false },
+    { name: "Televisions", count: 0, href: "/shop?category=tv", available: false },
+    { name: "Headphones", count: 0, href: "/shop?category=headphones", available: false },
   ];
 
   return (
@@ -24,7 +23,7 @@ const ShopByCategoryDropdown = () => {
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Grid size={18} className="text-purple-500" />
+          <Grid size={18} className="text-gray-600" />
           <span className="font-semibold text-gray-900">Shop by Category</span>
         </div>
         {isOpen ? (
@@ -42,13 +41,27 @@ const ShopByCategoryDropdown = () => {
               <Link
                 key={category.name}
                 to={category.href}
-                className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors group"
+                className={`flex items-center justify-between p-2 rounded transition-colors group ${
+                  category.available 
+                    ? "hover:bg-gray-50" 
+                    : "opacity-60 cursor-not-allowed"
+                }`}
               >
-                <span className="text-sm text-gray-700 group-hover:text-black">
-                  {category.name}
-                </span>
-                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  {category.count}
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${
+                    category.available 
+                      ? "text-gray-700 group-hover:text-black" 
+                      : "text-gray-500"
+                  }`}>
+                    {category.name}
+                  </span>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${
+                  category.available 
+                    ? "text-gray-500 bg-gray-100" 
+                    : "bg-yellow-100 text-yellow-800"
+                }`}>
+                  {category.available ? category.count : "Coming Soon"}
                 </span>
               </Link>
             ))}

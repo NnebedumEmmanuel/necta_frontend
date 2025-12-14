@@ -1,4 +1,4 @@
-﻿// Products data (JavaScript version)
+﻿// Products.js
 
 export const newArrivals = [
   {
@@ -6,12 +6,12 @@ export const newArrivals = [
     name: "T&G TG659 Trending High Quality Audio Music Player Extreme",
     price: "₦7,500",
     oldPrice: "₦55,000",
-    image: "/new1b.jpg",
+    image: "/images/new1b.png",
     gallery: [
-      "/images/img2.jpg",
-      "/new1c.jpg",
-      "/new1d.jpg",
-      "/new1e.jpg",
+      "/images/new1a.png",
+      "/images/new1c.png",
+      "/images/new1d.png",
+      "/images/new1e.png",
     ],
     colors: ["#000000", "#3498db", "#e74c3c", "#2c3e50"],
     storage: ["32GB", "64GB", "128GB"],
@@ -81,7 +81,7 @@ export const newArrivals = [
     name: "T&G TG678 Portable RGB Light TWS Bluetooth Fabric Surround Sound",
     price: "₦13,500",
     oldPrice: "₦45,000",
-    image: "/new2a.jpg",
+    image: "/images/new2a.png",
     gallery: ["/speakers/speaker2.png", "/speakers/speaker2_2.png"],
     colors: ["#e74c3c", "#3498db", "#9b59b6", "#2c3e50"],
     specs: {
@@ -137,7 +137,7 @@ export const newArrivals = [
     name: "T&G TG689 Bluetooth Speaker Outdoor Portable Card FM Radio",
     price: "₦6,800",
     oldPrice: "₦38,000",
-    image: "/new3.jpg",
+    image: "/images/new3.png",
     gallery: ["/speakers/speaker3.png", "/speakers/speaker3_2.png"],
     colors: ["#2c3e50", "#e74c3c", "#3498db"],
     specs: {
@@ -190,7 +190,7 @@ export const newArrivals = [
     id: 4,
     name: "T&G TG691 Bluetooth Speaker Outdoor Portable Card FM Radio",
     price: "₦8,500",
-    image: "/new4.jpg",
+    image: "/images/new4.png",
     gallery: ["/speakers/speaker4.png", "/speakers/speaker4_2.png"],
     colors: ["#3498db", "#2c3e50", "#e74c3c"],
     specs: {
@@ -239,7 +239,7 @@ export const newArrivals = [
     id: 5,
     name: "T&G TG699 Trending High Quality Audio Music Player Extreme",
     price: "₦7,500",
-    image: "/new5.jpg",
+    image: "/images/new5.png",
     gallery: ["/speakers/speaker5.png"],
     colors: ["#000000", "#e74c3c", "#3498db"],
     specs: {
@@ -288,7 +288,7 @@ export const newArrivals = [
     id: 6,
     name: "T&G TG689 Bluetooth Speaker Outdoor Portable Card FM Radio",
     price: "₦6,800",
-    image: "/new6.jpg",
+    image: "images/new6.png",
     gallery: ["/speakers/speaker6.png"],
     colors: ["#2c3e50", "#7f8c8d", "#34495e"],
     specs: {
@@ -336,7 +336,7 @@ export const newArrivals = [
     name: "T&G TG691 Bluetooth Speaker Outdoor Wireless Subwoofer",
     price: "₦8,500",
     oldPrice: "₦60,000",
-    image: "/new7.jpg",
+    image: "/images/new7.png",
     gallery: ["/speakers/speaker7.png"],
     colors: ["#000000", "#e74c3c", "#3498db"],
     specs: {
@@ -385,7 +385,7 @@ export const newArrivals = [
     id: 8,
     name: "T&G TG-672 Drums Speaker Bluetooth Speaker Dual 78mm",
     price: "₦25,000",
-    image: "/new8.jpg",
+    image: "/images/new8.png",
     gallery: ["/speakers/speaker8.png"],
     colors: ["#e74c3c", "#3498db", "#f1c40f"],
     specs: {
@@ -442,7 +442,7 @@ export const bestsellers = [
     name: "T&G TG-693 Wireless BT Woofer Speaker Outdoor Portable",
     price: "₦16,000",
     oldPrice: "₦65,000",
-    image: "/new9.jpg",
+    image: "/images/new9.png",
     gallery: ["/speakers/speaker9.png"],
     colors: ["#2c3e50", "#e74c3c", "#3498db"],
     specs: {
@@ -500,7 +500,7 @@ export const bestsellers = [
     name: "T&G TG-695 Wireless BT Woofer Speaker Outdoor Portable",
     price: "₦16,000",
     oldPrice: "₦68,000",
-    image: "/new10.jpg",
+    image: "/images/new10.png",
     gallery: ["/speakers/speaker10.png"],
     colors: ["#000000", "#2c3e50", "#7f8c8d"],
     specs: {
@@ -548,7 +548,7 @@ export const bestsellers = [
     id: 11,
     name: "T&G TG-676 Wireless Portable Stereo Woofer IPX5 Waterproof",
     price: "₦33,000",
-    image: "/new11.jpg",
+    image: "/images/new11.png",
     gallery: ["/speakers/speaker11.png"],
     colors: ["#3498db", "#2c3e50", "#e74c3c"],
     specs: {
@@ -601,7 +601,7 @@ export const bestsellers = [
     name: "T&G TG-682 Outdoor Portable Speaker Super Subwoofer ",
     price: "₦12,500",
     oldPrice: "₦75,000",
-    image: "/new12.jpg",
+    image: "/images/new12.png",
     gallery: ["/speakers/speaker12.png"],
     colors: ["#000000", "#e74c3c", "#2c3e50"],
     specs: {
@@ -650,7 +650,7 @@ export const bestsellers = [
     id: 13,
     name: "T&G TG698 Bluetooth Speaker Outdoor Portable Card FM Radio",
     price: "₦18,000",
-    image: "/new13.jpg",
+    image: "/images/new13.png",
     gallery: ["/speakers/speaker13.png"],
     colors: ["#2c3e50", "#3498db", "#e74c3c"],
     specs: {
@@ -698,7 +698,7 @@ export const bestsellers = [
     id: 14,
     name: "T&G TG-695 Wireless BT Woofer Speaker Outdoor Portable",
     price: "₦15,500",
-    image: "/new14.jpg",
+    image: "/images/new14.png",
     gallery: ["/speakers/speaker14.png"],
     colors: ["#000000", "#2c3e50", "#e74c3c"],
     specs: {
@@ -750,7 +750,7 @@ export const bestsellers = [
     id: 15,
     name: "T&G TG-692 Mini Wireless Portable Colorful Light BT Speaker FM",
     price: "₦8,000",
-    image: "/new15.jpg",
+    image: "/images/new15.png",
     gallery: ["/speakers/speaker15.png"],
     colors: ["#9b59b6", "#3498db", "#e74c3c", "#f1c40f"],
     specs: {
@@ -803,7 +803,7 @@ export const bestsellers = [
     name: "T&G TG-682 Outdoor Portable Speaker Super Subwoofer",
     price: "₦12,000",
     oldPrice: "₦72,000",
-    image: "/new16.jpg",
+    image: "/images/new16.png",
     gallery: ["/speakers/speaker16.png"],
     colors: ["#2c3e50", "#e74c3c", "#3498db"],
     specs: {
@@ -854,7 +854,7 @@ export const featured = [
     id: 17,
     name: "T&G TG-676 Wireless Portable Stereo Woofer IPX5 Waterproof",
     price: "₦32,000",
-    image: "/new17.jpg",
+    image: "/images/new17.png",
     gallery: ["/speakers/speaker17.png"],
     colors: ["#3498db", "#2c3e50", "#e74c3c"],
     specs: {
@@ -907,7 +907,7 @@ export const featured = [
     name: "T&G TG-672 Drums Speaker Bluetooth Dual 75mm speaker",
     price: "₦25,000",
     oldPrice: "₦48,000",
-    image: "/new18.jpg",
+    image: "/images/new18.png",
     gallery: ["/speakers/speaker18.png"],
     colors: ["#f1c40f", "#e74c3c", "#3498db"],
     specs: {
@@ -960,7 +960,7 @@ export const featured = [
     id: 19,
     name: "T&G TG659 Trending High Quality Audio Music Player Extreme",
     price: "₦7,000",
-    image: "/new19.jpg",
+    image: "/images/new19.png",
     gallery: ["/speakers/speaker19.png"],
     colors: ["#000000", "#2c3e50", "#e74c3c"],
     specs: {
@@ -1012,7 +1012,7 @@ export const featured = [
     id: 20,
     name: "T&G TG653 Mini Portable Speaker Outdoor Wireless Subwoofer",
     price: "₦8,000",
-    image: "/new20.jpg",
+    image: "/images/new20.png",
     gallery: ["/speakers/speaker20.png"],
     colors: ["#3498db", "#2c3e50", "#e74c3c"],
     specs: {
@@ -1060,7 +1060,7 @@ export const featured = [
     id: 21,
     name: "T&G TG678 Portable RGB Light TWS Bluetooth Fabric Surround Sound",
     price: "₦13,500",
-    image: "/new21.jpg",
+    image: "/images/new21.png",
     gallery: ["/speakers/speaker21.png"],
     colors: ["#9b59b6", "#3498db", "#e74c3c", "#f1c40f"],
     specs: {
@@ -1113,7 +1113,7 @@ export const featured = [
     id: 22,
     name: "T&G TG-672 Drums Speaker Bluetooth Dual 75mm speaker",
     price: "₦25,000",
-    image: "/new22.jpg",
+    image: "/images/new22.png",
     gallery: ["/speakers/speaker22.png"],
     colors: ["#e74c3c", "#f1c40f", "#3498db"],
     specs: {
@@ -1166,7 +1166,7 @@ export const featured = [
     id: 23,
     name: "T&G TG-695 Wireless BT Woofer Speaker Outdoor Portable",
     price: "₦23,000",
-    image: "/new23.jpg",
+    image: "/images/new23.png",
     gallery: ["/speakers/speaker23.png"],
     colors: ["#000000", "#2c3e50", "#7f8c8d"],
     specs: {
@@ -1218,7 +1218,7 @@ export const featured = [
     id: 24,
     name: "T&G TG-692 Mini Wireless Portable Colorful Light BT Speaker FM",
     price: "₦8,000",
-    image: "/new24.jpg",
+    image: "/images/new24.png",
     gallery: ["/speakers/speaker24.png"],
     colors: ["#3498db", "#9b59b6", "#e74c3c", "#f1c40f"],
     specs: {
@@ -1269,16 +1269,16 @@ export const featured = [
   }
 ];
 
-export const discountProducts = [
+export const relatedProducts = [
   {
     id: 1,
     name: "T&G TG659 Trending High Quality Audio Music Player Extreme",
     price: "₦7,500",
     oldPrice: "₦55,000",
-    image: "/new1a.jpg",
+    image: "/images/new1a.png",
     gallery: [
-      "/new1b.jpg",
-      "/new1c.jpg",
+      "/images/new1b.png",
+      "/images/new1c.png",
       "/new1d.jpg",
       "/new1e.jpg",
     ],
@@ -1350,7 +1350,7 @@ export const discountProducts = [
     name: "T&G TG678 Portable RGB Light TWS Bluetooth Fabric Surround Sound",
     price: "₦13,500",
     oldPrice: "₦45,000",
-    image: "/new2a.jpg",
+    image: "/images/new2a.png",
     gallery: ["/speakers/speaker2.png", "/speakers/speaker2_2.png"],
     colors: ["#e74c3c", "#3498db", "#9b59b6", "#2c3e50"],
     specs: {
@@ -1406,7 +1406,7 @@ export const discountProducts = [
     name: "T&G TG689 Bluetooth Speaker Outdoor Portable Card FM Radio",
     price: "₦6,800",
     oldPrice: "₦38,000",
-    image: "/new3.jpg",
+    image: "/images/new3.png",
     gallery: ["/speakers/speaker3.png", "/speakers/speaker3_2.png"],
     colors: ["#2c3e50", "#e74c3c", "#3498db"],
     specs: {
@@ -1460,7 +1460,7 @@ export const discountProducts = [
     name: "T&G TG-676 Wireless Portable Stereo Woofer IPX5 Waterproof",
     price: "₦35,000",
     oldPrice: "₦43,000",
-    image: "/new4.jpg",
+    image: "/images/new4.png",
     gallery: ["/speakers/speaker4.png", "/speakers/speaker4_2.png"],
     colors: ["#3498db", "#2c3e50", "#e74c3c"],
     specs: {
@@ -1513,7 +1513,7 @@ export const discountProducts = [
     name: "T&G TG-682 Outdoor Portable Speaker Super Subwoofer",
     price: "₦12,500",
     oldPrice: "₦75,000",
-    image: "/new12.jpg",
+    image: "/images/new12.png",
     gallery: ["/speakers/speaker12.png"],
     colors: ["#000000", "#e74c3c", "#2c3e50"],
     specs: {
@@ -1563,7 +1563,7 @@ export const discountProducts = [
     name: "T&G TG-695 Wireless BT Woofer Speaker Outdoor Portable",
     price: "₦15,500",
     oldPrice: "₦25,000",
-    image: "/new14.jpg",
+    image: "/images/new14.png",
     gallery: ["/speakers/speaker14.png"],
     colors: ["#000000", "#2c3e50", "#e74c3c"],
     specs: {
@@ -1616,7 +1616,7 @@ export const discountProducts = [
     name: "T&G TG-672 Drums Speaker Bluetooth Dual 78mm",
     price: "₦22,000",
     oldPrice: "₦25,000",
-    image: "/new8.jpg",
+    image: "/images/new8.png",
     gallery: ["/speakers/speaker8.png"],
     colors: ["#e74c3c", "#3498db", "#f1c40f"],
     specs: {
@@ -1670,7 +1670,7 @@ export const discountProducts = [
     name: "T&G TG-693 Wireless BT Woofer Speaker Outdoor Portable",
     price: "₦16,000",
     oldPrice: "₦65,000",
-    image: "/new9.jpg",
+    image: "/images/new9.png",
     gallery: ["/speakers/speaker9.png"],
     colors: ["#2c3e50", "#e74c3c", "#3498db"],
     specs: {
@@ -1725,7 +1725,7 @@ export const discountProducts = [
   }
 ];
 
-// Other product categories (phones, computers, etc.)
+// Only speakers are available
 export const phones = [];
 export const computers = [];
 export const smartWatches = [];
@@ -1733,16 +1733,10 @@ export const cameras = [];
 export const headphones = [];
 export const gaming = [];
 
-// Combine all products
+// Combine all products (only speakers)
 export const allProducts = [
   ...newArrivals,
   ...bestsellers,
   ...featured,
-  ...phones,
-  ...computers,
-  ...smartWatches,
-  ...cameras,
-  ...headphones,
-  ...gaming,
-  ...discountProducts,
+  ...relatedProducts,
 ];

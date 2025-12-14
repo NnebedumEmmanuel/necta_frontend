@@ -1,3 +1,4 @@
+// ShopPage.jsx
 import React, { useState, Suspense, useMemo, useCallback } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useWishlist } from "../../../context/WishlistContext";
@@ -10,42 +11,21 @@ import {
   newArrivals,
   bestsellers,
   featured,
-  phones,
-  computers,
-  smartWatches,
-  cameras,
-  headphones,
-  gaming,
 } from "../../../data/Products";
 import Pagination from "../../components/shop/Pagination";
 import ProductGrid from "../../components/home/home-products/ProductsGrid";
 import { Link } from "react-router-dom";
+import ComingSoon from "../../components/shop/ComingSoon";
 
 // Helper functions
 function getBrandFromName(name) {
-  const brands = ["Apple", "Samsung", "Xiaomi", "Poco", "OPPO", "Honor", "Motorola", "Nokia", "Realme", "Vivo", "Lenovo", "Asus", "LG", "Google", "OnePlus", "Infinix", "Canon", "Sony", "Nikon", "Blackmagic", "Fujifilm", "Panasonic", "Bose", "Beats", "Sennheiser", "JBL", "PlayStation", "Xbox", "Nintendo", "Steam", "Razer", "Logitech"];
+  const brands = ["T&G", "JBL", "Sony", "Bose", "Amazon", "Yamaha", "Klipsch", "Anker", "Samsung"];
   const foundBrand = brands.find(brand => name.toLowerCase().includes(brand.toLowerCase()));
-  return foundBrand || "Other";
+  return foundBrand || "T&G";
 }
 
-function getMemoryFromProduct(product) {
-  const memoryPatterns = /(\d+)\s*(GB|TB|MB)/gi;
-  const matches = product.name.match(memoryPatterns);
-  if (matches && matches.length > 0) {
-    return matches[0];
-  }
-  
-  const phoneMemories = ["64GB", "128GB", "256GB", "512GB"];
-  const computerMemories = ["8GB", "16GB", "32GB", "64GB"];
-  const watchMemories = ["16GB", "32GB", "64GB"];
-  
-  if (product.name.toLowerCase().includes("phone") || product.name.toLowerCase().includes("iphone")) {
-    return phoneMemories[Math.floor(Math.random() * phoneMemories.length)];
-  } else if (product.name.toLowerCase().includes("watch")) {
-    return watchMemories[Math.floor(Math.random() * watchMemories.length)];
-  } else {
-    return computerMemories[Math.floor(Math.random() * computerMemories.length)];
-  }
+function getMemoryFromProduct() {
+  return "N/A";
 }
 
 function parsePrice(price) {
@@ -63,64 +43,10 @@ function getRandomRating() {
 }
 
 // Enhanced mock data with ratings
-const allProducts = [
-  ...phones.map(product => ({
-    ...product,
-    category: "phones",
-    brand: getBrandFromName(product.name),
-    memory: getMemoryFromProduct(product),
-    priceValue: parsePrice(product.price),
-    rating: getRandomRating(),
-    reviewCount: Math.floor(Math.random() * 500) + 100,
-  })),
-  ...computers.map(product => ({
-    ...product,
-    category: "computers",
-    brand: getBrandFromName(product.name),
-    memory: getMemoryFromProduct(product),
-    priceValue: parsePrice(product.price),
-    rating: getRandomRating(),
-    reviewCount: Math.floor(Math.random() * 500) + 100,
-  })),
-  ...smartWatches.map(product => ({
-    ...product,
-    category: "smartWatches",
-    brand: getBrandFromName(product.name),
-    memory: getMemoryFromProduct(product),
-    priceValue: parsePrice(product.price),
-    rating: getRandomRating(),
-    reviewCount: Math.floor(Math.random() * 500) + 100,
-  })),
-  ...cameras.map(product => ({
-    ...product,
-    category: "cameras",
-    brand: getBrandFromName(product.name),
-    memory: getMemoryFromProduct(product),
-    priceValue: parsePrice(product.price),
-    rating: getRandomRating(),
-    reviewCount: Math.floor(Math.random() * 500) + 100,
-  })),
-  ...headphones.map(product => ({
-    ...product,
-    category: "headphones",
-    brand: getBrandFromName(product.name),
-    memory: getMemoryFromProduct(product),
-    priceValue: parsePrice(product.price),
-    rating: getRandomRating(),
-    reviewCount: Math.floor(Math.random() * 500) + 100,
-  })),
-  ...gaming.map(product => ({
-    ...product,
-    category: "gaming",
-    brand: getBrandFromName(product.name),
-    memory: getMemoryFromProduct(product),
-    priceValue: parsePrice(product.price),
-    rating: getRandomRating(),
-    reviewCount: Math.floor(Math.random() * 500) + 100,
-  })),
+const allProductsData = [
   ...newArrivals.map(product => ({
     ...product,
-    category: "newArrivals",
+    category: "speakers",
     brand: getBrandFromName(product.name),
     memory: getMemoryFromProduct(product),
     priceValue: parsePrice(product.price),
@@ -129,7 +55,7 @@ const allProducts = [
   })),
   ...bestsellers.map(product => ({
     ...product,
-    category: "bestsellers",
+    category: "speakers",
     brand: getBrandFromName(product.name),
     memory: getMemoryFromProduct(product),
     priceValue: parsePrice(product.price),
@@ -138,7 +64,7 @@ const allProducts = [
   })),
   ...featured.map(product => ({
     ...product,
-    category: "featured",
+    category: "speakers",
     brand: getBrandFromName(product.name),
     memory: getMemoryFromProduct(product),
     priceValue: parsePrice(product.price),
@@ -194,20 +120,17 @@ function ShopContent() {
       case "featured":
         return featured;
       case "phones":
-        return phones;
-      case "computers":
-        return computers;
-      case "smartwatches":
-        return smartWatches;
-      case "cameras":
-        return cameras;
+      case "solar":
+      case "inverter":
+      case "tv":
       case "headphones":
-        return headphones;
-      case "gaming":
-        return gaming;
+        // Return empty array for coming soon categories
+        return [];
+      case "speakers":
+        return allProductsData.filter(p => p.category === "speakers");
       case "all":
       default:
-        return allProducts;
+        return allProductsData;
     }
   }, [category]);
 
@@ -218,13 +141,19 @@ function ShopContent() {
       case "bestsellers": return "Bestsellers";
       case "featured": return "Featured";
       case "phones": return "Smartphones";
-      case "computers": return "Computers";
-      case "smartwatches": return "Smart Watches";
-      case "cameras": return "Cameras";
+      case "speakers": return "Speakers";
+      case "solar": return "Solar Products";
+      case "inverter": return "Inverters";
+      case "tv": return "Televisions";
       case "headphones": return "Headphones";
-      case "gaming": return "Gaming";
       default: return searchQuery ? `Search: "${searchQuery}"` : "All Products";
     }
+  };
+
+  // Check if category is coming soon
+  const isComingSoonCategory = () => {
+    const comingSoonCategories = ["phones", "solar", "inverter", "tv", "headphones"];
+    return comingSoonCategories.includes(category.toLowerCase());
   };
 
   // Handle search from mobile
@@ -254,17 +183,9 @@ function ShopContent() {
     let productsToFilter = [];
     
     if (category.toLowerCase() === "all") {
-      productsToFilter = allProducts;
+      productsToFilter = allProductsData;
     } else {
-      productsToFilter = baseProducts.map(baseProduct => {
-        const enrichedProduct = allProducts.find(p => p.id === baseProduct.id);
-        if (enrichedProduct) {
-          return enrichedProduct;
-        }
-        // If product not found in allProducts, create basic version
-        // This shouldn't happen as allProducts should contain all products
-        return baseProduct;
-      });
+      productsToFilter = baseProducts;
     }
 
     return productsToFilter.filter(product => {
@@ -353,6 +274,11 @@ function ShopContent() {
 
   const displayCategory = getDisplayCategory();
 
+  // If coming soon category, show coming soon page
+  if (isComingSoonCategory()) {
+    return <ComingSoon category={getDisplayCategory()} />;
+  }
+
   return (
     <section className="max-w-7xl mx-auto px-4 py-8">
       {/* Breadcrumb Navigation */}
@@ -382,7 +308,7 @@ function ShopContent() {
              {/* Filters */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg text-gray-900 mb-4">Filters</h3>
-             
+              
               
               <PriceFilter 
                 range={filters.priceRange}
@@ -524,16 +450,42 @@ function ShopContent() {
           </div>
 
           {/* Product Grid */}
-          <ProductGrid 
-            products={paginatedProducts}
-            wishlistState={wishlistState}
-            toggleWishlist={toggleWishlist}
-          />
+          {sortedAndFilteredProducts.length > 0 ? (
+            <>
+              <ProductGrid 
+                products={paginatedProducts}
+                wishlistState={wishlistState}
+                toggleWishlist={toggleWishlist}
+              />
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8">
-              <Pagination totalPages={totalPages} currentPage={page} />
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination totalPages={totalPages} currentPage={page} />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="max-w-md mx-auto">
+                <div className="text-gray-400 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
+                <p className="text-gray-600 mb-6">
+                  {searchQuery 
+                    ? `No products match your search "${searchQuery}". Try a different search term.`
+                    : "Check out our available speakers collection below."}
+                </p>
+                <Link
+                  to="/shop?category=speakers"
+                  className="inline-block bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                >
+                  Browse Available Speakers
+                </Link>
+              </div>
             </div>
           )}
         </div>

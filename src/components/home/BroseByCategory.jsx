@@ -1,13 +1,47 @@
+// BrowseByCategory.jsx
 import React from "react";
+import { 
+  Smartphone,
+  Speaker,
+  Sun,
+  Zap,
+  Tv,
+  Headphones
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function BrowseByCategory() {
   const categories = [
-    { name: "Phones", icon: "/icons/Phones2.png" },
-    { name: "SmartWatches", icon: "/icons/Smart Watches2.png" },
-    { name: "Cameras", icon: "/icons/Cameras2.png" },
-    { name: "Headphones", icon: "/icons/Headphones2.png" },
-    { name: "Computers", icon: "/icons/Computers2.png" },
-    { name: "Gaming", icon: "/icons/Gaming2.png" },
+    { 
+      name: "Phones", 
+      icon: <Smartphone size={40} className="text-gray-600" />,
+      available: false 
+    },
+    { 
+      name: "Speakers", 
+      icon: <Speaker size={40} className="text-gray-600" />,
+      available: true 
+    },
+    { 
+      name: "Solar", 
+      icon: <Sun size={40} className="text-gray-600" />,
+      available: false 
+    },
+    { 
+      name: "Inverter", 
+      icon: <Zap size={40} className="text-gray-600" />,
+      available: false 
+    },
+    { 
+      name: "TV", 
+      icon: <Tv size={40} className="text-gray-600" />,
+      available: false 
+    },
+    { 
+      name: "Headphones", 
+      icon: <Headphones size={40} className="text-gray-600" />,
+      available: false 
+    },
   ];
 
   return (
@@ -62,24 +96,36 @@ export default function BrowseByCategory() {
         {/* Categories Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {categories.map((category, index) => (
-            <a
-              href={`/shop?category=${encodeURIComponent(category.name.toLowerCase())}`}
+            <Link
+              to={`/shop?category=${encodeURIComponent(category.name.toLowerCase())}`}
               key={index}
-              className="flex flex-col items-center justify-center p-6 border bg-[#EDEDED] border-gray-200 [border-radius:6px] hover:border-gray-400 hover:shadow-md transition-all duration-200 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-black"
+              className={`flex flex-col items-center justify-center p-6 border ${
+                category.available 
+                  ? "bg-[#EDEDED] hover:bg-gray-100 cursor-pointer" 
+                  : "bg-gray-50 opacity-60 cursor-not-allowed"
+              } border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-md transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-black`}
               aria-label={`Browse ${category.name}`}
+              onClick={(e) => {
+                if (!category.available) {
+                  e.preventDefault();
+                }
+              }}
             >
-              <div className="relative w-12 h-12 mb-3 group-hover:scale-110 transition-transform duration-200">
-                <img
-                  src={category.icon}
-                  alt={category.name}
-                  width={48}
-                  height={48}
-                  className="object-contain"
-                />
+              <div className="relative w-16 h-16 mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                {category.icon}
               </div>
 
-              <h3 className="text-lg font-medium text-center">{category.name}</h3>
-            </a>
+              <div className="text-center">
+                <h3 className="text-lg font-medium mb-1">{category.name}</h3>
+                <span className={`text-xs px-2 py-1 rounded ${
+                  category.available 
+                    ? "text-gray-500 bg-gray-100" 
+                    : "bg-yellow-100 text-yellow-800"
+                }`}>
+                  {category.available ? "Available" : "Coming Soon"}
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
       </div>

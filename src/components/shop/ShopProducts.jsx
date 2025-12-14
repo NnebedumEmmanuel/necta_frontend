@@ -1,6 +1,7 @@
 import React from "react";
 import { Heart, ShoppingBag, Tag } from "lucide-react";
 import StarRating from "./StarRating";
+import { useToast } from "../../context/useToastHook";
 
 const ProductCard = ({ 
   product, 
@@ -8,6 +9,7 @@ const ProductCard = ({
   onWishlistToggle,
   onAddToCart
  }) => {
+  const { showToast } = useToast();
   const {
     image,
     brand,
@@ -48,7 +50,12 @@ const ProductCard = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onWishlistToggle?.(product);
+              onWishlistToggle?.(product);
+              if (isInWishlist) {
+                showToast(`${product.name} removed from wishlist`, { type: 'info' });
+              } else {
+                showToast(`${product.name} added to wishlist`, { type: 'success' });
+              }
           }}
           className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
           aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
@@ -105,7 +112,10 @@ const ProductCard = ({
 
         {/* Add to Cart Button */}
         <button
-          onClick={() => onAddToCart?.(product)}
+          onClick={() => {
+            onAddToCart?.(product);
+            showToast(`${product.name} added to cart`, { type: 'success' });
+          }}
           className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 group-hover:shadow-lg"
         >
           <ShoppingBag size={18} />
