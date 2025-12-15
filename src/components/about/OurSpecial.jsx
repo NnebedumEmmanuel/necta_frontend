@@ -19,7 +19,7 @@ export default function OurSpecial() {
           <div className="space-y-4">
             <div className="relative">
               <img
-                src="/public/special img.jpg"
+                src="/images/specialimg.jpg"
                 alt="hearing"
                 className="rounded-xl shadow-md w-full"
               />
@@ -44,7 +44,7 @@ export default function OurSpecial() {
           ----------------------------------------------------- */}
           <div className="relative">
             <img
-              src="/public/special img1.jpg"
+              src="/images/special img1.jpg"
               alt="electronics"
               className="rounded-xl shadow-md w-full h-full object-cover"
             />
@@ -107,7 +107,7 @@ export default function OurSpecial() {
             {/* ====== IMAGE MOVED FAR LOWER ====== */}
             <div className="absolute top-72 md:top-96 w-full">
               <img
-                src="/public/special img2.jpg"
+                src="/images/special img2.jpg"
                 alt="Airpods Small"
                 className="rounded-xl shadow-md w-full"
               />

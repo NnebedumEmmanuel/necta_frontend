@@ -30,7 +30,7 @@ const DiscountPage = () => {
     {
       id: 3,
       name: "T&G TG689 Bluetooth Speaker Outdoor",
-      image: "/public/img3.jpg",
+      image: "/images/img3.png",
       originalPrice: "₦12,000",
       discountedPrice: "₦6,800",
       rating: 5,

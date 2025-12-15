@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+// App.jsx - Updated with proper routing
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import './index.css';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
@@ -9,21 +10,35 @@ import ProductPage from './pages/shop/products/[id]/page';
 import WishlistPage from './pages/wishlist/page';
 import CartPage from './pages/cart/CartPage';
 import AboutPage from './pages/about/AboutPage';
-import ContactPage from './pages/Contact/ContactPage';
+import ContactPage from './pages/contact/ContactPage';
 import LoginPage from './pages/account/LoginPage';
 import SignUp from './components/auth/signup/Signup';
 import { WishlistProvider } from '../context/WishlistContext';
 import { CartProvider } from '../context/CartContext';
 import ToastProvider from './context/ToastProvider';
-import CheckoutPage from './pages/Checkout/Checkoutpage';
+import CheckoutPage from './pages/checkout/CheckoutPage';
+import UserDashboard from './pages/dashboard/UserDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminPanel from './components/admin/AdminPanel';
+import AdminProtectedRoute from './components/auth/admin/adminProtectedRoute';
 
 function AppWrapper() {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/account' || location.pathname === '/signup';
+  const hideHeaderFooterPaths = [
+    '/account', 
+    '/signup', 
+    '/admin', 
+    '/admin/*',
+    '/dashboard'
+  ];
+  
+  const isAuthPage = hideHeaderFooterPaths.some(path => 
+    location.pathname === path || location.pathname.startsWith(path.replace('/*', ''))
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
-      {!isAuthPage && <Header />}  {/* Only show header if not login/signup */}
+      {!isAuthPage && <Header />}
       <main className="flex-grow">
         <Routes>
           {/* Public pages */}
@@ -34,15 +49,37 @@ function AppWrapper() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/checkout" element={<CheckoutPage/>}/>
+          <Route path="/checkout" element={<CheckoutPage />} />
           
-
-          {/* Auth pages without header/footer */}
+          {/* Auth pages */}
           <Route path="/account" element={<LoginPage />} />
           <Route path="/signup" element={<SignUp />} />
+          
+          {/* Protected User Dashboard */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Protected Admin Panel */}
+          <Route 
+            path="/admin/*" 
+            element={
+              <AdminProtectedRoute>
+                <AdminPanel />
+              </AdminProtectedRoute>
+            } 
+          />
+          
+          {/* Redirect any unknown routes to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      {!isAuthPage && <Footer />}  {/* Only show footer if not login/signup */}
+      {!isAuthPage && <Footer />}
     </div>
   );
 }

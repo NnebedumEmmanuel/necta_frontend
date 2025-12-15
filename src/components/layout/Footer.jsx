@@ -12,7 +12,7 @@ export default function Footer() {
 
         {/* Logo and Email */}
         <div className="flex flex-col">
-          <img src="/public/img6.png" alt="Logo" className="w-32 mb-2" />
+          <img src="/images/img6.png" alt="Logo" className="w-32 mb-2" />
           <p className="text-sm text-gray-400">Email Address: nectagadget@hotmail.com</p>
           <p className="text-sm text-gray-400">contact      : 09157053789</p>
 
@@ -107,7 +107,7 @@ export default function Footer() {
         <div className="flex flex-col items-center">
           <div className="w-28 h-28 bg-white rounded overflow-hidden flex items-center justify-center">
             <img
-              src="/public/QR code img.jpeg"
+              src="/images/QRcode.jpeg"
               alt="QR Code"
               className="w-full h-full object-cover"
             />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { dummyUserLogin, adminLogin } from "../../../../services/authServices";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -21,32 +22,66 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      let response;
+      let redirectPath = "/dashboard";
       
-      // Mock successful login
-      toast.success(
-        <div className="p-4 bg-slate-700 text-white rounded-lg shadow-lg">
-          <p className="font-bold">Welcome Back!</p>
-          <p className="text-sm mt-1">
-            You have successfully logged in to Necta.
-          </p>
-        </div>
-      );
+      // Check for hardcoded admin login
+      if ((email === "admin@necta.com" || email === "admin") && 
+          password === "Admin@123") {
+        response = await adminLogin(email, password);
+        toast.success(
+          <div className="p-4 bg-green-700 text-white rounded-lg shadow-lg">
+            <p className="font-bold">Welcome Admin!</p>
+            <p className="text-sm mt-1">
+              You have successfully logged in to Necta Admin Panel.
+            </p>
+          </div>
+        );
+        redirectPath = "/admin";
+      } 
+      // All other logins are treated as regular users (with dummy users)
+      else {
+        response = await dummyUserLogin(email, password);
+        
+        // Check if user is admin (emilys or admin@necta.com)
+        if (response.username === "emilys" || response.email === "admin@necta.com") {
+          toast.success(
+            <div className="p-4 bg-green-700 text-white rounded-lg shadow-lg">
+              <p className="font-bold">Welcome Admin!</p>
+              <p className="text-sm mt-1">
+                You have successfully logged in to Necta Admin Panel.
+              </p>
+            </div>
+          );
+          redirectPath = "/admin";
+        } else {
+          toast.success(
+            <div className="p-4 bg-slate-700 text-white rounded-lg shadow-lg">
+              <p className="font-bold">Welcome Back, {response.firstName}!</p>
+              <p className="text-sm mt-1">
+                You have successfully logged in to Necta.
+              </p>
+            </div>
+          );
+          redirectPath = "/dashboard";
+        }
+      }
       
       // Store login state
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');
       }
       
-      navigate("/dashboard", { replace: true });
+      // Navigate to appropriate dashboard
+      navigate(redirectPath, { replace: true });
+      
     } catch (err) {
       console.error("Login error:", err);
       toast.error(
         <div className="p-4 bg-red-600 text-white rounded-lg shadow-lg">
           <p className="font-bold">Login Failed</p>
           <p className="text-sm mt-1">
-            Invalid email or password. Please try again.
+            {err.message || "Invalid email or password. Please try again."}
           </p>
         </div>
       );
@@ -73,13 +108,13 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address
+                Email or Username
               </label>
               <input
                 id="email"
-                type="email"
+                type="text"
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                placeholder="you@example.com"
+                placeholder="you@example.com or username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"

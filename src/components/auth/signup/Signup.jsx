@@ -1,7 +1,8 @@
+// components/auth/signup/Signup.jsx - Updated
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import countryData from "./CountryData.json";
+import { signup } from "../../../../services/authServices";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -9,7 +10,7 @@ const SignUp = () => {
     firstName: "",
     lastName: "",
     email: "",
-    phoneNumber: "",
+    phone: "",
     address: "",
     city: "",
     postalCode: "",
@@ -23,23 +24,6 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const API_BASE_URL = "https://koinfu.somee.com/api";
-
-  useEffect(() => {
-    if (formData.country) {
-      const selectedCountry = countryData.find(
-        (country) => country.name === formData.country
-      );
-      if (selectedCountry) {
-        setFormData((prevData) => ({
-          ...prevData,
-          currencyCode: selectedCountry.currencyCode,
-          currencySymbol: selectedCountry.currencySymbol,
-        }));
-      }
-    }
-  }, [formData.country]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -70,8 +54,8 @@ const SignUp = () => {
       newErrors.email = "Please enter a valid email";
     }
 
-    if (!formData.phoneNumber) {
-      newErrors.phoneNumber = "Phone number is required";
+    if (!formData.phone) {
+      newErrors.phone = "Phone number is required";
     }
 
     if (!formData.address.trim()) {
@@ -114,39 +98,38 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      // Prepare data for e-commerce registration
+      // Prepare data for DummyJSON API
       const userData = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.toLowerCase().trim(),
-        phoneNumber: formData.phoneNumber.trim(),
-        address: formData.address.trim(),
-        city: formData.city.trim(),
-        postalCode: formData.postalCode.trim(),
-        country: formData.country,
+        username: formData.email.toLowerCase().trim().split('@')[0] + Date.now().toString().slice(-4),
         password: formData.password,
-        confirmPassword: formData.confirmPassword,
-        newsletterSubscription: formData.newsletter,
-        shippingSameAsBilling: formData.shippingSameAsBilling,
+        phone: formData.phone.trim(),
+        address: {
+          address: formData.address.trim(),
+          city: formData.city.trim(),
+          postalCode: formData.postalCode.trim(),
+          country: formData.country
+        }
       };
 
-      console.log("Sending registration data:", userData);
+      console.log("Sending registration data to DummyJSON:", userData);
 
-      // Simulate API call with timeout
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Mock successful registration
+      // Call the signup function from authServices
+      const response = await signup(userData);
+      
       toast.success(
-        <div className="p-4 bg-slate-700 text-white rounded-lg shadow-lg">
+        <div className="p-4 bg-green-700 text-white rounded-lg shadow-lg">
           <p className="font-bold">Registration Successful!</p>
           <p className="text-sm mt-1">
-            Welcome to Necta! Your account has been created.
+            Welcome {response.firstName}! Your account has been created and you are now logged in.
           </p>
         </div>
       );
 
-      // Navigate to login page
-      setTimeout(() => navigate("/login"), 2000);
+      // Navigate to dashboard
+      setTimeout(() => navigate("/dashboard"), 1500);
 
     } catch (err) {
       console.error("Registration error:", err);
@@ -154,6 +137,8 @@ const SignUp = () => {
       
       if (err.message.includes("email") || err.message.includes("already exists")) {
         errorMessage = "This email is already registered. Try logging in instead.";
+      } else if (err.message.includes("password")) {
+        errorMessage = "Password must be at least 6 characters.";
       }
 
       toast.error(
@@ -166,6 +151,12 @@ const SignUp = () => {
       setIsLoading(false);
     }
   };
+
+  // Country options (simplified for demo)
+  const countries = [
+    "United States", "Canada", "United Kingdom", "Australia", 
+    "Germany", "France", "Japan", "India", "Brazil", "Mexico"
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -222,7 +213,7 @@ const SignUp = () => {
           <div className="mt-8 pt-6 border-t border-slate-700">
             <p className="text-slate-300">Already have an account?</p>
             <Link
-              to="/login"
+              to="/account"
               className="mt-3 inline-block bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition duration-200"
             >
               Sign In
@@ -307,17 +298,17 @@ const SignUp = () => {
                 Phone Number *
               </label>
               <input
-                name="phoneNumber"
+                name="phone"
                 className={`w-full px-4 py-3 rounded-lg border ${
-                  errors.phoneNumber ? "border-red-500" : "border-gray-300"
+                  errors.phone ? "border-red-500" : "border-gray-300"
                 } focus:ring-2 focus:ring-orange-500 focus:border-transparent transition`}
                 placeholder="+1 234 567 8900"
-                value={formData.phoneNumber}
+                value={formData.phone}
                 onChange={handleChange}
                 required
               />
-              {errors.phoneNumber && (
-                <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
               )}
             </div>
 
@@ -393,9 +384,9 @@ const SignUp = () => {
                   required
                 >
                   <option value="">Select country</option>
-                  {countryData && countryData.map((country) => (
-                    <option key={country.name} value={country.name}>
-                      {country.name}
+                  {countries.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
                     </option>
                   ))}
                 </select>
@@ -495,23 +486,6 @@ const SignUp = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center">
-                <input
-                  id="shippingSame"
-                  name="shippingSameAsBilling"
-                  type="checkbox"
-                  className="h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                  checked={formData.shippingSameAsBilling}
-                  onChange={handleChange}
-                />
-                <label
-                  htmlFor="shippingSame"
-                  className="ml-3 text-sm text-gray-700"
-                >
-                  Shipping address same as billing address
-                </label>
-              </div>
-
               <div className="flex items-center">
                 <input
                   id="newsletter"
