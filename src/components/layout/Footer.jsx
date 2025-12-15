@@ -1,32 +1,35 @@
 import React from "react";
+import { Instagram, Facebook, Search } from "lucide-react";
 
 export default function Footer() {
   return (
     <footer className="bg-[#1b1b1b] text-gray-300">
 
       {/* ==========================
-          TOP CONTACT ROW
+          TOP CONTACT ROW (Logo + Email Input + Subscribe aligned right)
       =========================== */}
-      <div className="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-8 border-b border-gray-700">
+      <div className="max-w-7xl mx-auto px-6 py-10 flex items-start justify-between border-b border-gray-700">
 
-        {/* --- CONTACT COLUMN 1 --- */}
-        <div>
-          <img src="/public/img6.png" alt="" className="w-32 mb-3" />
-          <p>Email: nectagadget@hotmail.com</p>
-          <p>Tel: 09157053789</p>
+        {/* Logo and Email */}
+        <div className="flex flex-col">
+          <img src="/public/img6.png" alt="Logo" className="w-32 mb-2" />
+          <p className="text-sm text-gray-400">Email Address: nectagadget@hotmail.com</p>
+          <p className="text-sm text-gray-400">contact      : 09157053789</p>
+
         </div>
 
-        {/* --- CONTACT COLUMN 2 --- */}
-        <div>
-          <p>Email: nectagadget@hotmail.com</p>
-          <p>Tel: 09157053789</p>
-          <p></p>
-        </div>
+        {/* Email Input + Subscribe Button aligned right */}
+        <div className="ml-auto relative flex-1 max-w-xl flex items-center mt-4 md:mt-0">
+          <input
+            type="email"
+            placeholder="Enter your email..."
+            className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
 
-        {/* --- CONTACT COLUMN 3 --- */}
-        <div>
-          <p>Email: nectagadget@hotmail.com</p>
-          <p>Tel: 09157053789</p>
+          <button className="ml-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-full transition">
+            Subscribe
+          </button>
         </div>
 
       </div>
@@ -36,9 +39,27 @@ export default function Footer() {
       =========================== */}
       <div className="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-6 gap-8 text-sm">
 
-        {/* HOME */}
+        {/* SOCIALS */}
         <div>
-          <h4 className="font-semibold mb-2">Home</h4>
+          <h4 className="font-semibold mb-3">Socials</h4>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://www.instagram.com/s/aGlnaGxpZ2h0OjE4MzA0ODAyMzUzMjY3OTUy?story_media_id=3785179784817469910_79294617253&igsh=MXdwdXR2cGszaWl3Zg=="
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-orange-500 transition"
+            >
+              <Instagram size={20} />
+            </a>
+            <a
+              href="https://www.facebook.com/share/p/1aAyZbZFgE/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-orange-500 transition"
+            >
+              <Facebook size={20} />
+            </a>
+          </div>
         </div>
 
         {/* ABOUT */}
@@ -73,7 +94,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* HUMAN RESOURCES */}
+        {/* HUMAN */}
         <div>
           <h4 className="font-semibold mb-2">Human</h4>
           <ul className="space-y-1">
@@ -82,32 +103,22 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* ==========================
-            QR CODE SECTION
-            (ONLY CODE VISIBLE)
-        =========================== */}
+        {/* QR CODE */}
         <div className="flex flex-col items-center">
-          <div className="w-28 h-28 bg-white  rounded overflow-hidden flex items-center justify-center">
-
-            {/* 
-              QR Code fits perfectly:
-              - object-contain keeps the full image visible
-              - no overflow or cropping
-            */}
+          <div className="w-28 h-28 bg-white rounded overflow-hidden flex items-center justify-center">
             <img
               src="/public/QR code img.jpeg"
               alt="QR Code"
               className="w-full h-full object-cover"
             />
           </div>
-
           <p className="mt-2 text-sm">Sweep</p>
         </div>
 
       </div>
 
       {/* ==========================
-          BOTTOM COPYRIGHT BAR
+          BOTTOM BAR
       =========================== */}
       <div className="bg-orange-500 text-white text-center text-sm py-3">
         ©2025 Shantou Meili Technology Co. | Guangdong ICP No. 2021128626-1 |

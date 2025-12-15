@@ -1,4 +1,4 @@
-// pages/CartPage.jsx
+// src/pages/CartPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
@@ -7,6 +7,7 @@ import { useCart } from "../../../context/useCartHook";
 const CartPage = () => {
   const { state, removeFromCart, updateQuantity, clearCart, getTotalPrice, getTotalItems } = useCart();
 
+  // Show empty cart message
   if (state.items.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -32,9 +33,7 @@ const CartPage = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <nav className="flex text-sm text-gray-500 mb-8">
-        <Link to="/" className="hover:text-black transition-colors">
-          Home
-        </Link>
+        <Link to="/" className="hover:text-black transition-colors">Home</Link>
         <span className="mx-2">/</span>
         <span className="text-black font-semibold">Shopping Cart</span>
       </nav>
@@ -53,36 +52,24 @@ const CartPage = () => {
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {/* Cart Header */}
             <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b">
-              <div className="col-span-6">
-                <span className="text-sm font-semibold text-gray-900">PRODUCT</span>
-              </div>
-              <div className="col-span-2 text-center">
-                <span className="text-sm font-semibold text-gray-900">QUANTITY</span>
-              </div>
-              <div className="col-span-2 text-center">
-                <span className="text-sm font-semibold text-gray-900">TOTAL</span>
-              </div>
-              <div className="col-span-2 text-center">
-                <span className="text-sm font-semibold text-gray-900">ACTION</span>
-              </div>
+              <div className="col-span-6"><span className="text-sm font-semibold text-gray-900">PRODUCT</span></div>
+              <div className="col-span-2 text-center"><span className="text-sm font-semibold text-gray-900">QUANTITY</span></div>
+              <div className="col-span-2 text-center"><span className="text-sm font-semibold text-gray-900">TOTAL</span></div>
+              <div className="col-span-2 text-center"><span className="text-sm font-semibold text-gray-900">ACTION</span></div>
             </div>
 
             {/* Cart Items List */}
             <div className="divide-y">
               {state.items.map((item) => {
-                const price = parseFloat(item.price.replace(/[^\d.-]/g, ''));
+                const price = parseFloat(item.price.replace(/[^\d.-]/g, ""));
                 const total = price * item.quantity;
 
                 return (
                   <div key={item.id} className="p-4 md:p-6">
                     <div className="flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center">
-                      {/* Product Image and Info */}
+                      {/* Product Info */}
                       <div className="flex items-start gap-4 md:col-span-6">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-20 h-20 object-contain rounded-lg bg-gray-50"
-                        />
+                        <img src={item.image} alt={item.name} className="w-20 h-20 object-contain rounded-lg bg-gray-50"/>
                         <div className="flex-1">
                           <Link
                             to={`/shop/products/${item.id}`}
@@ -90,9 +77,7 @@ const CartPage = () => {
                           >
                             {item.name}
                           </Link>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {item.brand || "Brand"}
-                          </p>
+                          <p className="text-sm text-gray-500 mt-1">{item.brand || "Brand"}</p>
                         </div>
                       </div>
 
@@ -105,14 +90,14 @@ const CartPage = () => {
                             className="p-2 hover:bg-gray-100 transition-colors"
                             disabled={item.quantity <= 1}
                           >
-                            <Minus size={16} />
+                            <Minus size={16}/>
                           </button>
                           <span className="w-12 text-center font-medium">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             className="p-2 hover:bg-gray-100 transition-colors"
                           >
-                            <Plus size={16} />
+                            <Plus size={16}/>
                           </button>
                         </div>
                       </div>
@@ -120,19 +105,17 @@ const CartPage = () => {
                       {/* Total */}
                       <div className="flex flex-col md:col-span-2 mt-4 md:mt-0">
                         <span className="md:hidden font-medium text-gray-600 mb-2">Total:</span>
-                        <span className="font-bold text-lg text-gray-900 ml-4">
-                          ₦{total.toFixed(2)}
-                        </span>
+                        <span className="font-bold text-lg text-gray-900 ml-4">₦{total.toFixed(2)}</span>
                       </div>
 
-                      {/* Delete Button */}
+                      {/* Remove Item */}
                       <div className="flex justify-end md:col-span-2 md:justify-center mt-4 md:mt-0">
                         <button
                           onClick={() => removeFromCart(item.id)}
                           className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors"
                           title="Remove from cart"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={18}/>
                         </button>
                       </div>
                     </div>
@@ -142,22 +125,19 @@ const CartPage = () => {
             </div>
 
             {/* Cart Actions */}
-            <div className="p-6 border-t bg-gray-50">
-              <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <Link
-                  to="/shop"
-                  className="inline-flex items-center justify-center border border-gray-300 text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Continue Shopping
-                </Link>
-                <button
-                  onClick={clearCart}
-                  className="inline-flex items-center justify-center border border-red-200 text-red-600 px-6 py-3 rounded-lg hover:bg-red-50 transition-colors font-medium"
-                >
-                  <Trash2 className="mr-2" size={18} />
-                  Clear Cart
-                </button>
-              </div>
+            <div className="p-6 border-t bg-gray-50 flex flex-col sm:flex-row justify-between gap-4">
+              <Link
+                to="/shop"
+                className="inline-flex items-center justify-center border border-gray-300 text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Continue Shopping
+              </Link>
+              <button
+                onClick={clearCart}
+                className="inline-flex items-center justify-center border border-red-200 text-red-600 px-6 py-3 rounded-lg hover:bg-red-50 transition-colors font-medium"
+              >
+                <Trash2 className="mr-2" size={18}/> Clear Cart
+              </button>
             </div>
           </div>
         </div>
@@ -188,14 +168,17 @@ const CartPage = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <button className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold">
-                Proceed to Checkout
-              </button>
-              <p className="text-center text-sm text-gray-500">
-                Free shipping on orders over ₦50,000
-              </p>
-            </div>
+            {/* Fixed Checkout Button */}
+            <Link
+              to="/checkout"
+              className="w-full block bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold text-center"
+            >
+              Proceed to Checkout
+            </Link>
+
+            <p className="text-center text-sm text-gray-500 mt-4">
+              Free shipping on orders over ₦50,000
+            </p>
 
             {/* Promo Code */}
             <div className="mt-8 pt-6 border-t">
@@ -213,6 +196,7 @@ const CartPage = () => {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

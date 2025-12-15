@@ -15,6 +15,7 @@ import SignUp from './components/auth/signup/Signup';
 import { WishlistProvider } from '../context/WishlistContext';
 import { CartProvider } from '../context/CartContext';
 import ToastProvider from './context/ToastProvider';
+import CheckoutPage from './pages/Checkout/Checkoutpage';
 
 function AppWrapper() {
   const location = useLocation();
@@ -33,6 +34,8 @@ function AppWrapper() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/checkout" element={<CheckoutPage/>}/>
+          
 
           {/* Auth pages without header/footer */}
           <Route path="/account" element={<LoginPage />} />
