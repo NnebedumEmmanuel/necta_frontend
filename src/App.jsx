@@ -20,7 +20,7 @@ import CheckoutPage from './pages/Checkout/Checkoutpage';
 import UserDashboard from './pages/dashboard/UserDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminPanel from './components/admin/AdminPanel';
-import AdminProtectedRoute from './components/auth/admin/adminProtectedRoute';
+import AdminProtectedRoute from './components/auth/admin/AdminProtectedRoute';
 
 function AppWrapper() {
   const location = useLocation();
