@@ -9,6 +9,7 @@ const StarRating = ({
   reviewCount = 0,
   interactive = false,
   onRate,
+  
   className = ""
 }) => {
   const [hoverRating, setHoverRating] = useState(0);
