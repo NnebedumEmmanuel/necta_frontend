@@ -6,7 +6,7 @@ import {
   CreditCard,
 } from "lucide-react";
 
-const OrderSummary = ({ cartItems, subtotal, deliveryFee }) => {
+const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
   const total = subtotal + deliveryFee;
 
   return (
@@ -38,31 +38,34 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee }) => {
           CART ITEMS
       ============================== */}
       <div className="space-y-3">
-        {cartItems.map((item) => (
-          <div
-            key={item.id}
-            className="
-              flex
-              justify-between
-              items-center
-              text-sm
-              text-gray-700
-              transition-colors
-              hover:text-gray-900
-            "
-          >
-            {/* Item name + quantity */}
-            <span>
-              {item.name} ×{" "}
-              <span className="font-medium">{item.quantity}</span>
-            </span>
+        {cartItems.map((item) => {
+          const itemPrice = parseFloat(item.price.replace(/[^\d.-]/g, ""));
+          return (
+            <div
+              key={item.id}
+              className="
+                flex
+                justify-between
+                items-center
+                text-sm
+                text-gray-700
+                transition-colors
+                hover:text-gray-900
+              "
+            >
+              {/* Item name + quantity */}
+              <span>
+                {item.name} ×{" "}
+                <span className="font-medium">{item.quantity}</span>
+              </span>
 
-            {/* Item total */}
-            <span className="font-medium">
-              ₦{item.price * item.quantity}
-            </span>
-          </div>
-        ))}
+              {/* Item total */}
+              <span className="font-medium">
+                ₦{(itemPrice * item.quantity).toFixed(2)}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Divider */}
@@ -99,18 +102,18 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee }) => {
       <div className="space-y-2 text-sm text-gray-700">
         <div className="flex justify-between">
           <span>Subtotal</span>
-          <span>₦{subtotal}</span>
+          <span>₦{subtotal.toFixed(2)}</span>
         </div>
 
         <div className="flex justify-between">
           <span>Delivery</span>
-          <span>₦{deliveryFee}</span>
+          <span>₦{deliveryFee.toFixed(2)}</span>
         </div>
 
         {/* Total */}
         <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t">
           <span>Total</span>
-          <span className="text-yellow-500">₦{total}</span>
+          <span className="text-yellow-500">₦{total.toFixed(2)}</span>
         </div>
       </div>
 
@@ -121,6 +124,27 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee }) => {
         <CreditCard size={14} />
         <span>Secure checkout • All payments are protected</span>
       </div>
+
+      {/* ==============================
+          PLACE ORDER BUTTON
+      ============================== */}
+      <button
+        onClick={onPlaceOrder}
+        className="
+          mt-6
+          w-full
+          bg-yellow-500
+          text-white
+          py-3
+          rounded-xl
+          font-semibold
+          hover:bg-yellow-600
+          transition-colors
+          duration-300
+        "
+      >
+        Place Order
+      </button>
     </div>
   );
 };

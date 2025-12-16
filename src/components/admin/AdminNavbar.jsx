@@ -37,7 +37,7 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
   };
 
   return (
-    <header className="w-full bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-800 shadow-lg p-4 flex justify-between items-center sticky top-0 z-40">
+    <header className="w-full bg-gradient-to-r from-slate-900 via-slate-700 to-orange-950 shadow-lg p-4 flex justify-between items-center sticky top-0 z-40">
       <div className="flex items-center gap-3">
         {/* Mobile Menu Button */}
         <button

@@ -1,4 +1,4 @@
-// services/authServices.js - Updated with better login handling
+// services/authServices.js - Complete Updated Version
 import axios from 'axios';
 
 const API_URL = 'https://dummyjson.com';
@@ -18,10 +18,8 @@ class AuthService {
 
   // ============ USER AUTHENTICATION ============
   
-  // User login with DummyJSON (username or email)
   async login(identifier, password) {
     try {
-      // First try to login with identifier as username
       const response = await this.api.post('/auth/login', {
         username: identifier,
         password,
@@ -36,7 +34,6 @@ class AuthService {
       }
       throw new Error('No token received');
     } catch (error) {
-      // If login with username fails, try to find user by email
       if (error.response?.status === 400 && identifier.includes('@')) {
         return await this.loginWithEmail(identifier, password);
       }
@@ -44,10 +41,8 @@ class AuthService {
     }
   }
 
-  // User login with email
   async loginWithEmail(email, password) {
     try {
-      // Search for user by email
       const usersResponse = await this.api.get('/users');
       const user = usersResponse.data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
       
@@ -55,7 +50,6 @@ class AuthService {
         throw new Error('User not found');
       }
       
-      // Login with username
       const response = await this.api.post('/auth/login', {
         username: user.username,
         password,
@@ -74,9 +68,7 @@ class AuthService {
     }
   }
 
-  // DUMMY USER LOGIN FOR TESTING (hardcoded users)
   async dummyUserLogin(email, password) {
-    // Hardcoded dummy users for testing
     const dummyUsers = [
       {
         email: 'testuser@necta.com',
@@ -104,7 +96,6 @@ class AuthService {
       }
     ];
 
-    // Check if it's a hardcoded dummy user
     const dummyUser = dummyUsers.find(u => 
       (u.email === email || u.username === email) && 
       u.password === password
@@ -114,7 +105,7 @@ class AuthService {
       const userData = {
         ...dummyUser,
         token: `dummy-token-${Date.now()}`,
-        id: 1000 + dummyUsers.indexOf(dummyUser)
+        id: 1 + dummyUsers.indexOf(dummyUser)
       };
       
       this.setToken(userData.token);
@@ -123,11 +114,9 @@ class AuthService {
       return userData;
     }
     
-    // If not a dummy user, try DummyJSON API
     return await this.login(email, password);
   }
 
-  // User signup (using DummyJSON /users/add endpoint)
   async signup(userData) {
     try {
       const response = await this.api.post('/users/add', {
@@ -145,7 +134,6 @@ class AuthService {
         }
       });
       
-      // Auto-login after signup
       const loginResponse = await this.login(response.data.username, userData.password);
       return loginResponse;
     } catch (error) {
@@ -155,9 +143,7 @@ class AuthService {
 
   // ============ ADMIN AUTHENTICATION ============
   
-  // Admin login (hardcoded credentials for demo)
   async adminLogin(email, password) {
-    // Demo admin credentials
     const adminCredentials = {
       email: 'admin@necta.com',
       password: 'Admin@123',
@@ -167,7 +153,6 @@ class AuthService {
       role: 'admin'
     };
 
-    // Check admin credentials
     if ((email === adminCredentials.email || email === adminCredentials.username) && 
         password === adminCredentials.password) {
       const adminData = {
@@ -182,14 +167,11 @@ class AuthService {
       return adminData;
     }
     
-    // Also check for emilys (DummyJSON admin)
     if ((email === 'emilys' || email === 'emilys@example.com') && 
         password === 'emilyspass') {
       try {
-        // Try to login with DummyJSON
         return await this.login('emilys', password);
       } catch (error) {
-        // If DummyJSON fails, use hardcoded
         const emilysData = {
           email: 'emilys@example.com',
           username: 'emilys',
@@ -210,7 +192,6 @@ class AuthService {
     throw new Error('Invalid admin credentials');
   }
 
-  // Get admin info (for AdminNavbar)
   getAdminInfo() {
     const user = this.getUser();
     if (this.isAdmin()) {
@@ -224,7 +205,6 @@ class AuthService {
     return null;
   }
 
-  // Logout admin/user
   logoutAdmin() {
     this.logout();
   }
@@ -283,8 +263,6 @@ class AuthService {
            user?.email === 'admin@necta.com';
   }
 
-  // ============ ERROR HANDLING ============
-  
   handleError(error) {
     if (error.response) {
       switch (error.response.status) {
@@ -305,96 +283,16 @@ class AuthService {
       return error;
     }
   }
-
-  // ============ LOCAL STORAGE PRODUCTS (for AdminPanel) ============
-  getProducts() {
-    const products = localStorage.getItem('admin_products');
-    return products ? JSON.parse(products) : [];
-  }
-
-  addProduct(product) {
-    const products = this.getProducts();
-    const newProduct = {
-      ...product,
-      id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
-      createdAt: new Date().toISOString()
-    };
-    products.push(newProduct);
-    localStorage.setItem('admin_products', JSON.stringify(products));
-    return newProduct;
-  }
-
-  updateProduct(id, updatedProduct) {
-    const products = this.getProducts();
-    const index = products.findIndex(p => p.id === id);
-    if (index !== -1) {
-      products[index] = { ...products[index], ...updatedProduct };
-      localStorage.setItem('admin_products', JSON.stringify(products));
-      return products[index];
-    }
-    return null;
-  }
-
-  deleteProduct(id) {
-    const products = this.getProducts();
-    const filteredProducts = products.filter(p => p.id !== id);
-    localStorage.setItem('admin_products', JSON.stringify(filteredProducts));
-    return true;
-  }
-
-  // ============ LOCAL STORAGE ORDERS (for AdminOrders) ============
-  getOrders() {
-    const orders = localStorage.getItem('admin_orders');
-    if (orders) {
-      return JSON.parse(orders);
-    }
-    // Default mock orders
-    const defaultOrders = [
-      {
-        id: 1,
-        orderNumber: 'ORD-001',
-        customer: { name: 'John Doe', email: 'john@example.com' },
-        createdAt: new Date().toISOString(),
-        items: [{ name: 'Product 1', quantity: 2, total: 49.98 }],
-        total: 49.98,
-        status: 'pending'
-      },
-      {
-        id: 2,
-        orderNumber: 'ORD-002',
-        customer: { name: 'Jane Smith', email: 'jane@example.com' },
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        items: [{ name: 'Product 2', quantity: 1, total: 29.99 }],
-        total: 29.99,
-        status: 'delivered'
-      }
-    ];
-    localStorage.setItem('admin_orders', JSON.stringify(defaultOrders));
-    return defaultOrders;
-  }
-
-  updateOrderStatus(id, status) {
-    const orders = this.getOrders();
-    const index = orders.findIndex(o => o.id === id);
-    if (index !== -1) {
-      orders[index].status = status;
-      localStorage.setItem('admin_orders', JSON.stringify(orders));
-      return orders[index];
-    }
-    return null;
-  }
 }
 
 // Create singleton instance
 const authServiceInstance = new AuthService();
 
-// Export the instance as both default and named export
+// ============ EXPORTS ============
 export default authServiceInstance;
 
-// Also export it as a named export
+// Named exports for convenience
 export const authService = authServiceInstance;
-
-// Export individual functions for backward compatibility
 export const getAdminInfo = () => authServiceInstance.getAdminInfo();
 export const logoutAdmin = () => authServiceInstance.logoutAdmin();
 export const login = (username, password) => authServiceInstance.login(username, password);
@@ -402,9 +300,3 @@ export const loginWithEmail = (email, password) => authServiceInstance.loginWith
 export const dummyUserLogin = (email, password) => authServiceInstance.dummyUserLogin(email, password);
 export const signup = (userData) => authServiceInstance.signup(userData);
 export const adminLogin = (email, password) => authServiceInstance.adminLogin(email, password);
-export const getProducts = () => authServiceInstance.getProducts();
-export const addProduct = (product) => authServiceInstance.addProduct(product);
-export const updateProduct = (id, product) => authServiceInstance.updateProduct(id, product);
-export const deleteProduct = (id) => authServiceInstance.deleteProduct(id);
-export const getOrders = () => authServiceInstance.getOrders();
-export const updateOrderStatus = (id, status) => authServiceInstance.updateOrderStatus(id, status);

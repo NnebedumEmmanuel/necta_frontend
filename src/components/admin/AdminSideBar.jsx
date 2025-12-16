@@ -33,7 +33,7 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
       }}
       className={`flex items-center gap-3 p-3 w-full rounded-xl transition text-left font-medium
         ${activePage === id 
-          ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg" 
+          ? "bg-gradient-to-r from-slate-600 to-orange-800 text-white shadow-lg" 
           : "text-gray-200 hover:bg-white/10 hover:text-white"}`}
       title={isCollapsed ? label : ""}
     >
@@ -43,7 +43,7 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
   );
 
   return (
-    <aside className={`bg-gradient-to-b from-indigo-900 via-purple-800 to-indigo-950 text-gray-200 h-screen sticky top-0 overflow-y-auto flex flex-col shadow-2xl transition-all duration-300 ${
+    <aside className={`bg-gradient-to-b from-slate-900 via-slate-800 to-orange-950 text-gray-200 h-screen sticky top-0 overflow-y-auto flex flex-col shadow-2xl transition-all duration-300 ${
       isCollapsed ? 'w-20' : 'w-64'
     }`}>
       {/* Header */}

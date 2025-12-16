@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { getOrders, updateOrderStatus } from "../../../services/authServices";
+import { allProducts } from "../../../data/Products";
 import { 
   Package, 
   Truck, 
@@ -17,6 +16,54 @@ import {
   MoreVertical,
   Eye
 } from "lucide-react";
+import { useToast } from "../../context/useToastHook";
+import { useEffect, useState } from "react";
+
+const generateMockOrders = () => {
+  const mockOrders = [];
+  const statuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
+  const customerNames = ["John Doe", "Jane Smith", "Peter Jones", "Mary Williams", "David Brown"];
+
+  for (let i = 1; i <= 20; i++) {
+    const items = [];
+    let subtotal = 0;
+    const numItems = Math.floor(Math.random() * 3) + 1;
+
+    for (let j = 0; j < numItems; j++) {
+      const product = allProducts[Math.floor(Math.random() * allProducts.length)];
+      const quantity = Math.floor(Math.random() * 2) + 1;
+      // Convert price string "₦7,500" to a number 7500
+      const price = parseFloat(product.price.replace(/[^0-9.-]+/g,""));
+      items.push({
+        ...product,
+        quantity,
+        total: price * quantity,
+      });
+      subtotal += price * quantity;
+    }
+    
+    const tax = subtotal * 0.05;
+    const total = subtotal + tax;
+
+    mockOrders.push({
+      id: i,
+      orderNumber: `NECTA-00${i}`,
+      userId: Math.floor(Math.random() * 100),
+      customer: {
+        name: customerNames[i % customerNames.length],
+        email: `${customerNames[i % customerNames.length].toLowerCase().replace(" ", ".")}@example.com`,
+      },
+      createdAt: new Date(new Date() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      status: statuses[i % statuses.length],
+      items,
+      subtotal,
+      tax,
+      total,
+      shippingAddress: `${i * 123} Mockingbird Lane, Faketown, USA`,
+    });
+  }
+  return mockOrders;
+};
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -26,6 +73,7 @@ export default function AdminOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadOrders();
@@ -33,13 +81,19 @@ export default function AdminOrders() {
 
   const loadOrders = () => {
     setIsLoading(true);
-    setTimeout(() => {
-      const allOrders = getOrders();
-      const sortedOrders = allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    try {
+      // Using mock data instead of service
+      const data = generateMockOrders();
+      const sortedOrders = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
       setOrders(sortedOrders);
       setFilteredOrders(sortedOrders);
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      showToast("Error loading orders", "error");
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   useEffect(() => {
@@ -47,9 +101,8 @@ export default function AdminOrders() {
     
     if (searchTerm) {
       filtered = filtered.filter(order =>
-        order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customer?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
@@ -62,10 +115,13 @@ export default function AdminOrders() {
 
   const updateStatus = (id, status) => {
     if (window.confirm(`Change order status to ${status}?`)) {
-      updateOrderStatus(id, status);
-      loadOrders();
+      setOrders(prevOrders => {
+        const newOrders = prevOrders.map(o => o.id === id ? { ...o, status } : o);
+        return newOrders;
+      });
+      showToast("Order status updated", "success");
     }
-  };
+   };
 
   const getStatusInfo = (status) => {
     switch (status) {
@@ -147,7 +203,7 @@ export default function AdminOrders() {
           </div>
           <div className={`px-3 py-1 rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium flex items-center gap-1`}>
             <StatusIcon size={12} />
-            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            {order.status && order.status.charAt(0).toUpperCase() + order.status.slice(1)}
           </div>
         </div>
 
@@ -436,7 +492,7 @@ export default function AdminOrders() {
                                     <StatusIcon className={`w-4 h-4 ${statusInfo.textColor}`} />
                                   </div>
                                   <span className={`font-semibold text-sm ${statusInfo.textColor}`}>
-                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                    {order.status && order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                                   </span>
                                 </div>
                               </td>
