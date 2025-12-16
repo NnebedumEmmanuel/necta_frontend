@@ -167,7 +167,7 @@ const ContactUs = () => {
                   onChange={handleChange}
                   rows="4"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-sm resize-none"
-                  placeholder="Write your message here..."
+                  placeholder="Write your message here.."
                   required
                 />
               </div>
