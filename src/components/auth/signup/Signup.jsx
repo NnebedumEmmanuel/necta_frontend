@@ -2,12 +2,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuth } from '@/context/AuthContext'
-import supabase from '../../../lib/supabaseClient'
+import { signup } from "../../../../services/authServices";
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { signUp } = useAuth()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -97,32 +95,60 @@ const SignUp = () => {
       return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const email = formData.email.toLowerCase().trim()
-      const password = formData.password
+      // Prepare data for DummyJSON API
+      const userData = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.toLowerCase().trim(),
+        username: formData.email.toLowerCase().trim().split('@')[0] + Date.now().toString().slice(-4),
+        password: formData.password,
+        phone: formData.phone.trim(),
+        address: {
+          address: formData.address.trim(),
+          city: formData.city.trim(),
+          postalCode: formData.postalCode.trim(),
+          country: formData.country
+        }
+      };
 
-      const res = await signUp({ email, password })
-      if (res?.error) throw res.error
+      console.log("Sending registration data to DummyJSON:", userData);
 
-      // After sign up, Supabase auth will create the user; our DB trigger
-      // inserts a matching profile row with default role 'user'. Fetch role.
-      const userId = res?.data?.user?.id || (await supabase.auth.getUser()).data?.user?.id
-      let role = null
-      if (userId) {
-        const { data: profile, error: profileErr } = await supabase.from('profiles').select('role').eq('id', userId).single()
-        if (!profileErr) role = profile?.role
+      // Call the signup function from authServices
+      const response = await signup(userData);
+      
+      toast.success(
+        <div className="p-4 bg-green-700 text-white rounded-lg shadow-lg">
+          <p className="font-bold">Registration Successful!</p>
+          <p className="text-sm mt-1">
+            Welcome {response.firstName}! Your account has been created and you are now logged in.
+          </p>
+        </div>
+      );
+
+      // Navigate to dashboard
+      setTimeout(() => navigate("/dashboard"), 1500);
+
+    } catch (err) {
+      console.error("Registration error:", err);
+      let errorMessage = "Sign up failed. Please try again.";
+      
+      if (err.message.includes("email") || err.message.includes("already exists")) {
+        errorMessage = "This email is already registered. Try logging in instead.";
+      } else if (err.message.includes("password")) {
+        errorMessage = "Password must be at least 6 characters.";
       }
 
-      toast.success('Registration successful — you are signed in')
-      navigate(role === 'admin' ? '/admin' : '/dashboard', { replace: true })
-    } catch (err) {
-      console.error('Registration error:', err)
-      const message = err?.message || err?.error_description || 'Sign up failed. Please try again.'
-      toast.error(message)
+      toast.error(
+        <div className="p-4 bg-red-600 text-white rounded-lg shadow-lg">
+          <p className="font-bold">Registration Error</p>
+          <p className="text-sm mt-1">{errorMessage}</p>
+        </div>
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   };
 
@@ -187,7 +213,7 @@ const SignUp = () => {
           <div className="mt-8 pt-6 border-t border-slate-700">
             <p className="text-slate-300">Already have an account?</p>
             <Link
-              to="/login"
+              to="/account"
               className="mt-3 inline-block bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition duration-200"
             >
               Sign In
@@ -544,7 +570,7 @@ const SignUp = () => {
             <p className="text-center text-sm text-gray-600">
               Already have an account?{" "}
               <Link
-                to="/login"
+                to="/account"
                 className="font-semibold text-orange-600 hover:text-orange-500"
               >
                 Sign in here

@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Search } from "lucide-react";
 
 type MemoryOption = {
   label: string;
+  count: number;
 };
 
 interface MemoryFilterProps {
@@ -12,18 +13,18 @@ interface MemoryFilterProps {
 }
 
 const memoryOptions: MemoryOption[] = [
-  { label: "16GB" },
-  { label: "32GB" },
-  { label: "64GB" },
-  { label: "128GB" },
-  { label: "256GB" },
-  { label: "512GB" },
-  { label: "1TB" },
-  { label: "2TB" },
-  { label: "4TB" },
-  { label: "8TB" },
-  { label: "16TB" },
-  { label: "32TB" },
+  { label: "16GB", count: 65 },
+  { label: "32GB", count: 123 },
+  { label: "64GB", count: 48 },
+  { label: "128GB", count: 50 },
+  { label: "256GB", count: 24 },
+  { label: "512GB", count: 8 },
+  { label: "1TB", count: 5 },
+  { label: "2TB", count: 3 },
+  { label: "4TB", count: 2 },
+  { label: "8TB", count: 1 },
+  { label: "16TB", count: 1 },
+  { label: "32TB", count: 0 },
 ];
 
 export default function MemoryFilter({ selected = [], onSelectionChange }: MemoryFilterProps) {
@@ -99,6 +100,7 @@ export default function MemoryFilter({ selected = [], onSelectionChange }: Memor
                 title={`Select ${option.label}`}
               />
               <span className="flex-1">{option.label}</span>
+              <span className="text-gray-500">{option.count}</span>
             </label>
           ))}
           {filteredOptions.length === 0 && (

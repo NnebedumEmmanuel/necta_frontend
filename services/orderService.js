@@ -1,50 +1,55 @@
-// services/orderService.js — use central API client
-import { api, handleApiError } from '../src/lib/api';
+// services/orderService.js
+import { apiService } from './apiServices';
 
 class OrderService {
   async getOrders(limit = 10, skip = 0) {
     try {
-      const response = await api.get(`/orders?limit=${limit}&skip=${skip}`);
+      const response = await apiService.api.get(`/carts?limit=${limit}&skip=${skip}`);
       return response.data;
     } catch (error) {
-      throw handleApiError(error);
+      throw apiService.handleError(error);
     }
   }
 
   async getOrder(id) {
     try {
-      const response = await api.get(`/orders/${id}`);
+      const response = await apiService.api.get(`/carts/${id}`);
       return response.data;
     } catch (error) {
-      throw handleApiError(error);
+      throw apiService.handleError(error);
     }
   }
 
   async addOrder(orderData) {
     try {
-      // Send order to backend checkout/init endpoint — backend will persist and (optionally) initialize payment
-      const response = await api.post('/checkout', orderData);
+      // DummyJSON does not support creating orders, so we simulate it using carts
+      const response = await apiService.api.post('/carts/add', {
+        userId: orderData.customer.userId,
+        products: orderData.items.map(item => ({ id: item.id, quantity: item.quantity }))
+      });
       return response.data;
     } catch (error) {
-      throw handleApiError(error);
+      throw apiService.handleError(error);
     }
   }
 
   async updateOrderStatus(orderId, status) {
     try {
-      const response = await api.patch(`/orders/${orderId}`, { status });
-      return response.data;
+        // DummyJSON does not support updating orders, so we simulate it by fetching a cart
+        // and returning it with the new status.
+        const response = await apiService.api.get(`/carts/${orderId}`);
+        return { ...response.data, status };
     } catch (error) {
-      throw handleApiError(error);
+        throw apiService.handleError(error);
     }
   }
 
   async getUserOrders(userId) {
     try {
-      const response = await api.get(`/users/${userId}/orders`);
-      return response.data;
+        const response = await apiService.api.get(`/users/${userId}/carts`);
+        return response.data;
     } catch (error) {
-      throw handleApiError(error);
+        throw apiService.handleError(error);
     }
   }
 }

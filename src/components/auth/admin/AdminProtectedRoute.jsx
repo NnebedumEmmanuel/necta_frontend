@@ -5,7 +5,7 @@ import { authService } from '../../../../services/authServices';
 const AdminProtectedRoute = ({ children }) => {
   if (!authService.isAuthenticated()) {
     // Redirect to login if not authenticated
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/account" replace />;
   }
 
   if (!authService.isAdmin()) {

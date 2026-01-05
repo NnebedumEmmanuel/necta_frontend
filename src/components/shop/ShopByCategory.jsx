@@ -7,12 +7,12 @@ const ShopByCategoryDropdown = () => {
   const [isOpen, setIsOpen] = useState(true); // Open by default
 
   const categories = [
-    { name: "Speakers", href: "/shop?category=speakers", available: true },
-    { name: "Smartphones", href: "/shop?category=phones", available: false },
-    { name: "Solar Products", href: "/shop?category=solar", available: false },
-    { name: "Inverters", href: "/shop?category=inverter", available: false },
-    { name: "Televisions", href: "/shop?category=tv", available: false },
-    { name: "Headphones", href: "/shop?category=headphones", available: false },
+    { name: "Speakers", count: 24, href: "/shop?category=speakers", available: true },
+    { name: "Smartphones", count: 0, href: "/shop?category=phones", available: false },
+    { name: "Solar Products", count: 0, href: "/shop?category=solar", available: false },
+    { name: "Inverters", count: 0, href: "/shop?category=inverter", available: false },
+    { name: "Televisions", count: 0, href: "/shop?category=tv", available: false },
+    { name: "Headphones", count: 0, href: "/shop?category=headphones", available: false },
   ];
 
   return (
@@ -56,11 +56,13 @@ const ShopByCategoryDropdown = () => {
                     {category.name}
                   </span>
                 </div>
-                {!category.available && (
-                  <span className={`text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800`}>
-                    Coming Soon
-                  </span>
-                )}
+                <span className={`text-xs px-2 py-1 rounded ${
+                  category.available 
+                    ? "text-gray-500 bg-gray-100" 
+                    : "bg-yellow-100 text-yellow-800"
+                }`}>
+                  {category.available ? category.count : "Coming Soon"}
+                </span>
               </Link>
             ))}
           </div>

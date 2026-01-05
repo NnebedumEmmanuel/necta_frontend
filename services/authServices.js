@@ -1,59 +1,70 @@
-// services/authServices.js - wired to backend via central API client
-import { api, attachAuthToken, handleApiError } from '../src/lib/api';
+// services/authServices.js - Complete Updated Version
+import axios from 'axios';
 
+const API_URL = 'https://dummyjson.com';
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user_data';
 const IS_ADMIN_KEY = 'is_admin';
 
 class AuthService {
   constructor() {
-    // Ensure any persisted token is attached to the shared axios instance on init
-    try {
-      const token = this.getToken();
-      if (token) attachAuthToken(token);
-    } catch (e) {
-      // ignore in non-browser envs
-    }
+    this.api = axios.create({
+      baseURL: API_URL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 
   // ============ USER AUTHENTICATION ============
   
   async login(identifier, password) {
     try {
-      const res = await api.post('/auth/login', { identifier, password });
-      const data = res.data;
-      if (data?.access_token || data?.token) {
-        const token = data.access_token || data.token;
-        this.setToken(token);
-        this.setUser(data.user || data);
-        this.setAdminStatus((data.user && data.user.role === 'admin') || data.username === 'emilys');
-        return data;
+      const response = await this.api.post('/auth/login', {
+        username: identifier,
+        password,
+        expiresInMins: 30,
+      });
+      
+      if (response.data.token) {
+        this.setToken(response.data.token);
+        this.setUser(response.data);
+        this.setAdminStatus(response.data.username === 'emilys');
+        return response.data;
       }
-      throw new Error('No token received from backend');
+      throw new Error('No token received');
     } catch (error) {
-      // fallback to email flow if backend returned a 400 and identifier is an email
       if (error.response?.status === 400 && identifier.includes('@')) {
         return await this.loginWithEmail(identifier, password);
       }
-      throw handleApiError(error);
+      throw this.handleError(error);
     }
   }
 
   async loginWithEmail(email, password) {
     try {
-      // Rely on backend to support email login; send the same payload and let server resolve
-      const res = await api.post('/auth/login', { identifier: email, password });
-      const data = res.data;
-      if (data?.access_token || data?.token) {
-        const token = data.access_token || data.token;
-        this.setToken(token);
-        this.setUser(data.user || data);
-        this.setAdminStatus((data.user && data.user.role === 'admin') || data.username === 'emilys');
-        return data;
+      const usersResponse = await this.api.get('/users');
+      const user = usersResponse.data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (!user) {
+        throw new Error('User not found');
       }
-      throw new Error('No token received from backend');
+      
+      const response = await this.api.post('/auth/login', {
+        username: user.username,
+        password,
+        expiresInMins: 30,
+      });
+      
+      if (response.data.token) {
+        this.setToken(response.data.token);
+        this.setUser(response.data);
+        this.setAdminStatus(user.username === 'emilys');
+        return response.data;
+      }
+      throw new Error('No token received');
     } catch (error) {
-      throw handleApiError(error);
+      throw this.handleError(error);
     }
   }
 
@@ -108,7 +119,7 @@ class AuthService {
 
   async signup(userData) {
     try {
-      const res = await api.post('/auth/signup', {
+      const response = await this.api.post('/users/add', {
         firstName: userData.firstName,
         lastName: userData.lastName,
         email: userData.email,
@@ -122,12 +133,11 @@ class AuthService {
           country: userData.country || 'Not provided'
         }
       });
-
-      // Attempt login after signup
-      const loginResponse = await this.login(userData.email, userData.password);
+      
+      const loginResponse = await this.login(response.data.username, userData.password);
       return loginResponse;
     } catch (error) {
-      throw handleApiError(error);
+      throw this.handleError(error);
     }
   }
 
@@ -208,8 +218,6 @@ class AuthService {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(IS_ADMIN_KEY);
-    // Ensure axios instance does not keep Authorization header
-    try { attachAuthToken(null); } catch (e) { /* ignore */ }
   }
 
   setToken(token, rememberMe = false) {
@@ -218,8 +226,6 @@ class AuthService {
     } else {
       sessionStorage.setItem(TOKEN_KEY, token);
     }
-    // Attach token to shared API client
-    try { attachAuthToken(token); } catch (e) { /* ignore */ }
   }
 
   getToken() {

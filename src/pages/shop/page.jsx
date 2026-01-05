@@ -7,9 +7,11 @@ import RatingFilter from "../../components/shop/RatingsFilter";
 import PriceFilter from "../../components/shop/PriceFilter";
 import ShopByCategoryDropdown from "../../components/shop/ShopByCategory";
 import CollectionsDropdown from "../../components/shop/Collections";
-import BrandFilter from "../../components/shop/BrandFilter";
-import CategoryFilter from "../../components/shop/CategoryFilter";
-import { productService } from "../../../services/productService";
+import {
+  newArrivals,
+  bestsellers,
+  featured,
+} from "../../../data/Products";
 import Pagination from "../../components/shop/Pagination";
 import ProductGrid from "../../components/home/home-products/ProductsGrid";
 import { Link } from "react-router-dom";
@@ -40,7 +42,36 @@ function getRandomRating() {
   return 3;
 }
 
-// Products will be fetched from backend — see useEffect inside ShopContent
+// Enhanced mock data with ratings
+const allProductsData = [
+  ...newArrivals.map(product => ({
+    ...product,
+    category: "speakers",
+    brand: getBrandFromName(product.name),
+    memory: getMemoryFromProduct(product),
+    priceValue: parsePrice(product.price),
+    rating: getRandomRating(),
+    reviewCount: Math.floor(Math.random() * 500) + 100,
+  })),
+  ...bestsellers.map(product => ({
+    ...product,
+    category: "speakers",
+    brand: getBrandFromName(product.name),
+    memory: getMemoryFromProduct(product),
+    priceValue: parsePrice(product.price),
+    rating: getRandomRating(),
+    reviewCount: Math.floor(Math.random() * 500) + 100,
+  })),
+  ...featured.map(product => ({
+    ...product,
+    category: "speakers",
+    brand: getBrandFromName(product.name),
+    memory: getMemoryFromProduct(product),
+    priceValue: parsePrice(product.price),
+    rating: getRandomRating(),
+    reviewCount: Math.floor(Math.random() * 500) + 100,
+  })),
+];
 
 function ShopContent() {
   const [searchParams] = useSearchParams();
@@ -51,16 +82,6 @@ function ShopContent() {
   const searchQuery = searchParams.get("search") || "";
   const itemsPerPage = 8;
 
-  // Products loaded from backend
-  const [products, setProducts] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [productsError, setProductsError] = useState(null);
-
-  // Sync collection query param from URL into filters so clicking a collection Link
-  // in `CollectionsDropdown` updates the filters state and triggers a fetch.
-  const collectionParam = searchParams.get('collection') || null;
-
   const { state: wishlistState, toggleWishlist } = useWishlist();
 
   // State for mobile filter visibility
@@ -69,35 +90,12 @@ function ShopContent() {
   // Add state for sort option
   const [sortOption, setSortOption] = useState("rating");
 
-  // Initialize unified filters state (single source of truth)
+  // Initialize all filter states
   const [filters, setFilters] = useState({
-    minPrice: 0,
-    maxPrice: 200000,
-    rating: 0,
-    brands: [],
-    categories: [],
-    collections: [],
+    memory: [],
+    priceRange: [0, 5000000],
+    ratings: [],
   });
-
-  // Keep filters.collections in sync with the collection URL param (if present)
-  React.useEffect(() => {
-    if (collectionParam) {
-      setFilters(prev => ({ ...prev, collections: [collectionParam] }));
-    }
-  }, [collectionParam]);
-
-  // Derive available brands/categories from loaded products
-  const availableBrands = useMemo(() => {
-    const set = new Set();
-    (products || []).forEach(p => { if (p.brand) set.add(p.brand); });
-    return Array.from(set).sort();
-  }, [products]);
-
-  const availableCategories = useMemo(() => {
-    const set = new Set();
-    (products || []).forEach(p => { if (p.category) set.add(p.category); });
-    return Array.from(set).sort();
-  }, [products]);
 
   // Update individual filter functions
   const updateFilter = useCallback((key, value) => {
@@ -107,15 +105,6 @@ function ShopContent() {
     }));
   }, []);
 
-  // Helpful derived active filter count for the mobile filters button
-  const activeFilterCount = (
-    (filters.brands?.length || 0) +
-    (filters.categories?.length || 0) +
-    (filters.collections?.length || 0) +
-    ((filters.rating || 0) > 0 ? 1 : 0) +
-    ((filters.minPrice || 0) > 0 || (filters.maxPrice || 0) < 200000 ? 1 : 0)
-  );
-
   // Handle sort change
   const handleSortChange = (e) => {
     setSortOption(e.target.value);
@@ -123,15 +112,13 @@ function ShopContent() {
 
   // Get base products based on category
   const getBaseProducts = useCallback(() => {
-    const lower = category.toLowerCase();
-    switch (lower) {
+    switch (category.toLowerCase()) {
       case "newarrivals":
-        // try filter by tag; fallback to first items
-        return products.filter(p => (p.tags || []).includes('new')) || products.slice(0, itemsPerPage);
+        return newArrivals;
       case "bestsellers":
-        return products.filter(p => (p.tags || []).includes('bestseller')) || products.slice(itemsPerPage, itemsPerPage*2);
+        return bestsellers;
       case "featured":
-        return products.filter(p => (p.tags || []).includes('featured')) || products.slice(itemsPerPage*2, itemsPerPage*3);
+        return featured;
       case "phones":
       case "solar":
       case "inverter":
@@ -140,10 +127,10 @@ function ShopContent() {
         // Return empty array for coming soon categories
         return [];
       case "speakers":
-        return products.filter(p => p.category === "speakers");
+        return allProductsData.filter(p => p.category === "speakers");
       case "all":
       default:
-        return products;
+        return allProductsData;
     }
   }, [category]);
 
@@ -190,35 +177,79 @@ function ShopContent() {
   };
 
   // Filter products based on all selected filters and category
-  // After moving filtering to the server, the `products` state already represents
-  // the filtered & paginated results. We still perform client-side sorting.
-  const filteredProducts = useMemo(() => products || [], [products]);
+  const filteredProducts = useMemo(() => {
+    const baseProducts = getBaseProducts();
+    
+    let productsToFilter = [];
+    
+    if (category.toLowerCase() === "all") {
+      productsToFilter = allProductsData;
+    } else {
+      productsToFilter = baseProducts;
+    }
 
-  // Sort products client-side (API returns page items already)
+    return productsToFilter.filter(product => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          product.name.toLowerCase().includes(query) ||
+          (product.brand && product.brand.toLowerCase().includes(query)) ||
+          (product.category && product.category.toLowerCase().includes(query));
+        
+        if (!matchesSearch) {
+          return false;
+        }
+      }
+
+      // Memory filter
+      if (filters.memory.length > 0 && !filters.memory.includes(product.memory)) {
+        return false;
+      }
+
+      // Price filter
+      if (product.priceValue < filters.priceRange[0] || product.priceValue > filters.priceRange[1]) {
+        return false;
+      }
+
+      // Rating filter
+      if (filters.ratings.length > 0) {
+        const minRating = Math.min(...filters.ratings);
+        if ((product.rating || 0) < minRating) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [category, filters, getBaseProducts, searchQuery]);
+
+  // Sort filtered products
   const sortedAndFilteredProducts = useMemo(() => {
-    const items = [...(filteredProducts || [])];
-
+    const products = [...filteredProducts];
+    
     switch (sortOption) {
       case "price":
-        return items.sort((a, b) => (a.priceValue || 0) - (b.priceValue || 0));
+        return products.sort((a, b) => a.priceValue - b.priceValue);
       case "price-desc":
-        return items.sort((a, b) => (b.priceValue || 0) - (a.priceValue || 0));
+        return products.sort((a, b) => b.priceValue - a.priceValue);
       case "name":
-        return items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        return products.sort((a, b) => a.name.localeCompare(b.name));
       case "rating":
       default:
-        return items.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        return products.sort((a, b) => {
+          const ratingA = a.rating || 0;
+          const ratingB = b.rating || 0;
+          return ratingB - ratingA;
+        });
     }
   }, [filteredProducts, sortOption]);
 
   const clearAllFilters = () => {
     setFilters({
-      minPrice: 0,
-      maxPrice: 200000,
-      rating: 0,
-      brands: [],
-      categories: [],
-      collections: [],
+      memory: [],
+      priceRange: [0, 5000000],
+      ratings: [],
     });
   };
 
@@ -228,90 +259,20 @@ function ShopContent() {
     navigate(`${location.pathname}?${params.toString()}`);
   };
 
-  // Fetch products whenever filters or page changes
-  React.useEffect(() => {
-    let mounted = true;
-    setLoadingProducts(true);
-    setProductsError(null);
-
-    const fetchProducts = async () => {
-      try {
-  // Filters changed; fetch will run. (Debug logs removed for production)
-        const filterPayload = {
-          minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice,
-          rating: filters.rating,
-          brands: filters.brands,
-          categories: (filters.categories && filters.categories.length > 0) ? filters.categories : (category !== 'all' ? [category] : []),
-          collections: filters.collections,
-          q: searchQuery,
-        };
-
-  // TEMP LOG: dump filter payload to help verify UI selections -> server query
-  // Remove this log after you've verified the values in your browser console.
-  console.log("FETCH PARAMS", filterPayload);
-
-  const skip = (page - 1) * itemsPerPage;
-  const res = await productService.getProducts({ limit: itemsPerPage, skip, filters: filterPayload });
-
-        if (!mounted) return;
-
-        const items = res?.products ?? [];
-        const enhanced = items.map(product => ({
-          ...product,
-          category: product.category || (product.categories?.name ?? 'speakers'),
-          brand: product.brand || getBrandFromName(product.name || ''),
-          memory: product.memory || getMemoryFromProduct(),
-          priceValue: parsePrice(String(product.price || '0')),
-          rating: product.rating || getRandomRating(),
-          reviewCount: product.reviewCount || Math.floor(Math.random() * 500) + 100,
-        }));
-
-        setProducts(enhanced);
-        setTotal(res?.total ?? 0);
-      } catch (err) {
-        if (!mounted) return;
-        setProductsError(err?.message || String(err));
-      } finally {
-        mounted && setLoadingProducts(false);
-      }
-    };
-
-    fetchProducts();
-
-    return () => { mounted = false };
-  // required dependency set per request: ensure effect runs when any filter changes
-  }, [filters.minPrice, filters.maxPrice, filters.rating, filters.brands, filters.categories, filters.collections, page, searchQuery, category]);
-
-  const hasActiveFilters =
-    (filters.minPrice || 0) > 0 ||
-    (filters.maxPrice || 0) < 200000 ||
-    (filters.rating || 0) > 0 ||
-    (filters.brands && filters.brands.length > 0) ||
-    (filters.categories && filters.categories.length > 0) ||
-    (filters.collections && filters.collections.length > 0) ||
-    Boolean(searchQuery && searchQuery.length > 0);
+  const hasActiveFilters = 
+    filters.memory.length > 0 ||
+    filters.priceRange[0] > 0 ||
+    filters.priceRange[1] < 5000000 ||
+    filters.ratings.length > 0;
 
   // Pagination
-  // total comes from server; products are already paginated
-  const totalProducts = total;
-  const totalPages = Math.ceil((totalProducts || 0) / itemsPerPage);
-  const paginatedProducts = sortedAndFilteredProducts; // already one page from server
+  const totalProducts = sortedAndFilteredProducts.length;
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
+  const startIndex = (page - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProducts = sortedAndFilteredProducts.slice(startIndex, endIndex);
 
   const displayCategory = getDisplayCategory();
-
-  // If coming soon category, show coming soon page
-  if (loadingProducts) {
-    return <ShopLoading />;
-  }
-
-  if (productsError) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-10 text-center text-red-500">
-        Failed to load products: {productsError}
-      </div>
-    );
-  }
 
   // If coming soon category, show coming soon page
   if (isComingSoonCategory()) {
@@ -350,25 +311,13 @@ function ShopContent() {
               
               
               <PriceFilter 
-                range={[filters.minPrice, filters.maxPrice]}
-                onRangeChange={(range) => setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }))}
+                range={filters.priceRange}
+                onRangeChange={(range) => updateFilter('priceRange', range)}
               />
                
               <RatingFilter 
-                selected={filters.rating ? [filters.rating] : []}
-                onSelectionChange={(ratings) => setFilters(prev => ({ ...prev, rating: ratings.length ? Math.min(...ratings) : 0 }))}
-              />
-
-              <BrandFilter
-                options={availableBrands}
-                selected={filters.brands}
-                onSelectionChange={(brands) => updateFilter('brands', brands)}
-              />
-
-              <CategoryFilter
-                options={availableCategories}
-                selected={filters.categories}
-                onSelectionChange={(cats) => updateFilter('categories', cats)}
+                selected={filters.ratings}
+                onSelectionChange={(ratings) => updateFilter('ratings', ratings)}
               />
             </div>
           <div className="sticky top-6 mt-4 space-y-6">
@@ -408,7 +357,7 @@ function ShopContent() {
             {searchQuery && (
               <div className="flex items-center justify-between">
                 <p className="text-gray-600">
-                  Found {totalProducts} products
+                  Found {sortedAndFilteredProducts.length} products
                 </p>
                 <button
                   onClick={clearSearch}
@@ -452,7 +401,8 @@ function ShopContent() {
               Filters
               {hasActiveFilters && (
                 <span className="bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {activeFilterCount}
+                  {Object.values(filters).reduce((acc, val) => 
+                    Array.isArray(val) ? acc + val.length : acc + (val[0] > 0 || val[1] < 5000000 ? 1 : 0), 0)}
                 </span>
               )}
             </button>
@@ -472,7 +422,7 @@ function ShopContent() {
           {/* Desktop Controls */}
           <div className="hidden lg:flex items-center justify-between mb-6">
             <p className="text-gray-600">
-              Showing {paginatedProducts.length} of {totalProducts} products
+              Showing {paginatedProducts.length} of {sortedAndFilteredProducts.length} products
               {hasActiveFilters && " (filtered)"}
             </p>
             
@@ -564,33 +514,16 @@ function ShopContent() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-gray-900">Rating</h3>
                 <RatingFilter 
-                  selected={filters.rating ? [filters.rating] : []}
-                  onSelectionChange={(ratings) => setFilters(prev => ({ ...prev, rating: ratings.length ? Math.min(...ratings) : 0 }))}
+                  selected={filters.ratings}
+                  onSelectionChange={(ratings) => updateFilter('ratings', ratings)}
                 />
               </div>
               
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-gray-900">Price Range</h3>
                 <PriceFilter 
-                  range={[filters.minPrice, filters.maxPrice]}
-                  onRangeChange={(range) => setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }))}
-                />
-              </div>
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg text-gray-900">Brand</h3>
-                <BrandFilter
-                  options={availableBrands}
-                  selected={filters.brands}
-                  onSelectionChange={(brands) => updateFilter('brands', brands)}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg text-gray-900">Category</h3>
-                <CategoryFilter
-                  options={availableCategories}
-                  selected={filters.categories}
-                  onSelectionChange={(cats) => updateFilter('categories', cats)}
+                  range={filters.priceRange}
+                  onRangeChange={(range) => updateFilter('priceRange', range)}
                 />
               </div>
             <div className="space-y-6">

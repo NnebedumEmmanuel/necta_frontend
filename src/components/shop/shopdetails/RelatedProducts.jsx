@@ -1,27 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Heart } from "lucide-react";
+import { relatedProducts } from "../../../../data/Products";
 import { useWishlist } from "../../../../context/WishlistContext";
 import { useToast } from "../../../context/useToastHook";
-import { productService } from '../../../../services/productService';
 
 const RelatedProducts = () => {
-  const [products, setProducts] = useState([]);
+  const products = relatedProducts;
   const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist();
-  const { showToast } = useToast();
 
-  useEffect(() => {
-    let mounted = true;
-    productService.getProducts(8, 0)
-      .then((res) => {
-        if (!mounted) return;
-        const items = Array.isArray(res)
-          ? res
-          : res?.data ?? res?.items ?? res?.products ?? res ?? [];
-        setProducts(items);
-      })
-      .catch((err) => console.error('Failed to load related products', err));
-    return () => { mounted = false };
-  }, []);
+  const { showToast } = useToast();
 
   const toggleWishlist = (product, e) => {
     e.preventDefault();
@@ -64,7 +51,7 @@ const RelatedProducts = () => {
               <a href={`/shop/products/${product.id}`}>
                 <div className="cursor-pointer">
                   <img
-                    src={product.image || product.images?.[0]?.url}
+                    src={product.image}
                     alt={product.name}
                     className="w-full h-32 sm:h-40 object-contain mb-3 sm:mb-4 mx-auto"
                   />

@@ -5,10 +5,10 @@ const RatingFilter = ({ selected = [], onSelectionChange }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const ratingOptions = [
-    { value: 4, label: "4+ Stars & above", stars: 4 },
-    { value: 3, label: "3+ Stars & above", stars: 3 },
-    { value: 2, label: "2+ Stars & above", stars: 2 },
-    { value: 1, label: "1+ Stars & above", stars: 1 },
+    { value: 4, label: "4+ Stars & above", stars: 4, count: 289 },
+    { value: 3, label: "3+ Stars & above", stars: 3, count: 432 },
+    { value: 2, label: "2+ Stars & above", stars: 2, count: 567 },
+    { value: 1, label: "1+ Stars & above", stars: 1, count: 89 },
   ];
 
   const handleRatingSelect = (ratingValue) => {
@@ -88,7 +88,9 @@ const RatingFilter = ({ selected = [], onSelectionChange }) => {
                     </div>
                   </div>
                   
-                  {/* No count badge - removed hardcoded counts per UI cleanup */}
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    {option.count}
+                  </span>
                 </button>
               );
             })}

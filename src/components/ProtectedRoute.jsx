@@ -1,23 +1,13 @@
-
-
-import { Navigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-
+// components/auth/ProtectedRoute.jsx
+import { Navigate } from 'react-router-dom';
+import { authService } from '../../services/authServices';
 
 const ProtectedRoute = ({ children }) => {
-  const { session, loading } = useAuth();
-
-  // Wait for loading to finish before making any redirect decision
-  if (loading) {
-    return null;
+  if (!authService.isAuthenticated()) {
+    // Redirect to login if not authenticated
+    return <Navigate to="/account" replace />;
   }
 
-  // Redirect to /login only if session is null and not loading
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Render children if authenticated
   return children;
 };
 

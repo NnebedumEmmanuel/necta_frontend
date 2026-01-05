@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useReducer } from 'react';
-import { api, handleApiError } from '../src/lib/api';
 
 // Create the context
 const WishlistContext = createContext(null);
@@ -38,36 +37,14 @@ export const WishlistProvider = ({ children }) => {
     items: []
   });
 
-  // Add toggleWishlist function — optimistic update with backend sync
-  const toggleWishlist = async (product) => {
+  // Add toggleWishlist function
+  const toggleWishlist = (product) => {
     const isInWishlist = state.items.find(item => item.id === product.id);
-
+    
     if (isInWishlist) {
-      // Optimistically remove
       dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
-      try {
-        await api.delete(`/me/wishlist/${product.id}`);
-      } catch (err) {
-        // revert on failure
-        dispatch({ type: 'ADD_TO_WISHLIST', payload: product });
-        throw handleApiError(err);
-      }
     } else {
-      // Optimistically add
       dispatch({ type: 'ADD_TO_WISHLIST', payload: product });
-      try {
-        const res = await api.post('/me/wishlist', { productId: product.id });
-        // Optionally replace stored item with server item if returned
-        if (res?.data && res.data.product) {
-          // replace the optimistic item with server-provided data
-          dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
-          dispatch({ type: 'ADD_TO_WISHLIST', payload: res.data.product });
-        }
-      } catch (err) {
-        // revert on failure
-        dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
-        throw handleApiError(err);
-      }
     }
   };
 

@@ -1,4 +1,4 @@
-// Removed dependency on hardcoded products; orders use generated mock items.
+import { allProducts } from "../../../data/Products";
 import { 
   Package, 
   Truck, 
@@ -24,19 +24,13 @@ const generateMockOrders = () => {
   const statuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
   const customerNames = ["John Doe", "Jane Smith", "Peter Jones", "Mary Williams", "David Brown"];
 
-  const sampleProducts = [
-    { id: 1, name: 'Sample Speaker', price: '₦7,500', image: '/images/img1.png' },
-    { id: 2, name: 'Sample Headset', price: '₦12,000', image: '/images/img2.png' },
-    { id: 3, name: 'Sample Phone', price: '₦85,000', image: '/images/img3.png' },
-  ];
-
   for (let i = 1; i <= 20; i++) {
     const items = [];
     let subtotal = 0;
     const numItems = Math.floor(Math.random() * 3) + 1;
 
     for (let j = 0; j < numItems; j++) {
-  const product = sampleProducts[Math.floor(Math.random() * sampleProducts.length)];
+      const product = allProducts[Math.floor(Math.random() * allProducts.length)];
       const quantity = Math.floor(Math.random() * 2) + 1;
       // Convert price string "₦7,500" to a number 7500
       const price = parseFloat(product.price.replace(/[^0-9.-]+/g,""));
