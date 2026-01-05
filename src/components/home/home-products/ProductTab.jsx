@@ -1,29 +1,55 @@
-import React, { useState } from 'react';
-
-// Import the actual product data
-import { newArrivals, bestsellers, featured } from '../../../../data/Products';
+import React, { useState, useEffect } from 'react';
 import ProductGrid from './ProductsGrid';
+import { productService } from '../../../../services/productService';
 
 const tabs = ['New Arrival', 'Bestseller', 'Featured Products'];
 
 const ProductTabs = () => {
   const [activeTab, setActiveTab] = useState('New Arrival');
-  const [products, setProducts] = useState(newArrivals);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+
+    // Fetch a small list of products from backend and split into tab groups
+    productService.getProducts(12, 0)
+      .then((res) => {
+        if (!mounted) return;
+        // productService now returns { data, meta, raw } but keep compatibility
+        const items = Array.isArray(res)
+          ? res
+          : res?.data ?? res?.items ?? res?.products ?? res ?? [];
+        setProducts(items);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setError(err?.message || String(err));
+      })
+      .finally(() => mounted && setLoading(false));
+
+    return () => { mounted = false };
+  }, []);
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
-    switch (tab) {
+  };
+
+  // For unknown product shape we use slices for tabs (backend decides ordering)
+  const getTabProducts = () => {
+    if (!products) return [];
+    switch (activeTab) {
       case 'New Arrival':
-        setProducts(newArrivals);
-        break;
+        return products.slice(0, 4);
       case 'Bestseller':
-        setProducts(bestsellers);
-        break;
+        return products.slice(4, 8);
       case 'Featured Products':
-        setProducts(featured);
-        break;
+        return products.slice(8, 12);
       default:
-        setProducts(newArrivals);
+        return products.slice(0, 4);
     }
   };
 
@@ -42,7 +68,14 @@ const ProductTabs = () => {
           </button>
         ))}
       </div>
-      <ProductGrid products={products} />
+
+      {loading ? (
+        <div className="text-center py-6">Loading products…</div>
+      ) : error ? (
+        <div className="text-center py-6 text-red-500">Failed to load products</div>
+      ) : (
+        <ProductGrid products={getTabProducts()} />
+      )}
     </div>
   );
 };

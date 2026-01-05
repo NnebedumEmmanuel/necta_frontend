@@ -16,6 +16,7 @@ import SignUp from './components/auth/signup/Signup';
 import { WishlistProvider } from '../context/WishlistContext';
 import { CartProvider } from '../context/CartContext';
 import ToastProvider from './context/ToastProvider';
+import { AuthProvider } from '@/context/AuthContext';
 import CheckoutPage from './pages/Checkout/Checkoutpage';
 import UserDashboard from './pages/dashboard/UserDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -25,7 +26,7 @@ import AdminProtectedRoute from './components/auth/admin/AdminProtectedRoute';
 function AppWrapper() {
   const location = useLocation();
   const hideHeaderFooterPaths = [
-    '/account', 
+    '/login',
     '/signup', 
     '/admin', 
     '/admin/*',
@@ -51,8 +52,8 @@ function AppWrapper() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           
-          {/* Auth pages */}
-          <Route path="/account" element={<LoginPage />} />
+          {/* Auth pages (public) */}
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUp />} />
           
           {/* Protected User Dashboard */}
@@ -63,6 +64,16 @@ function AppWrapper() {
                 <UserDashboard />
               </ProtectedRoute>
             } 
+          />
+
+          {/* Protected Account page */}
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>
+            }
           />
           
           {/* Protected Admin Panel */}
@@ -90,8 +101,10 @@ function App() {
       <CartProvider>
         <WishlistProvider>
           <ToastProvider>
-            <AppWrapper />
-            <ScrollToTopButton />
+            <AuthProvider>
+              <AppWrapper />
+              <ScrollToTopButton />
+            </AuthProvider>
           </ToastProvider>
         </WishlistProvider>
       </CartProvider>
