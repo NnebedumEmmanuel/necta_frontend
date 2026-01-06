@@ -47,10 +47,15 @@ export const WishlistProvider = ({ children }) => {
       dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
       try {
         await api.delete(`/me/wishlist/${product.id}`);
+        return true;
       } catch (err) {
         // revert on failure
         dispatch({ type: 'ADD_TO_WISHLIST', payload: product });
-        throw handleApiError(err);
+        // Network or server error: revert optimistic change and return false.
+        // We avoid throwing here so callers (UI) can handle failures gracefully
+        // (for example, show a toast) without unexpected navigations.
+        console.error('toggleWishlist: failed to remove from wishlist', handleApiError(err));
+        return false;
       }
     } else {
       // Optimistically add
@@ -63,10 +68,13 @@ export const WishlistProvider = ({ children }) => {
           dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
           dispatch({ type: 'ADD_TO_WISHLIST', payload: res.data.product });
         }
+        return true;
       } catch (err) {
         // revert on failure
         dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
-        throw handleApiError(err);
+        // Revert optimistic update and return false so UI can react gracefully.
+        console.error('toggleWishlist: failed to add to wishlist', handleApiError(err));
+        return false;
       }
     }
   };
