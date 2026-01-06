@@ -80,8 +80,21 @@ export const CartProvider = ({ children }) => {
 
   const getTotalPrice = () => {
     return state.items.reduce((total, item) => {
-      const price = parseFloat(item.price.replace(/[^\d.-]/g, ''));
-      return total + (price * item.quantity);
+      // Normalize price: item.price may be a number or a string. Guard against
+      // missing or malformed values and treat quantity consistently.
+      const rawPrice = item.price;
+      let price = 0;
+      if (typeof rawPrice === 'number' && Number.isFinite(rawPrice)) {
+        price = rawPrice;
+      } else if (rawPrice != null) {
+        // Coerce to string and strip non-numeric chars, then parse
+        const normalized = String(rawPrice).replace(/[^\d.-]/g, '');
+        const p = parseFloat(normalized);
+        price = Number.isFinite(p) ? p : 0;
+      }
+
+      const qty = Number(item.quantity ?? item.qty ?? 1) || 0;
+      return total + (price * qty);
     }, 0);
   };
 
