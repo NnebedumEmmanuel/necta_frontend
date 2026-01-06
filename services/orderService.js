@@ -22,9 +22,18 @@ class OrderService {
 
   async addOrder(orderData) {
     try {
-      // Send order to backend checkout/init endpoint — axios baseURL is '/api', so
-      // call the relative path '/checkout' (axios will request '/api/checkout').
-      const response = await api.post('/checkout', orderData);
+      // The backend expects a payload like: { items: [...], email: 'user@example.com', shipping_address: '...' }
+      // Translate the frontend orderData shape into the backend shape.
+      const payload = {
+        items: (orderData.items || []).map(i => ({
+          id: i.id,
+          qty: Number(i.quantity || i.qty || 1),
+          price: Number(i.price || 0),
+        })),
+        email: orderData.customer?.email || orderData.email || '',
+        shipping_address: orderData.shippingAddress || orderData.shipping_address || '',
+      }
+      const response = await api.post('/checkout', payload);
       return response.data;
     } catch (error) {
       throw handleApiError(error);

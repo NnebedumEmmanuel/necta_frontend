@@ -23,6 +23,10 @@ export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
+  // Allow sending cookies for same-origin requests if your backend uses
+  // session cookies for authentication. This does not affect Authorization
+  // header usage — that still requires adding the token to headers.
+  withCredentials: true,
 })
 
 // Helper to attach bearer token to requests. Accepts a token string.

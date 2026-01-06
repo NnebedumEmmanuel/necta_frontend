@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer } from 'react';
-import { api, handleApiError } from '../src/lib/api';
+import { api, handleApiError, attachAuthToken } from '../src/lib/api';
+import { useAuth } from '../src/context/AuthContext';
 
 // Create the context
 const WishlistContext = createContext(null);
@@ -40,12 +41,17 @@ export const WishlistProvider = ({ children }) => {
 
   // Add toggleWishlist function — optimistic update with backend sync
   const toggleWishlist = async (product) => {
+    const { session } = useAuth();
+    // If we have a Supabase session, attach its access token for this request.
+    const token = session?.access_token || session?.provider_token || null
+    if (token) attachAuthToken(token)
     const isInWishlist = state.items.find(item => item.id === product.id);
 
     if (isInWishlist) {
       // Optimistically remove
       dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: product.id });
       try {
+        // If using cookies for auth, axios withCredentials=true will send them.
         await api.delete(`/me/wishlist/${product.id}`);
         return true;
       } catch (err) {
@@ -61,6 +67,7 @@ export const WishlistProvider = ({ children }) => {
       // Optimistically add
       dispatch({ type: 'ADD_TO_WISHLIST', payload: product });
       try {
+        // Ensure payload is { productId }
         const res = await api.post('/me/wishlist', { productId: product.id });
         // Optionally replace stored item with server item if returned
         if (res?.data && res.data.product) {

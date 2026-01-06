@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import supabase from '../lib/supabaseClient';
+import { attachAuthToken } from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -26,6 +27,8 @@ export const AuthProvider = ({ children }) => {
       .then(({ data }) => {
         if (!mountedRef.current) return;
         applySession(data?.session ?? null);
+        // Attach token to API client when session is present (for Authorization header)
+        if (data?.session?.access_token) attachAuthToken(data.session.access_token)
       })
       .catch(() => {
         /* ignore */
@@ -38,6 +41,8 @@ export const AuthProvider = ({ children }) => {
     const { data } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mountedRef.current) return;
       applySession(newSession ?? null);
+      // update API token when auth state changes
+      if (newSession?.access_token) attachAuthToken(newSession.access_token)
       // ensure loading is cleared when an auth event occurs
       setLoading(false);
     });
