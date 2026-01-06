@@ -1,13 +1,11 @@
 // components/admin/AdminNavbar.jsx - Updated
 import React, { useState } from "react";
-import { logoutAdmin, getAdminInfo } from "../../../services/authServices";
 import { Bell, Menu, ChevronLeft, ChevronRight } from "lucide-react";
-import { authService } from "../../../services/authServices";
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollapsed, onToggleCollapse }) {
-  // Use getUser instead of getAdminInfo
-  const user = authService.getUser();
-  const name = user?.firstName || "Admin";
+  const { user: authUser, signOut } = useAuth();
+  const name = authUser?.firstName || "Admin";
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
     { id: 1, message: "New order received", time: "5 min ago", read: false },
@@ -31,8 +29,12 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
     setNotifications(notifications.map(notification => ({ ...notification, read: true })));
   };
 
-  const handleLogout = () => {
-    logoutAdmin();
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (e) {
+      // ignore
+    }
     if (onLogout) onLogout();
   };
 

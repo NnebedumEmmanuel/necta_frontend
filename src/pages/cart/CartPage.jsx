@@ -61,8 +61,14 @@ const CartPage = () => {
             {/* Cart Items List */}
             <div className="divide-y">
               {state.items.map((item) => {
-                const price = parseFloat(item.price.replace(/[^\d.-]/g, ""));
-                const total = price * item.quantity;
+                // Price in items sometimes arrives as a number or a string with
+                // currency symbols. Normalize safely to a Number for
+                // calculations and fall back to 0 when missing/invalid.
+                const rawPrice = item?.price;
+                const price = typeof rawPrice === 'number'
+                  ? Number(rawPrice || 0)
+                  : parseFloat(String(rawPrice || '').replace(/[^\d.-]/g, '')) || 0;
+                const total = price * (Number(item.quantity) || 0);
 
                 return (
                   <div key={item.id} className="p-4 md:p-6">

@@ -39,9 +39,19 @@ class OrderService {
     }
   }
 
-  async getUserOrders(userId) {
+  async getUserOrders(userId, token = null) {
     try {
-      const response = await api.get(`/users/${userId}/orders`);
+      // Prefer authenticated endpoint that returns orders for the current
+      // session: `/api/me/orders`. If a token is provided we'll include it
+      // in the Authorization header for the request. Keep backward
+      // compatibility by accepting userId but prefer the authenticated
+      // endpoint.
+      const url = '/api/me/orders';
+      const config = {};
+      if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+      }
+      const response = await api.get(url, config);
       return response.data;
     } catch (error) {
       throw handleApiError(error);

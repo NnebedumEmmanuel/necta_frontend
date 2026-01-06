@@ -1,6 +1,6 @@
 // pages/dashboard/UserDashboard.jsx - Complete Updated Version
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   Package, 
   Heart, 
@@ -30,7 +30,8 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const { showToast } = useToast();
-  const { user: authUser, loading: authLoading, signOut } = useAuth();
+  const { user: authUser, session, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -38,8 +39,11 @@ const UserDashboard = () => {
       if (!mounted) return;
       setLoading(true);
       try {
-        // Fetch orders only when a valid auth user exists
-        const ordersData = await orderService.getUserOrders(userId);
+  // Fetch orders only when a valid auth user exists. Use the
+  // authenticated endpoint `/api/me/orders` and include the
+  // session access token when available.
+  const token = session?.access_token || session?.accessToken || null;
+  const ordersData = await orderService.getUserOrders(userId, token);
         const sortedOrders = (ordersData?.carts || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         const ordersWithStatus = sortedOrders.map(order => ({
           ...order,
@@ -270,7 +274,7 @@ const UserDashboard = () => {
                     </div>
                   </Link>
 
-                  {authService.isAdmin() && (
+                  {( (authUser?.role === 'admin') || (authUser?.user_metadata?.role === 'admin') || (localStorage.getItem('is_admin') === 'true') ) && (
                     <Link
                       to="/admin"
                       className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl hover:shadow-md transition group"

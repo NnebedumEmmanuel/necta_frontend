@@ -4,7 +4,7 @@ import AdminNavbar from "./AdminNavbar";
 import AdminProducts from "./AdminProducts";
 import AdminOrders from "./AdminOrders";
 import AdminSidebar from "./AdminSideBar";
-import { authService } from "../../../services/authServices"; // Update path as needed
+import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from "react-router-dom";
 
 export default function AdminPanel() {
@@ -13,38 +13,40 @@ export default function AdminPanel() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { user: authUser, session, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Check authentication on component mount
-    const checkAuth = async () => {
-      if (!authService.isAuthenticated()) {
-        navigate("/login");
+    // Use AuthContext as the single source of truth for authentication
+    const checkAuth = () => {
+      if (authLoading) return;
+      if (!session) {
+        navigate('/login');
         return;
       }
 
-      if (!authService.isAdmin()) {
-        navigate("/");
+      const isAdmin = (authUser && (authUser.role === 'admin' || authUser?.user_metadata?.role === 'admin')) || (localStorage.getItem('is_admin') === 'true');
+      if (!isAdmin) {
+        navigate('/');
         return;
       }
 
-      try {
-        const userData = authService.getUser();
-        setUser(userData);
-      } catch (error) {
-        console.error("Failed to load user:", error);
-        navigate("/login");
-      } finally {
-        setLoading(false);
-      }
+      setUser(authUser);
+      setLoading(false);
     };
 
     checkAuth();
   }, [navigate]);
 
   const handleLogout = () => {
-    authService.logout();
-    navigate("/login");
+    // Use AuthContext signOut helper
+    try {
+      signOut();
+    } catch (e) {
+      // ignore
+    }
+    navigate('/login');
   };
 
   const renderPage = () => {

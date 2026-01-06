@@ -5,14 +5,14 @@ import { useCart } from "../../../context/useCartHook";
 import CheckoutForm from "../../components/shop/CheckoutForm";
 import OrderSummary from "../../components/shop/shopdetails/OrderSummary";
 import { orderService } from "../../../services/orderService";
-import { authService } from "../../../services/authServices";
+import { useAuth } from '@/context/AuthContext';
 import { useToast } from "../../context/useToastHook";
 
 const CheckoutPage = () => {
   const { state, clearCart } = useCart();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const user = authService.getUser();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     fullName: user?.firstName ? `${user.firstName} ${user.lastName}` : "",
@@ -25,8 +25,9 @@ const CheckoutPage = () => {
 
   // Calculate subtotal from cart
   const subtotal = state.items.reduce((acc, item) => {
-    const price = parseFloat(item.price.replace(/[^\d.-]/g, "")) || 0;
-    return acc + price * item.quantity;
+    const rawPrice = item?.price;
+    const price = typeof rawPrice === 'number' ? Number(rawPrice || 0) : parseFloat(String(rawPrice || '').replace(/[^\d.-]/g, '')) || 0;
+    return acc + price * (Number(item.quantity) || 0);
   }, 0);
 
   const deliveryFee = 1500;
@@ -55,15 +56,19 @@ const CheckoutPage = () => {
         city: formData.city,
         state: formData.state
       },
-      items: state.items.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: parseFloat(item.price.replace(/[^\d.-]/g, "")).toFixed(2),
-        quantity: item.quantity,
-        total: (parseFloat(item.price.replace(/[^\d.-]/g, "")) * item.quantity).toFixed(2),
-        image: item.image,
-        brand: item.brand || "T&G"
-      })),
+      items: state.items.map(item => {
+        const rawPrice = item?.price;
+        const price = typeof rawPrice === 'number' ? Number(rawPrice || 0) : parseFloat(String(rawPrice || '').replace(/[^\d.-]/g, '')) || 0;
+        return {
+          id: item.id,
+          name: item.name,
+          price: price.toFixed(2),
+          quantity: item.quantity,
+          total: (price * (Number(item.quantity) || 0)).toFixed(2),
+          image: item.image,
+          brand: item.brand || "T&G"
+        };
+      }),
       subtotal: subtotal.toFixed(2),
       tax: (subtotal * 0.08).toFixed(2),
       total: (subtotal + (subtotal * 0.08) + deliveryFee).toFixed(2),
