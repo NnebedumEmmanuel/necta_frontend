@@ -1,22 +1,14 @@
 import axios from 'axios'
 
-// Vite environment variable for backend base URL
-// Use import.meta.env.VITE_API_BASE_URL — do NOT use process.env or NEXT_ prefixed vars
-const RAW_API_BASE = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL
-  ? String(import.meta.env.VITE_API_BASE_URL)
-  : ''
+// Use a same-origin relative API base so the browser issues same-origin requests
+// (no CORS required). Keep a small exported `API_BASE_URL` for code that builds
+// URLs with fetch() — it points to '/api'. Do not include absolute backend URLs
+// in browser code.
+export const API_BASE_URL = '/api'
 
-export const API_BASE_URL = RAW_API_BASE.replace(/\/$/, '');
-
-if (!API_BASE_URL) {
-  // Make missing configuration loudly visible in the console
-  console.error('VITE_API_BASE_URL is not defined — API requests will fail. Set VITE_API_BASE_URL in your .env')
-}
-
-// Create axios instance. We'll prefer passing absolute URLs when calling endpoints so
-// that axios is always calling the exact backend. Still configure defaults here.
 export const api = axios.create({
-  baseURL: API_BASE_URL || undefined,
+  // baseURL is relative; axios will prepend it to request paths.
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

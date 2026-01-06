@@ -90,10 +90,10 @@ class ProductService {
         params.set('q', String(search).trim());
       }
 
-      const url = `${API_BASE_URL}/api/products?${params.toString()}`;
+  const url = `${API_BASE_URL}/products?${params.toString()}`;
 
-      // Use a plain fetch call with cache: 'no-store' to ensure fresh data on every call.
-      const response = await fetch(url, { method: 'GET', cache: 'no-store', headers: { 'Accept': 'application/json' } });
+  // Use a plain fetch call with cache: 'no-store' to ensure fresh data on every call.
+  const response = await fetch(url, { method: 'GET', cache: 'no-store', headers: { 'Accept': 'application/json' } });
       if (!response.ok) {
         const text = await response.text().catch(() => '');
         const msg = text || `Request failed with status ${response.status}`;
@@ -125,7 +125,7 @@ class ProductService {
 
   async getProduct(id) {
     try {
-      const response = await api.get(`${API_BASE_URL}/api/products/${id}`);
+  const response = await api.get(`/products/${id}`);
       const body = response.data || null;
       // Backend may return { product: {...} } or the product directly
       return body?.product ?? body ?? null;
@@ -136,7 +136,7 @@ class ProductService {
 
   async addProduct(product) {
     try {
-      const response = await api.post(`${API_BASE_URL}/api/products/add`, product);
+  const response = await api.post(`/products/add`, product);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -145,7 +145,7 @@ class ProductService {
 
   async updateProduct(id, product) {
     try {
-      const response = await api.put(`${API_BASE_URL}/api/products/${id}`, product);
+  const response = await api.put(`/products/${id}`, product);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -154,7 +154,7 @@ class ProductService {
 
   async deleteProduct(id) {
     try {
-      const response = await api.delete(`${API_BASE_URL}/api/products/${id}`);
+  const response = await api.delete(`/products/${id}`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
