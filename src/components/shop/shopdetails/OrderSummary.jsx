@@ -7,7 +7,13 @@ import {
 } from "lucide-react";
 
 const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
-  const total = subtotal + deliveryFee;
+  const total = Number(subtotal || 0) + Number(deliveryFee || 0);
+
+  // Presentation-only formatter. All calculations treat prices as numbers.
+  const formatPrice = (value) => {
+    const n = Number(value || 0);
+    return n.toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 2 });
+  };
 
   return (
     <div
@@ -39,7 +45,9 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
       ============================== */}
       <div className="space-y-3">
         {cartItems.map((item) => {
-          const itemPrice = parseFloat(item.price.replace(/[^\d.-]/g, ""));
+          // item.price is expected to be a number. Coerce defensively.
+          const itemPrice = Number(item.price || 0);
+          const qty = Number(item.quantity || item.qty || 1) || 0;
           return (
             <div
               key={item.id}
@@ -61,7 +69,7 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
 
               {/* Item total */}
               <span className="font-medium">
-                ₦{(itemPrice * item.quantity).toFixed(2)}
+                {formatPrice(itemPrice * qty)}
               </span>
             </div>
           );
@@ -102,18 +110,18 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
       <div className="space-y-2 text-sm text-gray-700">
         <div className="flex justify-between">
           <span>Subtotal</span>
-          <span>₦{subtotal.toFixed(2)}</span>
+          <span>{formatPrice(subtotal)}</span>
         </div>
 
         <div className="flex justify-between">
           <span>Delivery</span>
-          <span>₦{deliveryFee.toFixed(2)}</span>
+          <span>{formatPrice(deliveryFee)}</span>
         </div>
 
         {/* Total */}
         <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t">
           <span>Total</span>
-          <span className="text-yellow-500">₦{total.toFixed(2)}</span>
+          <span className="text-yellow-500">{formatPrice(total)}</span>
         </div>
       </div>
 
