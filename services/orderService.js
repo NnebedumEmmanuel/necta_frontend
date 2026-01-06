@@ -22,8 +22,9 @@ class OrderService {
 
   async addOrder(orderData) {
     try {
-      // Send order to backend checkout/init endpoint — backend will persist and (optionally) initialize payment
-      const response = await api.post('/checkout', orderData);
+  // Send order to backend checkout/init endpoint — backend will persist and (optionally) initialize payment
+  // Use the App Route path (/api/checkout) on the Next backend so requests target the API route
+  const response = await api.post('/api/checkout', orderData);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
