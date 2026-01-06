@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { allProducts } from "../../../data/Products.js";
 import { useToast } from "../../context/useToastHook.js";
+import { productService } from '../../../services/productService';
 
 // Helper to format products from the local data file
 const formatProducts = (products) => {
@@ -51,14 +51,26 @@ export default function AdminProducts() {
   const toast = useToast();
 
   useEffect(() => {
+    let mounted = true;
     setLoading(true);
-    const formatted = formatProducts(allProducts);
-    setProducts(formatted);
-    
-    const uniqueCategories = ["all", ...new Set(formatted.map(p => p.category).filter(Boolean))];
-    setCategories(uniqueCategories);
-    
-    setLoading(false);
+    productService.getProducts(1000, 0)
+      .then((res) => {
+        if (!mounted) return;
+        const items = Array.isArray(res)
+          ? res
+          : res?.data ?? res?.items ?? res?.products ?? res ?? [];
+        const formatted = formatProducts(items);
+        setProducts(formatted);
+
+        const uniqueCategories = ["all", ...new Set(formatted.map(p => p.category).filter(Boolean))];
+        setCategories(uniqueCategories);
+      })
+      .catch((err) => {
+        console.error('Failed to load admin products', err);
+      })
+      .finally(() => mounted && setLoading(false));
+
+    return () => { mounted = false };
   }, []);
 
   useEffect(() => {

@@ -1,39 +1,20 @@
-// services/apiService.js
-import axios from 'axios';
+// services/apiService.js — thin wrapper around central api instance
+import { api, handleApiError } from '../src/lib/api';
 import { authService } from './authServices';
-
-const API_URL = 'https://dummyjson.com';
 
 class ApiService {
   constructor() {
-    this.api = axios.create({
-      baseURL: API_URL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Use shared axios instance from src/lib/api.js
+    this.api = api;
 
-    // Add auth token to requests if available
-    this.api.interceptors.request.use(
-      (config) => {
-        const token = authService.getToken();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
-
-    // Handle token expiration
+    // Handle token expiry / unauthorized globally
     this.api.interceptors.response.use(
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
-          authService.logout();
-          window.location.href = '/login';
+          try { authService.logout(); } catch (e) { /* ignore */ }
+          // Attempt client-side redirect if running in browser
+          if (typeof window !== 'undefined') window.location.href = '/login';
         }
         return Promise.reject(error);
       }
@@ -80,13 +61,7 @@ class ApiService {
 
   // Error handling
   handleError(error) {
-    if (error.response) {
-      return new Error(error.response.data?.message || 'API request failed');
-    } else if (error.request) {
-      return new Error('Network error. Please check your connection.');
-    } else {
-      return error;
-    }
+    return handleApiError(error);
   }
 }
 

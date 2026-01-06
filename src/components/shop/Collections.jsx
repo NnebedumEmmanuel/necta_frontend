@@ -1,40 +1,44 @@
-import React, { useState } from "react";
-import { ChevronDown, ChevronUp, TrendingUp, Star, Zap, Tag } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CollectionsDropdown = () => {
   const [isOpen, setIsOpen] = useState(true); // Open by default
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const collections = [
-    { 
-      name: "Trending Now", 
-      count: 4, 
-      href: "/shop?collection=trending",
-      icon: TrendingUp,
-      color: "text-blue-600"
-    },
-    { 
-      name: "Best Sellers", 
-      count: 4, 
-      href: "/shop?collection=bestsellers",
-      icon: Star,
-      color: "text-yellow-600"
-    },
-    { 
-      name: "New Releases", 
-      count: 4, 
-      href: "/shop?collection=new",
-      icon: Zap,
-      color: "text-green-600"
-    },
-    { 
-      name: "Deals & Offers", 
-      count: 1, 
-      href: "/shop?collection=deals",
-      icon: Tag,
-      color: "text-red-600"
-    },
-  ];
+  useEffect(() => {
+    let mounted = true;
+    const fetchCollections = async () => {
+      setLoading(true);
+      try {
+  const res = await fetch('/api/collections', { cache: 'no-store' })
+        const data = await res.json()
+        console.log('Collections API response', data)
+        if (!mounted) return
+        const cols = Array.isArray(data?.collections) ? data.collections : []
+        setCollections(cols)
+        console.log('Collections set in state', cols)
+      } catch (e) {
+        // Log error and ensure UI shows empty list
+        console.error('Failed to load collections', e)
+        setCollections([])
+      } finally {
+        mounted && setLoading(false)
+      }
+    }
+
+    fetchCollections()
+    return () => { mounted = false }
+  }, [])
+
+  // Explicitly determine whether we have a non-empty collections array.
+  const hasCollections = Array.isArray(collections) && collections.length > 0
+
+  // Debug: log collections state so devs can confirm data reaches the UI
+  // This is temporary and can be removed after verification.
+  // eslint-disable-next-line no-console
+  console.log('Collections state (UI)', collections)
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -55,26 +59,37 @@ const CollectionsDropdown = () => {
       {isOpen && (
         <div className="border-t">
           <div className="p-2">
-            {collections.map((collection) => {
-              const Icon = collection.icon;
-              return (
-                <Link
-                  key={collection.name}
-                  to={collection.href}
-                  className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors group"
-                >
-                  <div className="flex items-center gap-2">
-                    <Icon size={16} className={collection.color} />
-                    <span className="text-sm text-gray-700 group-hover:text-black">
-                      {collection.name}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    {collection.count}
-                  </span>
-                </Link>
-              );
-            })}
+            {loading ? (
+              <div className="text-sm text-gray-500 p-2">Loading...</div>
+            ) : hasCollections ? (
+              collections.map((collection, idx) => {
+                const Icon = Tag
+                // Defensive guards: collection may be null/undefined or missing fields
+                const id = collection?.id
+                const slug = collection?.slug ?? ''
+                const name = collection?.name ?? 'Untitled'
+
+                // Use the collection slug in the query param when present.
+                const href = slug ? `/shop?collection=${encodeURIComponent(slug)}` : '/shop'
+
+                return (
+                  <Link
+                    key={id ?? slug ?? `col-${idx}`}
+                    to={href}
+                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon size={16} className="text-gray-600" />
+                      <span className="text-sm text-gray-700 group-hover:text-black">
+                        {name}
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })
+            ) : (
+              <div className="text-sm text-gray-500 p-2">No collections</div>
+            )}
           </div>
         </div>
       )}

@@ -14,7 +14,13 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
   const wishlistState = externalWishlistState || localWishlistState;
   const toggleWishlist = externalToggleWishlist || localToggleWishlist;
 
-  if (!products || products.length === 0) {
+  // Normalize incoming `products` prop — backend may return an object like
+  // { data: [...], total, limit, skip } or { items: [...] } or a raw array.
+  const items = Array.isArray(products)
+    ? products
+    : products?.data ?? products?.items ?? products?.products ?? [];
+
+  if (!items || items.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">No products found.</p>
@@ -34,7 +40,7 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {products.map((product) => {
+  {items.map((product) => {
         const isInWishlist = wishlistState?.items?.some(item => item.id === product.id) || false;
         
         return (
@@ -44,7 +50,7 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
                 {/* Image Container */}
                 <div className="relative h-40 bg-gray-50 overflow-hidden">
                   <img
-                    src={product.image}
+                    src={product.image || product.images?.[0]?.url}
                     alt={product.name}
                     className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
                   />

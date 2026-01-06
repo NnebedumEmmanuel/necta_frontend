@@ -1,6 +1,6 @@
 // pages/dashboard/UserDashboard.jsx - Complete Updated Version
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { 
   Package, 
   Heart, 
@@ -19,7 +19,7 @@ import {
   TrendingUp,
   DollarSign
 } from "lucide-react";
-import { authService } from "../../../services/authServices";
+import { useAuth } from '@/context/AuthContext';
 import { orderService } from "../../../services/orderService";
 import { useToast } from "../../context/useToastHook";
 
@@ -29,48 +29,59 @@ const UserDashboard = () => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user: authUser, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
-    loadUserData();
-  }, []);
+    let mounted = true;
+    const loadUserData = async (userId) => {
+      if (!mounted) return;
+      setLoading(true);
+      try {
+        // Fetch orders only when a valid auth user exists
+        const ordersData = await orderService.getUserOrders(userId);
+        const sortedOrders = (ordersData?.carts || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const ordersWithStatus = sortedOrders.map(order => ({
+          ...order,
+          status: order.status || 'pending'
+        }));
+        if (mounted) setOrders(ordersWithStatus);
 
-  const loadUserData = async () => {
-    setLoading(true);
-    try {
-      const userData = authService.getUser();
-      if (!userData) {
-        navigate('/login');
-        return;
+        // Load wishlist from localStorage
+        const savedWishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+        if (mounted) setWishlist(savedWishlist);
+      } catch (err) {
+        console.error("Failed to load user data:", err);
+        if (mounted) showToast("Failed to load user data", "error");
+      } finally {
+        if (mounted) setLoading(false);
       }
-      
-      setUser(userData);
-      
-      // Load user's orders
-      const ordersData = await orderService.getUserOrders(userData.id);
-      const sortedOrders = ordersData.carts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      const ordersWithStatus = sortedOrders.map(order => ({
-        ...order,
-        status: order.status || 'pending'
-      }));
-      setOrders(ordersWithStatus);
-      
-      // Load wishlist from localStorage
-      const savedWishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-      setWishlist(savedWishlist);
-      
-    } catch (error) {
-      console.error("Failed to load user data:", error);
-      showToast("Failed to load user data", "error");
-    } finally {
+    };
+
+    // Only run when auth has finished loading and there is an auth user.
+    if (!authLoading && authUser) {
+      setUser(authUser);
+      loadUserData(authUser.id);
+    } else if (!authLoading && !authUser) {
+      // Auth says there's no user; clear local data but do not navigate.
+      setUser(null);
+      setOrders([]);
+      setWishlist([]);
       setLoading(false);
     }
-  };
 
-  const handleLogout = () => {
-    authService.logout();
-    navigate('/');
+    return () => {
+      mounted = false;
+    };
+  }, [authLoading, authUser, showToast]);
+
+  const handleLogout = async () => {
+    // Sign out via AuthContext and do not navigate here.
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('Logout failed', err);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -91,6 +102,7 @@ const UserDashboard = () => {
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

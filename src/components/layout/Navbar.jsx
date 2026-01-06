@@ -13,7 +13,8 @@ import {
   Tv,
   Headphones
 } from "lucide-react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "../../../context/WishlistContext";
 import { useCart } from "../../../context/useCartHook";
 
@@ -60,17 +61,20 @@ const categories = [
 ];
 
 export default function Header() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { state: wishlistState } = useWishlist();
   const { getTotalItems } = useCart();
+  const { session, loading } = useAuth();
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      // Use a normal location change for the search submission instead of
+      // an imperative React Router navigate() call so Navbar performs no
+      // programmatic routing via useNavigate.
+      window.location.href = `/shop?search=${encodeURIComponent(searchQuery.trim())}`;
     }
   };
 
@@ -182,7 +186,6 @@ export default function Header() {
                 </span>
               )}
             </Link>
-            
             <Link to="/cart" className="relative">
               <ShoppingCart size={22} className={`cursor-pointer hover:text-black transition ${
                 isActive('/cart') ? 'text-black' : 'text-gray-800'
@@ -193,12 +196,23 @@ export default function Header() {
                 </span>
               )}
             </Link>
-            
-            <Link to="/account">
-              <User size={22} className={`cursor-pointer hover:text-black transition ${
-                isActive('/account') ? 'text-black' : 'text-gray-800'
-              }`} />
-            </Link>
+            {/* Auth-dependent UI: only render after loading is false */}
+            {!loading && (
+              session ? (
+                  <Link to="/dashboard">
+                    {/* Replace with avatar if available */}
+                    <User size={22} className={`cursor-pointer hover:text-black transition ${
+                      isActive('/dashboard') ? 'text-black' : 'text-gray-800'
+                    }`} />
+                  </Link>
+                ) : (
+                  <Link to="/login">
+                    <User size={22} className={`cursor-pointer hover:text-black transition ${
+                      isActive('/login') ? 'text-black' : 'text-gray-800'
+                    }`} />
+                  </Link>
+                )
+            )}
           </div>
         </div>
       </div>
@@ -356,12 +370,12 @@ export default function Header() {
                 </span>
               </Link>
               <Link 
-                to="/account" 
+                to="/login" 
                 className="flex flex-col items-center"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <User size={22} className={isActive('/account') ? 'text-black' : 'text-gray-800'} />
-                <span className={`text-xs mt-1 ${isActive('/account') ? 'text-black font-medium' : 'text-gray-600'}`}>
+                <User size={22} className={isActive('/login') ? 'text-black' : 'text-gray-800'} />
+                <span className={`text-xs mt-1 ${isActive('/login') ? 'text-black font-medium' : 'text-gray-600'}`}>
                   Account
                 </span>
               </Link>

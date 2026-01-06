@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { allProducts } from "../../../../../data/Products";
 import DetailsSection from "../../../../components/shop/shopdetails/DetailsSection";
 import ReviewsSection from "../../../../components/shop/shopdetails/ReviewSection";
 import RelatedProducts from "../../../../components/shop/shopdetails/RelatedProducts";
+import { productService } from '../../../../../services/productService';
 import { useWishlist } from "../../../../../context/WishlistContext";
 import { Heart } from "lucide-react";
 import { useCart } from "../../../../../context/useCartHook";
@@ -15,18 +15,50 @@ export default function ProductPage() {
   const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist();
   const { addToCart } = useCart();
   const { showToast } = useToast();
-  
-  const product = allProducts.find((p) => p.id.toString() === id);
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // State for product customization
-  const [activeImage, setActiveImage] = useState(product?.image || "");
-  const [activeColor, setActiveColor] = useState(product?.colors?.[0] || null);
+  // State for product customization (initialized after product loads)
+  const [activeImage, setActiveImage] = useState("");
+  const [activeColor, setActiveColor] = useState(null);
   const [activeStorage, setActiveStorage] = useState("128GB");
 
-  if (!product) {
-    navigate("/404");
-    return null;
-  }
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+
+    (async () => {
+      try {
+        const data = await productService.getProduct(id);
+        if (!mounted) return;
+        const p = data?.product || data || null;
+        if (!p) {
+          // Not found by UUID — navigate to 404
+          navigate('/404');
+          return;
+        }
+
+        setProduct(p);
+        setActiveImage(p.image || p.gallery?.[0] || p.images?.[0]?.url || '');
+        setActiveColor(p.colors?.[0] || null);
+        setActiveStorage((p.storage && p.storage[0]) || '128GB');
+      } catch (err) {
+        if (!mounted) return;
+        setError(err?.message || String(err));
+        navigate('/404');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => { mounted = false };
+  }, [id, navigate]);
+
+  if (loading) return <div className="p-8 text-center">Loading product…</div>;
+  if (error) return <div className="p-8 text-center text-red-500">Failed to load product: {error}</div>;
+  if (!product) return null;
 
   const isInWishlist = wishlistState?.items?.some(item => item.id === product.id) || false;
 
