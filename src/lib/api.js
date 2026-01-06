@@ -1,17 +1,27 @@
 import axios from 'axios'
 
-// Use a same-origin relative API base so the browser issues same-origin requests
-// (no CORS required). Keep a small exported `API_BASE_URL` for code that builds
-// URLs with fetch() — it points to '/api'. Do not include absolute backend URLs
-// in browser code.
-export const API_BASE_URL = '/api'
+// Prefer an explicit backend host when provided via Vite env (VITE_API_BASE_URL).
+// If not set, fall back to a same-origin relative '/api' so dev proxy can be used.
+const RAW_API_BASE = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL
+  ? String(import.meta.env.VITE_API_BASE_URL)
+  : ''
+
+export const API_BASE_URL = RAW_API_BASE ? RAW_API_BASE.replace(/\/$/, '') : '/api'
+
+if (!RAW_API_BASE) {
+  // In dev, using '/api' means the Vite dev server can proxy requests to the real backend.
+  // In prod you'd typically set VITE_API_BASE_URL to the full backend origin.
+  // Log a short hint to help debugging if developers forget to set env.
+  // eslint-disable-next-line no-console
+  console.info(`api: using relative API base '/api' (no VITE_API_BASE_URL). Set VITE_API_BASE_URL to target a remote backend.`)
+} else {
+  // eslint-disable-next-line no-console
+  console.info(`api: using backend base ${API_BASE_URL}`)
+}
 
 export const api = axios.create({
-  // baseURL is relative; axios will prepend it to request paths.
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
 })
 

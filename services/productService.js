@@ -90,19 +90,11 @@ class ProductService {
         params.set('q', String(search).trim());
       }
 
-  const url = `${API_BASE_URL}/products?${params.toString()}`;
+      const url = `/products?${params.toString()}`;
 
-  // Use a plain fetch call with cache: 'no-store' to ensure fresh data on every call.
-  const response = await fetch(url, { method: 'GET', cache: 'no-store', headers: { 'Accept': 'application/json' } });
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        const msg = text || `Request failed with status ${response.status}`;
-        const err = new Error(msg);
-        err.status = response.status;
-        throw err;
-      }
-
-      const body = await response.json().catch(() => ({}));
+      // Use the central axios client so baseURL and auth headers are applied consistently.
+      const response = await api.get(url, { params: undefined });
+      const body = response.data || {};
 
       // Normalize to an array for callers
       const items = Array.isArray(body.data)

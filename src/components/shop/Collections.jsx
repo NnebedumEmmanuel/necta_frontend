@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
+import { api } from "@/lib/api";
 
 const CollectionsDropdown = () => {
   const [isOpen, setIsOpen] = useState(true); // Open by default
@@ -12,8 +13,9 @@ const CollectionsDropdown = () => {
     const fetchCollections = async () => {
       setLoading(true);
       try {
-  const res = await fetch('/api/collections', { cache: 'no-store' })
-        const data = await res.json()
+        // Use central axios client so baseURL and auth headers are applied.
+        const res = await api.get('/collections', { params: undefined });
+        const data = res.data || {};
         console.log('Collections API response', data)
         if (!mounted) return
         const cols = Array.isArray(data?.collections) ? data.collections : []
