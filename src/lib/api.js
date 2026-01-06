@@ -6,14 +6,14 @@ const RAW_API_BASE = typeof import.meta !== 'undefined' && import.meta.env && im
   ? String(import.meta.env.VITE_API_BASE_URL)
   : ''
 
-export const API_BASE_URL = RAW_API_BASE ? RAW_API_BASE.replace(/\/$/, '') : '/api'
+// Production-safe API base:
+// - If VITE_API_BASE_URL is set, use that origin + '/api' suffix (e.g. https://necta-backend.vercel.app/api)
+// - Otherwise fall back to '/api' so the Vite dev proxy can forward requests in development
+export const API_BASE_URL = RAW_API_BASE ? `${RAW_API_BASE.replace(/\/$/, '')}/api` : '/api'
 
 if (!RAW_API_BASE) {
-  // In dev, using '/api' means the Vite dev server can proxy requests to the real backend.
-  // In prod you'd typically set VITE_API_BASE_URL to the full backend origin.
-  // Log a short hint to help debugging if developers forget to set env.
   // eslint-disable-next-line no-console
-  console.info(`api: using relative API base '/api' (no VITE_API_BASE_URL). Set VITE_API_BASE_URL to target a remote backend.`)
+  console.info(`api: using relative API base '${API_BASE_URL}' (no VITE_API_BASE_URL). Set VITE_API_BASE_URL to target a remote backend.`)
 } else {
   // eslint-disable-next-line no-console
   console.info(`api: using backend base ${API_BASE_URL}`)
