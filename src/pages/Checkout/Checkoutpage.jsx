@@ -78,20 +78,33 @@ const CheckoutPage = () => {
 
     try {
       // Save the order
-      const newOrder = await orderService.addOrder(orderData);
+      const res = await orderService.addOrder(orderData);
 
-      if (newOrder) {
-        // Clear cart
-        clearCart();
-        
-        // Show success message
-        showToast(`Order placed successfully! Order Number: ${newOrder.id}`, "success");
-        
-        // Redirect to order confirmation
-        navigate(`/order-confirmation/${newOrder.id}`);
-      } else {
-        showToast("Failed to place order. Please try again.", "error");
+      // res is the backend response object (e.g. { success: true, data: { order, paystack } })
+      if (res?.success) {
+        const order = res.data?.order;
+        const paystack = res.data?.paystack;
+
+        // If Paystack returned an authorization_url, redirect the browser to complete payment
+        const authorizationUrl = paystack?.authorization_url || paystack?.data?.authorization_url;
+        if (authorizationUrl) {
+          // Clear cart before redirecting to payment
+          clearCart();
+          // Redirect to Paystack checkout page
+          window.location.href = authorizationUrl;
+          return;
+        }
+
+        // Fallback: if no paystack URL, but order exists, navigate to confirmation
+        if (order?.id) {
+          clearCart();
+          showToast(`Order placed successfully! Order Number: ${order.id}`, "success");
+          navigate(`/order-confirmation/${order.id}`);
+          return;
+        }
       }
+
+      showToast("Failed to place order. Please try again.", "error");
     } catch (error) {
       console.error("Error placing order:", error);
       showToast("Failed to place order. Please try again.", "error");

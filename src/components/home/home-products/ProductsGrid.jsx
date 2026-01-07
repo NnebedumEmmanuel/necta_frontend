@@ -127,7 +127,8 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                toggleWishlist(product);
+                // Pass only the product id to the wishlist toggle as required by backend
+                toggleWishlist(product.id);
                 if (isInWishlist) {
                   showToast(`${product.name} removed from wishlist`, { type: 'info' });
                 } else {
