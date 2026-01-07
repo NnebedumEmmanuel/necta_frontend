@@ -37,13 +37,23 @@ export function attachAuthToken(token) {
 
 // Response helper: normalize errors
 export function handleApiError(error) {
-  if (error.response) {
-    const msg = error.response.data?.message || error.response.data?.error || JSON.stringify(error.response.data)
-    return new Error(msg || 'API request failed')
-  } else if (error.request) {
-    return new Error('Network error. Please check your connection.')
+  // Normalize axios errors into a predictable shape. Callers can inspect
+  // err.status and err.data to decide how to proceed.
+  if (error?.response) {
+    const status = error.response.status;
+    const data = error.response.data;
+    const message = data?.message || data?.error || (typeof data === 'string' ? data : JSON.stringify(data)) || 'API request failed';
+    const err = new Error(message);
+    err.status = status;
+    err.data = data;
+    return err;
+  } else if (error?.request) {
+    const err = new Error('Network error. Please check your connection.');
+    err.status = null;
+    err.data = null;
+    return err;
   }
-  return error
+  return error;
 }
 
 export default { api, attachAuthToken, handleApiError }
