@@ -41,12 +41,12 @@ export const WishlistProvider = ({ children }) => {
 
   // Read auth session at top-level of the provider (valid hook usage)
   const { session } = useAuth();
+  // If we have a Supabase session, attach its access token for this request.
+  const token = session?.access_token || session?.provider_token || null
+  if (token) attachAuthToken(token)
 
   // Add toggleWishlist function — optimistic update with backend sync
   const toggleWishlist = async (product) => {
-    // If we have a Supabase session, attach its access token for this request.
-    const token = session?.access_token || session?.provider_token || null
-    if (token) attachAuthToken(token)
     const isInWishlist = state.items.find(item => item.id === product.id);
 
     if (isInWishlist) {
