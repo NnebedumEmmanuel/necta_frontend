@@ -18,6 +18,7 @@ import { CartProvider } from '../context/CartContext';
 import ToastProvider from './context/ToastProvider';
 import { AuthProvider } from '@/context/AuthContext';
 import CheckoutPage from './pages/Checkout/Checkoutpage';
+// Payment callback and order confirmation pages were added temporarily; reverting those routes.
 import UserDashboard from './pages/dashboard/UserDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminPanel from './components/admin/AdminPanel';
@@ -51,6 +52,7 @@ function AppWrapper() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          {/* payment callback and confirmation routes removed during revert */}
           
           {/* Auth pages (public) */}
           <Route path="/login" element={<LoginPage />} />

@@ -88,9 +88,9 @@ const CheckoutPage = () => {
         // If Paystack returned an authorization_url, redirect the browser to complete payment
         const authorizationUrl = paystack?.authorization_url || paystack?.data?.authorization_url;
         if (authorizationUrl) {
-          // Clear cart before redirecting to payment
+          // Original behavior: clear cart before redirecting to payment and then
+          // navigate to Paystack. Restoring that flow during revert.
           clearCart();
-          // Redirect to Paystack checkout page
           window.location.href = authorizationUrl;
           return;
         }

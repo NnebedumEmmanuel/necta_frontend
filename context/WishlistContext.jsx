@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer, useState } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useState, useRef } from 'react';
 import { api, handleApiError, attachAuthToken } from '../src/lib/api';
 import { useAuth } from '../src/context/AuthContext';
 import { productService } from '../services/productService';
@@ -41,6 +41,7 @@ export const WishlistProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const { session } = useAuth(); // valid hook usage inside component
   const { showToast } = useToast();
+  const lastFetchedTokenRef = useRef(null);
 
   // Attach token to api client when session changes
   useEffect(() => {
@@ -51,17 +52,41 @@ export const WishlistProvider = ({ children }) => {
   // Load wishlist rows and join with products
   useEffect(() => {
     let mounted = true;
+    const lastToken = lastFetchedTokenRef.current;
+
     async function loadWishlist() {
       setLoading(true);
       try {
+        // Ensure auth token is attached before making request. This prevents an early 401
+        const token = session?.access_token || session?.provider_token || null;
+        attachAuthToken(token);
+
         const res = await api.get('/me/wishlist');
-        const rows = res?.data?.items ?? res?.data ?? res ?? [];
+
+        // backend responses can be shaped in multiple ways: { data: [...] } or { data: { data: [...] } }
+        let rows = res?.data?.data ?? res?.data?.items ?? res?.data ?? res ?? [];
+
+        // normalize to array
+        if (!Array.isArray(rows)) {
+          if (rows && Array.isArray(rows.rows)) rows = rows.rows;
+          else rows = [];
+        }
 
         // rows expected shape: [{ id, user_id, product_id }, ...]
-        const uniqueIds = Array.from(new Set(rows.map(r => r.product_id).filter(Boolean)));
+        const uniqueIds = Array.from(new Set(rows.map(r => r?.product_id).filter(Boolean)));
 
-        // Fetch product details in parallel (batch if backend supports it)
-        const products = await Promise.all(uniqueIds.map(id => productService.getProduct(id).catch(() => null)));
+        // Prefer a single batched product fetch to avoid N+1 requests.
+        // If the backend doesn't support fetching by ids, fall back to per-id requests.
+        let products = [];
+        if (uniqueIds.length > 0) {
+          try {
+            const resp = await productService.getProducts({ filters: { ids: uniqueIds } });
+            products = resp?.products ?? [];
+          } catch (batchErr) {
+            // fallback to N+1 fetches if batch fails for any reason
+            products = await Promise.all(uniqueIds.map(id => productService.getProduct(id).catch(() => null)));
+          }
+        }
 
         // Map product_id -> product
         const productMap = new Map();
@@ -77,6 +102,8 @@ export const WishlistProvider = ({ children }) => {
         dispatch({ type: 'CLEAR_WISHLIST' });
         // Add joined products to state
         joined.forEach(p => dispatch({ type: 'ADD_TO_WISHLIST', payload: p }));
+        // remember the token we fetched for so duplicate effects do not refetch the same data
+        lastFetchedTokenRef.current = token ?? null;
       } catch (err) {
         console.error('Failed to load wishlist', handleApiError(err));
         // do not block UI; optional toast
@@ -85,6 +112,19 @@ export const WishlistProvider = ({ children }) => {
         if (mounted) setLoading(false);
       }
     }
+
+    // If there's no authenticated session yet, do not attempt to fetch (prevents 401 on first load)
+    const token = session?.access_token || session?.provider_token || null;
+    if (!token) {
+      // if we previously had wishlist data for another user, clear it
+      if (lastToken != null) dispatch({ type: 'CLEAR_WISHLIST' });
+      lastFetchedTokenRef.current = null;
+      return () => { mounted = false };
+    }
+
+    // prevent duplicate fetches for the same token (React StrictMode or identity churn)
+    if (token && lastFetchedTokenRef.current === token) return () => { mounted = false };
+
     loadWishlist();
     return () => { mounted = false };
   }, [session]);

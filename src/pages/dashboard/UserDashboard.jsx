@@ -1,6 +1,6 @@
 // pages/dashboard/UserDashboard.jsx - Complete Updated Version
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   Package, 
   Heart, 
@@ -32,6 +32,25 @@ const UserDashboard = () => {
   const { showToast } = useToast();
   const { user: authUser, session, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Sync query params -> UI state: if URL contains ?tab=orders we open that tab.
+  // Also surface payment status via toast when paystatus=success is present.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    const paystatus = params.get('paystatus');
+
+    const validTabs = ['overview', 'orders', 'wishlist', 'profile', 'security'];
+    if (tab && validTabs.includes(tab)) {
+      setActiveTab(tab);
+    }
+
+    if (paystatus === 'success') {
+      // Use existing toast system to show success. Keep it lightweight.
+      showToast?.('Payment successful. Thank you!', 'success');
+    }
+  }, [location.search, showToast]);
 
   useEffect(() => {
     let mounted = true;
