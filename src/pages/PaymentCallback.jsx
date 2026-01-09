@@ -10,34 +10,36 @@ const PaymentCallback = () => {
   const { clearCart } = useCart()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     async function verify() {
+      setLoading(true)
+      setError(null)
       try {
         const params = new URLSearchParams(location.search)
         const reference = params.get('reference')
         if (!reference) {
-          showToast?.('Missing payment reference', { type: 'error' })
-          navigate('/')
+          setError('Missing payment reference in URL.');
           return
         }
 
         const res = await api.get('/paystack/verify', { params: { reference } })
         const body = res?.data ?? res
 
-        if (body?.success && body?.orderId) {
-          try { clearCart() } catch (e) {  }
-          navigate(`/order-confirmation/${body.orderId}`)
+        if (body?.success) {
+          try { clearCart() } catch (e) { }
+          showToast?.('Payment verified. Redirecting to orders...', { type: 'success' })
+          // Explicit, deterministic navigation to dashboard orders tab
+          navigate('/dashboard?tab=orders&paystatus=success')
           return
         }
 
-        const status = body?.status || 'unknown'
-        showToast?.(`Payment verification: ${status}`, { type: 'error' })
-        navigate('/')
+        const status = body?.status || body?.error || 'unknown'
+        setError(`Payment verification failed: ${status}`)
       } catch (err) {
         console.error('Payment callback verify error', err)
-        showToast?.('Failed to verify payment. If you were charged, contact support.', { type: 'error' })
-        navigate('/')
+        setError('Failed to verify payment. If you were charged, contact support.')
       } finally {
         setLoading(false)
       }
@@ -47,9 +49,38 @@ const PaymentCallback = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold">Verifying payment...</h2>
-        {loading && <p className="text-sm text-gray-500">Please wait — we are confirming your payment and finalizing your order.</p>}
+      <div className="max-w-md w-full text-center p-6">
+        <h2 className="text-xl font-semibold mb-2">Verifying payment...</h2>
+        {loading && (
+          <p className="text-sm text-gray-500">Please wait — we are confirming your payment and finalizing your order.</p>
+        )}
+
+        {!loading && error && (
+          <div className="mt-4 text-left bg-red-50 border border-red-200 p-4 rounded">
+            <p className="text-sm text-red-700">{error}</p>
+            <div className="mt-3 flex gap-2">
+              <button
+                className="px-3 py-1 bg-blue-600 text-white rounded"
+                onClick={() => {
+                  // Retry verification
+                  setLoading(true)
+                  setError(null)
+                  // trigger effect by updating location.search manually not needed; just call verify via navigation
+                  // simpler: reload the page to re-run the effect (keeps logic minimal and deterministic)
+                  window.location.reload()
+                }}
+              >
+                Retry
+              </button>
+              <button
+                className="px-3 py-1 border rounded"
+                onClick={() => navigate('/dashboard?tab=orders')}
+              >
+                Go to Orders
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
