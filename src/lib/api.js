@@ -1,14 +1,10 @@
 import axios from 'axios'
 
-// Prefer an explicit backend host when provided via Vite env (VITE_API_BASE_URL).
-// If not set, fall back to a same-origin relative '/api' so dev proxy can be used.
 const RAW_API_BASE = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL
   ? String(import.meta.env.VITE_API_BASE_URL)
   : ''
 
-// Production-safe API base:
 // - If VITE_API_BASE_URL is set, use that origin + '/api' suffix (e.g. https://necta-backend.vercel.app/api)
-// - Otherwise fall back to '/api' so the Vite dev proxy can forward requests in development
 export const API_BASE_URL = RAW_API_BASE ? `${RAW_API_BASE.replace(/\/$/, '')}/api` : '/api'
 
 if (!RAW_API_BASE) {
@@ -23,22 +19,15 @@ export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
-  // Allow sending cookies for same-origin requests if your backend uses
-  // session cookies for authentication. This does not affect Authorization
-  // header usage — that still requires adding the token to headers.
   withCredentials: true,
 })
 
-// Helper to attach bearer token to requests. Accepts a token string.
 export function attachAuthToken(token) {
   if (token) api.defaults.headers.common['Authorization'] = `Bearer ${token}`
   else delete api.defaults.headers.common['Authorization']
 }
 
-// Response helper: normalize errors
 export function handleApiError(error) {
-  // Normalize axios errors into a predictable shape. Callers can inspect
-  // err.status and err.data to decide how to proceed.
   if (error?.response) {
     const status = error.response.status;
     const data = error.response.data;

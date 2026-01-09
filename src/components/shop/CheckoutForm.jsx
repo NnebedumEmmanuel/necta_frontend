@@ -1,16 +1,11 @@
-// src/components/CheckoutForm.jsx
 import React from "react";
 
 const CheckoutForm = ({ formData, setFormData }) => {
 
-  // ==============================
-  // Handle input value changes
-  // Updates only the changed field
-  // ==============================
   const handleChange = (e) => {
     setFormData({
-      ...formData,                 // keep existing form values
-      [e.target.name]: e.target.value, // update the changed field dynamically
+      ...formData,
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -25,21 +20,17 @@ const CheckoutForm = ({ formData, setFormData }) => {
         border-yellow-100
       "
     >
-      {/* ==============================
-          FORM HEADER
-      ============================== */}
+      {}
       <h2 className="text-2xl font-bold mb-2 text-gray-800">
         Shipping Details
       </h2>
 
-      {/* Yellow accent underline */}
+      {}
       <div className="w-16 h-1 bg-yellow-400 rounded-full mb-6" />
 
-      {/* ==============================
-          INPUT GRID
-      ============================== */}
+      {}
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Full Name */}
+        {}
         <input
           type="text"
           name="fullName"
@@ -57,7 +48,7 @@ const CheckoutForm = ({ formData, setFormData }) => {
           "
         />
 
-        {/* Email */}
+        {}
         <input
           type="email"
           name="email"
@@ -75,7 +66,7 @@ const CheckoutForm = ({ formData, setFormData }) => {
           "
         />
 
-        {/* Phone */}
+        {}
         <input
           type="tel"
           name="phone"
@@ -93,7 +84,7 @@ const CheckoutForm = ({ formData, setFormData }) => {
           "
         />
 
-        {/* City */}
+        {}
         <input
           type="text"
           name="city"
@@ -112,9 +103,7 @@ const CheckoutForm = ({ formData, setFormData }) => {
         />
       </div>
 
-      {/* ==============================
-          ADDRESS TEXTAREA
-      ============================== */}
+      {}
       <textarea
         name="address"
         placeholder="Delivery Address *"
@@ -133,9 +122,7 @@ const CheckoutForm = ({ formData, setFormData }) => {
         "
       />
 
-      {/* ==============================
-          STATE INPUT
-      ============================== */}
+      {}
       <input
         type="text"
         name="state"
@@ -154,9 +141,7 @@ const CheckoutForm = ({ formData, setFormData }) => {
         "
       />
 
-      {/* ==============================
-          INFO NOTE
-      ============================== */}
+      {}
       <p className="text-sm text-gray-500 mt-4">
         <span className="text-yellow-500 font-semibold">*</span> Required fields
       </p>

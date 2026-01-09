@@ -1,4 +1,3 @@
-// Sidebar.jsx
 import React from "react";
 import { 
   X, 
@@ -21,7 +20,6 @@ import { useLocation } from "react-router-dom";
 
 const Logo = "/icons/Logo.png";
 
-// Category icons configuration
 const categories = [
   { 
     name: "Phones", 
@@ -66,7 +64,6 @@ export default function Sidebar({ isOpen, onClose }) {
   const cartState = { itemCount: 0 };
   const wishlistState = { items: [] };
 
-  // Function to check if a link is active
   const isActive = (path) => {
     if (path === '/') {
       return location.pathname === '/';
@@ -74,7 +71,6 @@ export default function Sidebar({ isOpen, onClose }) {
     return location.pathname.startsWith(path);
   };
 
-  // Function to check if a category is active
   const isCategoryActive = (categoryLabel) => {
     const searchParams = new URLSearchParams(location.search);
     const currentCategory = searchParams.get('category');
@@ -83,7 +79,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   return (
     <>
-      {/* ===== Full width overlay ===== */}
+      {}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 w-full"
@@ -91,7 +87,7 @@ export default function Sidebar({ isOpen, onClose }) {
         />
       )}
 
-      {/* ===== Sidebar Drawer ===== */}
+      {}
       <div
         className="fixed top-0 left-0 h-full w-72 bg-white/80 backdrop-blur-xl shadow-2xl z-50 border-r border-gray-200"
         style={{
@@ -99,7 +95,7 @@ export default function Sidebar({ isOpen, onClose }) {
           transition: 'transform 0.3s ease-in-out'
         }}
       >
-        {/* ===== Header ===== */}
+        {}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <a href="/" onClick={onClose}>
@@ -117,7 +113,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* ===== Quick Actions ===== */}
+        {}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="space-y-2">
             <a 
@@ -165,7 +161,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* ===== Nav Links ===== */}
+        {}
         <nav className="flex flex-col gap-3 mt-6 px-6 text-gray-800">
           <a
             href="/"
@@ -246,7 +242,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </a>
         </nav>
 
-        {/* ===== Categories ===== */}
+        {}
         <div className="mt-10 border-t border-gray-200 pt-5 px-6 text-sm text-gray-600">
           <div className="flex items-center gap-2 mb-3 text-gray-700 font-medium">
             <Layers size={16} />
@@ -282,7 +278,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </ul>
         </div>
 
-        {/* ===== Footer ===== */}
+        {}
         <div className="absolute bottom-4 left-0 w-full px-6 text-xs text-gray-500">
           <p>© 2025 CyberStore. All rights reserved.</p>
         </div>

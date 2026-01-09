@@ -1,4 +1,3 @@
-// components/admin/AdminNavbar.jsx - Updated
 import React, { useState } from "react";
 import { Bell, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
@@ -33,7 +32,6 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
     try {
       await signOut();
     } catch (e) {
-      // ignore
     }
     if (onLogout) onLogout();
   };
@@ -41,7 +39,7 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
   return (
     <header className="w-full bg-gradient-to-r from-slate-900 via-slate-700 to-orange-950 shadow-lg p-4 flex justify-between items-center sticky top-0 z-40">
       <div className="flex items-center gap-3">
-        {/* Mobile Menu Button */}
+        {}
         <button
           onClick={onToggleSidebar}
           className="lg:hidden p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
@@ -49,7 +47,7 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
           <Menu className="w-5 h-5 text-white" />
         </button>
 
-        {/* Desktop Collapse Button */}
+        {}
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
@@ -70,7 +68,7 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Notification Bell */}
+        {}
         <div className="relative">
           <button
             onClick={toggleNotifications}
@@ -85,7 +83,7 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
             )}
           </button>
 
-          {/* Notification Dropdown */}
+          {}
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-2xl border border-purple-200 z-50">
               <div className="p-4 border-b border-purple-200 flex justify-between items-center bg-gradient-to-r from-purple-50 to-indigo-50">
@@ -135,7 +133,7 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
           )}
         </div>
 
-        {/* Logout Button */}
+        {}
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition shadow-md"

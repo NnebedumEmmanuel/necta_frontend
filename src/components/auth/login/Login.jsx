@@ -30,8 +30,6 @@ const Login = () => {
         }
         return;
       }
-      // After successful sign in, we show success toast.
-      // Navigation is handled by an effect that watches `session`.
       toast.success("Signed in successfully");
     } catch (err) {
       console.error("Login error:", err);
@@ -46,18 +44,15 @@ const Login = () => {
     }
   };
 
-  // Redirect to /dashboard when a session becomes available.
   useEffect(() => {
     if (session) {
       try {
         navigate('/dashboard', { replace: true });
       } catch (e) {
-        // ignore navigation errors
       }
     }
   }, [session, navigate]);
 
-  // Google OAuth
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
@@ -66,8 +61,6 @@ const Login = () => {
         toast.error(error.message || 'Google sign-in failed');
         return;
       }
-      // If this is a redirect flow, the user will be sent to Google and back.
-      // When the session is established the effect above will navigate to /dashboard.
       toast.info('Redirecting to Google for authentication...');
     } catch (err) {
       console.error('Google sign-in error:', err);
@@ -77,8 +70,6 @@ const Login = () => {
     }
   };
 
-  // Login page should render regardless of auth state. Navigation occurs only
-  // after an explicit successful sign-in (handled in handleSubmit).
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -94,7 +85,7 @@ const Login = () => {
               Sign in to your account to continue shopping
             </p>
           </div>
-          {/* OAuth button */}
+          {}
           <div className="mt-4">
             <button
               type="button"
@@ -111,7 +102,7 @@ const Login = () => {
               Continue with Google
             </button>
           </div>
-          {/* Login form fields and actions */}
+          {}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -193,7 +184,7 @@ const Login = () => {
               </Link>
             </div>
           </form>
-          {/* end form */}
+          {}
         </div>
       </div>
     </div>

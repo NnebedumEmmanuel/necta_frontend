@@ -5,7 +5,6 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-// ✅ Slide Animation Hero Slider
 export default function HeroSlider() {
   const slides = [
     {
@@ -46,20 +45,18 @@ export default function HeroSlider() {
         autoplay={{ delay: 5000, disableOnInteraction: false }}
         loop={true}
         
-        // Smooth slide transition
         speed={800}
         spaceBetween={0}
         slidesPerView={1}
         
-        // Responsive breakpoints
         breakpoints={{
-          320: { // Mobile
+          320: {
             speed: 600,
           },
-          768: { // Tablets
+          768: {
             speed: 700,
           },
-          1024: { // Desktops
+          1024: {
             speed: 800,
           },
         }}
@@ -70,7 +67,7 @@ export default function HeroSlider() {
           <SwiperSlide key={s.id}>
             <div className="flex flex-col lg:flex-row items-center justify-between h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-0">
               
-              {/* LEFT TEXT */}
+              {}
               <div className="w-full lg:w-1/2 text-white text-center lg:text-left order-2 lg:order-1 mt-8 lg:mt-0 z-10">
                 <p className="text-gray-400 mb-2 sm:mb-4 text-sm sm:text-base">{s.eyebrow}</p>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light leading-tight mb-3 sm:mb-4">
@@ -84,7 +81,7 @@ export default function HeroSlider() {
                 </button>
               </div>
 
-              {/* RIGHT IMAGE */}
+              {}
               <div className="w-full lg:w-1/2 flex justify-center lg:justify-end order-1 lg:order-2 z-10">
                 <img
                   src={s.img}

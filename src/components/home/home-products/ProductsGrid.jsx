@@ -10,12 +10,9 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
   const { addToCart } = useCart();
   const { showToast } = useToast();
   
-  // Use external props if provided, otherwise use local context
   const wishlistState = externalWishlistState || localWishlistState;
   const toggleWishlist = externalToggleWishlist || localToggleWishlist;
 
-  // Normalize incoming `products` prop — backend may return an object like
-  // { data: [...], total, limit, skip } or { items: [...] } or a raw array.
   const items = Array.isArray(products)
     ? products
     : products?.data ?? products?.items ?? products?.products ?? [];
@@ -47,7 +44,7 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
           <div key={product.id} className="relative group">
             <Link to={`/shop/products/${product.id}`} className="block">
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200 group">
-                {/* Image Container */}
+                {}
                 <div className="relative h-40 bg-gray-50 overflow-hidden">
                   <img
                     src={product.image || product.images?.[0]?.url}
@@ -58,21 +55,21 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
 
                 </div>
 
-                {/* Product Info */}
+                {}
                 <div className="p-3">
-                  {/* Brand */}
+                  {}
                   <div className="mb-1">
                     <span className="text-xs font-semibold text-gray-500 uppercase">
                       {product.brand || getBrandFromName(product.name)}
                     </span>
                   </div>
 
-                  {/* Product Name */}
+                  {}
                   <h3 className="text-sm font-bold text-gray-900 mb-2 line-clamp-2 h-10">
                     {product.name}
                   </h3>
 
-                  {/* Rating - Smaller Stars */}
+                  {}
                   <div className="flex items-center mb-2">
                     <div className="flex">
                       {[...Array(5)].map((_, i) => (
@@ -96,7 +93,7 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
                     </span>
                   </div>
 
-                  {/* Price Section */}
+                  {}
                   <div className="mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-base font-bold text-gray-900">
@@ -110,7 +107,7 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
                     </div>
                   </div>
 
-                  {/* Add to Cart Button */}
+                  {}
                   <button
                     onClick={(e) => handleAddToCart(product, e)}
                     className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-2 px-3 rounded-md transition-all duration-200 flex items-center justify-center gap-1 text-xs"
@@ -122,12 +119,11 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
               </div>
             </Link>
             
-            {/* Wishlist Button - Outside Link */}
+            {}
             <button 
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // Pass only the product id to the wishlist toggle as required by backend
                 toggleWishlist(product.id);
                 if (isInWishlist) {
                   showToast(`${product.name} removed from wishlist`, { type: 'info' });
@@ -150,7 +146,6 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
   );
 };
 
-// Helper function to extract brand from name
 function getBrandFromName(name) {
   const brands = ["Apple", "Samsung", "Xiaomi", "Poco", "OPPO", "Honor", "Motorola", "Nokia", "Realme", "Vivo", "Lenovo", "Asus", "LG", "Google", "OnePlus", "Infinix", "Canon", "Sony", "Nikon", "Blackmagic", "Fujifilm", "Panasonic", "Bose", "Beats", "Sennheiser", "JBL", "PlayStation", "Xbox", "Nintendo", "Steam", "Razer", "Logitech"];
   const foundBrand = brands.find(brand => name.toLowerCase().includes(brand.toLowerCase()));

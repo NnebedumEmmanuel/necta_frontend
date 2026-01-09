@@ -39,21 +39,21 @@ const Hero = ({
 
   return (
     <div 
-      className="relative overflow-hidden py-32 sm:py-40 px-4 sm:px-6 lg:px-8" // increased py for more height
+      className="relative overflow-hidden py-32 sm:py-40 px-4 sm:px-6 lg:px-8"
       style={{
         backgroundImage: `url('${backgroundImage}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        minHeight: '600px', // optional: ensures a minimum height
+        minHeight: '600px',
       }}
     >
-      {/* Overlay with blur */}
+      {}
       <div className={`absolute inset-0 ${overlayOpacity} ${blur}`}></div>
       
-      {/* Content */}
+      {}
       <div className="relative z-10 max-w-7xl mx-auto">
-        {/* Breadcrumb */}
+        {}
         <div className="flex items-center justify-center gap-2 text-sm text-gray-200 mb-6">
           {breadcrumbs.map((crumb, index) => (
             <div key={index} className="flex items-center gap-2">
@@ -78,7 +78,7 @@ const Hero = ({
           ))}
         </div>
         
-        {/* Title */}
+        {}
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white text-center">
           {title}
         </h1>

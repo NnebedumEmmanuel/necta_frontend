@@ -1,4 +1,3 @@
-// context/CartContext.jsx
 import React, { useReducer, useEffect } from "react";
 import { CartContext } from "./CartContextFile";
 
@@ -57,7 +56,6 @@ export const CartProvider = ({ children }) => {
     items: JSON.parse(localStorage.getItem('cart')) || []
   });
 
-  // Save to localStorage whenever cart changes
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(state.items));
   }, [state.items]);
@@ -80,14 +78,11 @@ export const CartProvider = ({ children }) => {
 
   const getTotalPrice = () => {
     return state.items.reduce((total, item) => {
-      // Normalize price: item.price may be a number or a string. Guard against
-      // missing or malformed values and treat quantity consistently.
       const rawPrice = item.price;
       let price = 0;
       if (typeof rawPrice === 'number' && Number.isFinite(rawPrice)) {
         price = rawPrice;
       } else if (rawPrice != null) {
-        // Coerce to string and strip non-numeric chars, then parse
         const normalized = String(rawPrice).replace(/[^\d.-]/g, '');
         const p = parseFloat(normalized);
         price = Number.isFinite(p) ? p : 0;

@@ -1,4 +1,3 @@
-// src/components/OrderSummary.jsx
 import React from "react";
 import {
   Package,
@@ -9,7 +8,6 @@ import {
 const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
   const total = Number(subtotal || 0) + Number(deliveryFee || 0);
 
-  // Presentation-only formatter. All calculations treat prices as numbers.
   const formatPrice = (value) => {
     const n = Number(value || 0);
     return n.toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 2 });
@@ -30,9 +28,7 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
         hover:-translate-y-[1px]
       "
     >
-      {/* ==============================
-          HEADER
-      ============================== */}
+      {}
       <div className="flex items-center gap-2 mb-4">
         <Package className="text-yellow-500" size={22} />
         <h2 className="text-2xl font-bold text-gray-800">
@@ -40,12 +36,9 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
         </h2>
       </div>
 
-      {/* ==============================
-          CART ITEMS
-      ============================== */}
+      {}
       <div className="space-y-3">
         {cartItems.map((item) => {
-          // item.price is expected to be a number. Coerce defensively.
           const itemPrice = Number(item.price || 0);
           const qty = Number(item.quantity || item.qty || 1) || 0;
           return (
@@ -61,13 +54,13 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
                 hover:text-gray-900
               "
             >
-              {/* Item name + quantity */}
+              {}
               <span>
                 {item.name} ×{" "}
                 <span className="font-medium">{item.quantity}</span>
               </span>
 
-              {/* Item total */}
+              {}
               <span className="font-medium">
                 {formatPrice(itemPrice * qty)}
               </span>
@@ -76,12 +69,10 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
         })}
       </div>
 
-      {/* Divider */}
+      {}
       <hr className="my-4 border-gray-200" />
 
-      {/* ==============================
-          DELIVERY ESTIMATE
-      ============================== */}
+      {}
       <div
         className="
           flex
@@ -104,9 +95,7 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
         </span>
       </div>
 
-      {/* ==============================
-          PRICE BREAKDOWN
-      ============================== */}
+      {}
       <div className="space-y-2 text-sm text-gray-700">
         <div className="flex justify-between">
           <span>Subtotal</span>
@@ -118,24 +107,20 @@ const OrderSummary = ({ cartItems, subtotal, deliveryFee, onPlaceOrder }) => {
           <span>{formatPrice(deliveryFee)}</span>
         </div>
 
-        {/* Total */}
+        {}
         <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t">
           <span>Total</span>
           <span className="text-yellow-500">{formatPrice(total)}</span>
         </div>
       </div>
 
-      {/* ==============================
-          PAYMENT NOTE
-      ============================== */}
+      {}
       <div className="flex items-center gap-2 mt-4 text-xs text-gray-500">
         <CreditCard size={14} />
         <span>Secure checkout • All payments are protected</span>
       </div>
 
-      {/* ==============================
-          PLACE ORDER BUTTON
-      ============================== */}
+      {}
       <button
         onClick={onPlaceOrder}
         className="

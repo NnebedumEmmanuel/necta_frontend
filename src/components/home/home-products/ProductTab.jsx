@@ -15,11 +15,9 @@ const ProductTabs = () => {
     setLoading(true);
     setError(null);
 
-    // Fetch a small list of products from backend and split into tab groups
     productService.getProducts(12, 0)
       .then((res) => {
         if (!mounted) return;
-        // productService now returns { data, meta, raw } but keep compatibility
         const items = Array.isArray(res)
           ? res
           : res?.data ?? res?.items ?? res?.products ?? res ?? [];
@@ -38,7 +36,6 @@ const ProductTabs = () => {
     setActiveTab(tab);
   };
 
-  // For unknown product shape we use slices for tabs (backend decides ordering)
   const getTabProducts = () => {
     if (!products) return [];
     switch (activeTab) {

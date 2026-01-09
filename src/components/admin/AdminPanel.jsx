@@ -1,4 +1,3 @@
-// AdminPanel.jsx
 import React, { useState, useEffect } from "react";
 import AdminNavbar from "./AdminNavbar";
 import AdminProducts from "./AdminProducts";
@@ -17,8 +16,6 @@ export default function AdminPanel() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check authentication on component mount
-    // Use AuthContext as the single source of truth for authentication
     const checkAuth = () => {
       if (authLoading) return;
       if (!session) {
@@ -40,11 +37,9 @@ export default function AdminPanel() {
   }, [navigate]);
 
   const handleLogout = () => {
-    // Use AuthContext signOut helper
     try {
       signOut();
     } catch (e) {
-      // ignore
     }
     navigate('/login');
   };
@@ -88,7 +83,7 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50">
-      {/* Mobile Sidebar Overlay */}
+      {}
       {showMobileSidebar && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div 
@@ -108,7 +103,7 @@ export default function AdminPanel() {
         </div>
       )}
       
-      {/* Desktop Sidebar */}
+      {}
       <div className={`hidden lg:block fixed left-0 top-0 h-screen z-30 transition-all duration-300 ease-in-out ${
         isSidebarCollapsed ? 'w-20' : 'w-64'
       }`}>
@@ -121,7 +116,7 @@ export default function AdminPanel() {
         />
       </div>
       
-      {/* Main Content */}
+      {}
       <div className={`min-h-screen flex flex-col transition-all duration-300 ${
         isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       }`}>

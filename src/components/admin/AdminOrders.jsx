@@ -1,4 +1,3 @@
-// Removed dependency on hardcoded products; orders use generated mock items.
 import { 
   Package, 
   Truck, 
@@ -38,7 +37,6 @@ const generateMockOrders = () => {
     for (let j = 0; j < numItems; j++) {
   const product = sampleProducts[Math.floor(Math.random() * sampleProducts.length)];
       const quantity = Math.floor(Math.random() * 2) + 1;
-      // Convert price string "₦7,500" to a number 7500
       const price = parseFloat(product.price.replace(/[^0-9.-]+/g,""));
       items.push({
         ...product,
@@ -88,7 +86,6 @@ export default function AdminOrders() {
   const loadOrders = () => {
     setIsLoading(true);
     try {
-      // Using mock data instead of service
       const data = generateMockOrders();
       const sortedOrders = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
@@ -178,7 +175,6 @@ export default function AdminOrders() {
 
   const stats = getOrderStats();
 
-  // Mobile Order Card Component
   const MobileOrderCard = ({ order }) => {
     const statusInfo = getStatusInfo(order.status);
     const StatusIcon = statusInfo.icon;
@@ -278,7 +274,7 @@ export default function AdminOrders() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
+        {}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
@@ -290,9 +286,9 @@ export default function AdminOrders() {
           </div>
         </div>
 
-        {/* Stats Cards Grid */}
+        {}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {/* Total Orders */}
+          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
@@ -305,7 +301,7 @@ export default function AdminOrders() {
             </div>
           </div>
           
-          {/* Pending */}
+          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
@@ -318,7 +314,7 @@ export default function AdminOrders() {
             </div>
           </div>
           
-          {/* Processing */}
+          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
@@ -331,7 +327,7 @@ export default function AdminOrders() {
             </div>
           </div>
           
-          {/* Delivered */}
+          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
@@ -344,7 +340,7 @@ export default function AdminOrders() {
             </div>
           </div>
           
-          {/* Revenue - Spans 2 columns on mobile, 2 on lg */}
+          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200 col-span-2 md:col-span-1 lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
@@ -360,7 +356,7 @@ export default function AdminOrders() {
           </div>
         </div>
 
-        {/* Filters */}
+        {}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -396,7 +392,7 @@ export default function AdminOrders() {
           </div>
         </div>
 
-        {/* Loading State */}
+        {}
         {isLoading ? (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
             <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
@@ -404,7 +400,7 @@ export default function AdminOrders() {
           </div>
         ) : (
           <>
-            {/* Mobile View - Cards */}
+            {}
             <div className="lg:hidden">
               {filteredOrders.length === 0 ? (
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
@@ -421,7 +417,7 @@ export default function AdminOrders() {
               )}
             </div>
 
-            {/* Desktop View - Table */}
+            {}
             <div className="hidden lg:block">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
@@ -528,7 +524,7 @@ export default function AdminOrders() {
         )}
       </div>
 
-      {/* Order Details Modal - Responsive */}
+      {}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
           <div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -546,7 +542,7 @@ export default function AdminOrders() {
                 </button>
               </div>
 
-              {/* Customer Info - Responsive Grid */}
+              {}
               <div className="mb-4 sm:mb-6">
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3">Customer Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -571,7 +567,7 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {/* Order Items */}
+              {}
               <div className="mb-4 sm:mb-6">
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3">Order Items</h3>
                 <div className="space-y-2 sm:space-y-3">
@@ -590,7 +586,7 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {/* Order Summary */}
+              {}
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg sm:rounded-xl lg:rounded-2xl p-4 sm:p-6">
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3">Order Summary</h3>
                 <div className="space-y-2">

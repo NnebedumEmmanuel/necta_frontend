@@ -1,8 +1,6 @@
 import { ChevronUp } from "lucide-react";
 
 export default function PriceFilter({ range = [0, 200000], onRangeChange }) {
-  // Controlled component: no internal state. Parent must provide `range` and
-  // `onRangeChange`.
   const currentRange = Array.isArray(range) && range.length === 2 ? range : [0, 200000];
 
   const handleMinInputChange = (value) => {
@@ -27,7 +25,7 @@ export default function PriceFilter({ range = [0, 200000], onRangeChange }) {
       </div>
 
       <div className="mt-4">
-        {/* Price inputs */}
+        {}
         <div className="flex justify-between text-sm text-gray-600 mb-4">
           <div className="flex flex-col">
             <label htmlFor="price-from" className="text-xs text-gray-400 mb-1">
@@ -67,7 +65,7 @@ export default function PriceFilter({ range = [0, 200000], onRangeChange }) {
           </div>
         </div>
 
-        {/* Single range slider for max price (recommended) */}
+        {}
         <div className="mb-4">
           <label htmlFor="max-price-slider" className="block text-sm text-gray-600 mb-2">
             Maximum Price: ₦{currentRange[1].toLocaleString()}
@@ -90,7 +88,7 @@ export default function PriceFilter({ range = [0, 200000], onRangeChange }) {
           </div>
         </div>
 
-        {/* Price range display */}
+        {}
         <div className="flex justify-between text-xs text-gray-500 bg-gray-50 p-2 rounded">
           <span>₦{currentRange[0].toLocaleString()}</span>
           <span className="text-gray-400">to</span>

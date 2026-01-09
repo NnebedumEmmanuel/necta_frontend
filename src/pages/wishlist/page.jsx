@@ -1,10 +1,8 @@
-// import React from "";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, Trash2, ShoppingCart } from "lucide-react";
 import { useWishlist } from "../../../context/WishlistContext";
 import { useCart } from "../../../context/useCartHook";
 import { useToast } from "../../context/useToastHook";
-
 
 export default function WishlistPage() {
   const { state, dispatch } = useWishlist();
@@ -28,7 +26,7 @@ export default function WishlistPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
-      {/* Breadcrumb Navigation */}
+      {}
       <nav className="flex text-gray-500 text-sm mb-8">
         <Link to="/" className="hover:text-black transition-colors">
           Home
@@ -37,7 +35,7 @@ export default function WishlistPage() {
         <span className="text-black font-semibold">Wishlist</span>
       </nav>
 
-      {/* Page Title */}
+      {}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">My Wishlist</h1>
         <p className="text-gray-600">
@@ -45,7 +43,7 @@ export default function WishlistPage() {
         </p>
       </div>
 
-      {/* Empty State */}
+      {}
       {state.items.length === 0 ? (
         <div className="text-center py-12">
           <Heart size={64} className="mx-auto text-gray-300 mb-4" />
@@ -67,7 +65,7 @@ export default function WishlistPage() {
               key={product.id}
               className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
             >
-              {/* Product Image */}
+              {}
               <div className="relative w-full h-48 bg-gray-100 overflow-hidden group cursor-pointer">
                 <img
                   src={product.image}
@@ -84,7 +82,7 @@ export default function WishlistPage() {
                 </button>
               </div>
 
-              {/* Product Info */}
+              {}
               <div className="p-4">
                 <h3
                   className="font-semibold text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors"
@@ -93,7 +91,7 @@ export default function WishlistPage() {
                   {product.name}
                 </h3>
 
-                {/* Price */}
+                {}
                 <div className="flex items-center gap-2 mb-4">
                   <p className="text-xl font-bold text-black">{product.price}</p>
                   {product.oldPrice && (
@@ -101,7 +99,7 @@ export default function WishlistPage() {
                   )}
                 </div>
 
-                {/* Action Buttons */}
+                {}
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAddToCart(product)}
@@ -123,7 +121,7 @@ export default function WishlistPage() {
         </div>
       )}
 
-      {/* Continue Shopping Button */}
+      {}
       {state.items.length > 0 && (
         <div className="mt-12 flex justify-center">
           <Link

@@ -18,7 +18,7 @@ export default function DetailsSection({ product }) {
         <p className="text-gray-600 leading-relaxed mb-6">{details.description}</p>
 
         <div className="space-y-4">
-          {/* Screen Section */}
+          {}
           {details.screen && (
             <div>
               <h3 className="font-semibold text-gray-900 mb-2 text-lg">Screen</h3>
@@ -36,7 +36,7 @@ export default function DetailsSection({ product }) {
             </div>
           )}
 
-          {/* CPU Section */}
+          {}
           {details.cpu && (
             <div>
               <h3 className="font-semibold text-gray-900 mb-2 text-lg border-t">CPU</h3>

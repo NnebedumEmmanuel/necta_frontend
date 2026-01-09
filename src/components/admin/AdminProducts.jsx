@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { useToast } from "../../context/useToastHook.js";
 import { productService } from '../../../services/productService';
 
-// Helper to format products from the local data file
 const formatProducts = (products) => {
   return products.map(p => {
     const priceString = String(p.price || "");
@@ -22,9 +21,9 @@ const formatProducts = (products) => {
       price: price,
       oldPrice: oldPrice,
       discPercent: discPercent,
-      inStock: p.inStock || Math.floor(Math.random() * 100) + 1, // Keep existing or use random
-      category: p.category || 'speakers', // Keep existing or use default
-      brand: p.brand || 'T&G', // Keep existing or use default
+      inStock: p.inStock || Math.floor(Math.random() * 100) + 1,
+      category: p.category || 'speakers',
+      brand: p.brand || 'T&G',
       image: p.image || "",
       description: p.description || ""
     };
@@ -238,7 +237,7 @@ export default function AdminProducts() {
         {!loading && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Stats Cards can be re-added here if needed */}
+              {}
             </div>
 
             {filteredProducts.length === 0 ? (

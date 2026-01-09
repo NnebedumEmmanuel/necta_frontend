@@ -1,4 +1,3 @@
-// Header.jsx
 import React, { useState } from "react";
 import { 
   Search, 
@@ -20,7 +19,6 @@ import { useCart } from "../../../context/useCartHook";
 
 const Logo = "/logo.png";
 
-// Category configuration with Lucide icons
 const categories = [
   { 
     label: "phones", 
@@ -71,9 +69,6 @@ export default function Header() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Use a normal location change for the search submission instead of
-      // an imperative React Router navigate() call so Navbar performs no
-      // programmatic routing via useNavigate.
       window.location.href = `/shop?search=${encodeURIComponent(searchQuery.trim())}`;
     }
   };
@@ -84,7 +79,6 @@ export default function Header() {
     }
   };
 
-  // Function to check if a nav link is active
   const isActive = (path) => {
     if (path === '/') {
       return location.pathname === '/';
@@ -94,7 +88,7 @@ export default function Header() {
 
   return (
     <div className="w-full">
-      {/* ===== Top Navbar ===== */}
+      {}
       <div className="flex flex-col items-center justify-center py-5 bg-[#FFFFFF]">
         <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8 lg:gap-12 w-full max-w-6xl px-4 text-center relative">
           <div className="absolute top-1/2 left-4 -translate-y-1/2 md:hidden">
@@ -196,11 +190,11 @@ export default function Header() {
                 </span>
               )}
             </Link>
-            {/* Auth-dependent UI: only render after loading is false */}
+            {}
             {!loading && (
               session ? (
                   <Link to="/dashboard">
-                    {/* Replace with avatar if available */}
+                    {}
                     <User size={22} className={`cursor-pointer hover:text-black transition ${
                       isActive('/dashboard') ? 'text-black' : 'text-gray-800'
                     }`} />
@@ -217,7 +211,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* ===== Bottom Categories ===== */}
+      {}
       <div className="hidden lg:flex items-center justify-center gap-8 bg-[#2E2E2E] text-white py-3 text-sm">
         {categories.map((category, index) => (
           <React.Fragment key={category.label}>
@@ -234,7 +228,7 @@ export default function Header() {
         ))}
       </div>
 
-      {/* Mobile Menu */}
+      {}
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-white border-t shadow-lg">
           <div className="flex flex-col p-4 space-y-4">
@@ -308,7 +302,7 @@ export default function Header() {
               </Link>
             </nav>
             
-            {/* Mobile Categories */}
+            {}
             <div className="pt-4 border-t">
               <h3 className="font-medium text-gray-700 mb-3">Categories</h3>
               <div className="grid grid-cols-2 gap-2">

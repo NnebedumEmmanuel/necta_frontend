@@ -5,17 +5,15 @@ export default function OurSpecial() {
     <section className="w-full py-20 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         
-        {/* ---- SECTION TITLE ---- */}
+        {}
         <h2 className="text-center text-3xl font-semibold mb-14">
           Our Specials
         </h2>
 
-        {/* ---- GRID LAYOUT ---- */}
+        {}
         <div className="grid md:grid-cols-3 gap-10 items-start relative">
 
-          {/* ----------------------------------------------------
-              CARD 1
-          ----------------------------------------------------- */}
+          {}
           <div className="space-y-4">
             <div className="relative">
               <img
@@ -39,9 +37,7 @@ export default function OurSpecial() {
             </button>
           </div>
 
-          {/* ----------------------------------------------------
-              CARD 2 (CENTER LARGE IMAGE)
-          ----------------------------------------------------- */}
+          {}
           <div className="relative">
             <img
               src="/images/special img1.jpg"
@@ -54,12 +50,10 @@ export default function OurSpecial() {
             </p>
           </div>
 
-          {/* ----------------------------------------------------
-              CARD 3 (CIRCULAR TEXT + LOWERED IMAGE)
-          ----------------------------------------------------- */}
+          {}
           <div className="relative">
 
-            {/* ====== ROTATING CIRCULAR TEXT (MOVED HIGHER) ====== */}
+            {}
             <div className="absolute left-1/2 -translate-x-1/2 top-10 md:top-20">
               <svg
                 width="200"
@@ -104,7 +98,7 @@ export default function OurSpecial() {
               </svg>
             </div>
 
-            {/* ====== IMAGE MOVED FAR LOWER ====== */}
+            {}
             <div className="absolute top-72 md:top-96 w-full">
               <img
                 src="/images/special img2.jpg"

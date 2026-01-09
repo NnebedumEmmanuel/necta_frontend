@@ -1,4 +1,3 @@
-// pages/dashboard/UserDashboard.jsx - Complete Updated Version
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -34,8 +33,6 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Sync query params -> UI state: if URL contains ?tab=orders we open that tab.
-  // Also surface payment status via toast when paystatus=success is present.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
@@ -47,7 +44,6 @@ const UserDashboard = () => {
     }
 
     if (paystatus === 'success') {
-      // Use existing toast system to show success. Keep it lightweight.
       showToast?.('Payment successful. Thank you!', 'success');
     }
   }, [location.search, showToast]);
@@ -58,9 +54,6 @@ const UserDashboard = () => {
       if (!mounted) return;
       setLoading(true);
       try {
-  // Fetch orders only when a valid auth user exists. Use the
-  // authenticated endpoint `/api/me/orders` and include the
-  // session access token when available.
   const token = session?.access_token || session?.accessToken || null;
   const ordersData = await orderService.getUserOrders(userId, token);
         const sortedOrders = (ordersData?.carts || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -70,7 +63,6 @@ const UserDashboard = () => {
         }));
         if (mounted) setOrders(ordersWithStatus);
 
-        // Load wishlist from localStorage
         const savedWishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
         if (mounted) setWishlist(savedWishlist);
       } catch (err) {
@@ -81,12 +73,10 @@ const UserDashboard = () => {
       }
     };
 
-    // Only run when auth has finished loading and there is an auth user.
     if (!authLoading && authUser) {
       setUser(authUser);
       loadUserData(authUser.id);
     } else if (!authLoading && !authUser) {
-      // Auth says there's no user; clear local data but do not navigate.
       setUser(null);
       setOrders([]);
       setWishlist([]);
@@ -99,7 +89,6 @@ const UserDashboard = () => {
   }, [authLoading, authUser, showToast]);
 
   const handleLogout = async () => {
-    // Sign out via AuthContext and do not navigate here.
     try {
       await signOut();
     } catch (err) {
@@ -126,10 +115,9 @@ const UserDashboard = () => {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
+      {}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -167,7 +155,7 @@ const UserDashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
+        {}
         <div className="flex flex-wrap gap-2 bg-white rounded-2xl p-2 mb-8 shadow-sm">
           {[
             { id: "overview", label: "Overview", icon: TrendingUp },
@@ -194,11 +182,11 @@ const UserDashboard = () => {
           })}
         </div>
 
-        {/* Tab Content */}
+        {}
         <div className="space-y-8">
           {activeTab === "overview" && (
             <>
-              {/* Stats Cards */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
                   <div className="flex items-center justify-between">
@@ -253,7 +241,7 @@ const UserDashboard = () => {
                 </div>
               </div>
 
-              {/* Quick Actions */}
+              {}
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -309,7 +297,7 @@ const UserDashboard = () => {
                 </div>
               </div>
 
-              {/* Recent Orders */}
+              {}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-xl font-bold text-gray-800">Recent Orders</h2>
@@ -605,7 +593,7 @@ const UserDashboard = () => {
         </div>
       </div>
 
-      {/* Footer Help */}
+      {}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">

@@ -5,17 +5,13 @@ export default function Footer() {
   return (
     <footer className="bg-[#1b1b1b] text-gray-300">
 
-      {/* ==========================
-          TOP CONTACT ROW
-          - Stacks on mobile
-          - Side-by-side on desktop
-      =========================== */}
+      {}
       <div className="max-w-7xl mx-auto px-6 py-10 
                       flex flex-col md:flex-row 
                       gap-8 md:gap-0 
                       border-b border-gray-700">
 
-        {/* Logo + Contact Info */}
+        {}
         <div className="flex flex-col items-center md:items-start text-center md:text-left">
           <img src="/images/img6.png" alt="Logo" className="w-32 mb-2" />
           <p className="text-sm text-gray-400">
@@ -26,11 +22,11 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* Email Input + Subscribe */}
+        {}
         <div className="md:ml-auto w-full md:max-w-xl">
           <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
 
-            {/* Email input */}
+            {}
             <div className="relative w-full">
               <Search
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
@@ -45,7 +41,7 @@ export default function Footer() {
               />
             </div>
 
-            {/* Subscribe button */}
+            {}
             <button
               className="bg-orange-500 hover:bg-orange-600 
                          text-white font-semibold 
@@ -58,19 +54,14 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* ==========================
-          MIDDLE LINKS ROW
-          - 2 cols on mobile
-          - 3 on tablet
-          - 6 on desktop
-      =========================== */}
+      {}
       <div className="max-w-7xl mx-auto px-6 py-10 
                       grid grid-cols-2 
                       sm:grid-cols-3 
                       md:grid-cols-6 
                       gap-8 text-sm">
 
-        {/* SOCIALS */}
+        {}
         <div>
           <h4 className="font-semibold mb-3">Socials</h4>
           <div className="flex items-center gap-4">
@@ -93,7 +84,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* ABOUT */}
+        {}
         <div>
           <h4 className="font-semibold mb-2">About Us</h4>
           <ul className="space-y-1">
@@ -105,7 +96,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* PRODUCTS */}
+        {}
         <div>
           <h4 className="font-semibold mb-2">Product</h4>
           <ul className="space-y-1">
@@ -115,7 +106,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* NEWS */}
+        {}
         <div>
           <h4 className="font-semibold mb-2">News Center</h4>
           <ul className="space-y-1">
@@ -125,7 +116,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* HUMAN */}
+        {}
         <div>
           <h4 className="font-semibold mb-2">Human</h4>
           <ul className="space-y-1">
@@ -134,7 +125,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* QR CODE */}
+        {}
         <div className="flex flex-col items-center col-span-2 sm:col-span-1">
           <div className="w-28 h-28 bg-white rounded overflow-hidden flex items-center justify-center">
             <img
@@ -147,10 +138,7 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* ==========================
-          BOTTOM BAR
-          - Wraps nicely on mobile
-      =========================== */}
+      {}
       <div className="bg-orange-500 text-white text-center text-xs sm:text-sm py-3 px-4">
         ©2025 Shantou Meili Technology Co. | Guangdong ICP No. 2021128626-1 |
         Powered by www.300.cn Shantou | SEO Tags | Business License

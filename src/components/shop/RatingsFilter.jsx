@@ -21,7 +21,7 @@ const RatingFilter = ({ selected = [], onSelectionChange }) => {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {/* Dropdown Header */}
+      {}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
@@ -37,7 +37,7 @@ const RatingFilter = ({ selected = [], onSelectionChange }) => {
         )}
       </button>
 
-      {/* Dropdown Content */}
+      {}
       {isOpen && (
         <div className="border-t p-3">
           <div className="space-y-2">
@@ -88,13 +88,13 @@ const RatingFilter = ({ selected = [], onSelectionChange }) => {
                     </div>
                   </div>
                   
-                  {/* No count badge - removed hardcoded counts per UI cleanup */}
+                  {}
                 </button>
               );
             })}
           </div>
           
-          {/* Clear Button */}
+          {}
           {selected.length > 0 && (
             <button
               onClick={() => onSelectionChange([])}

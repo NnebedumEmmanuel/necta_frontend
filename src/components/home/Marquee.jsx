@@ -31,10 +31,8 @@ const SpeakerMarquee = () => {
     "Studio-Quality Sound"
   ];
 
-  // Duplicate for seamless loop
   const loopTexts = [...speakerTexts, ...speakerTexts, ...speakerTexts];
 
-  // Function to handle marquee animation
   const startMarquee = () => {
     const container = marqueeRef.current;
     if (!container) return;
@@ -42,15 +40,12 @@ const SpeakerMarquee = () => {
     const content = container.children[0];
     const contentWidth = content.offsetWidth;
     
-    // Calculate how much to duplicate based on screen width
     let position = 0;
-    const speed = 0.5; // Slower speed for smoother animation
+    const speed = 0.5;
 
     const animate = () => {
       position -= speed;
       
-      // When the first duplicate has moved completely out of view
-      // reset to the beginning of the second duplicate
       if (Math.abs(position) >= contentWidth / 3) {
         position = 0;
       }
@@ -63,12 +58,10 @@ const SpeakerMarquee = () => {
   };
 
   useEffect(() => {
-    // Wait a bit for DOM to render
     const timeoutId = setTimeout(() => {
       startMarquee();
     }, 100);
     
-    // Cleanup animation on unmount
     return () => {
       clearTimeout(timeoutId);
       if (animationRef.current) {

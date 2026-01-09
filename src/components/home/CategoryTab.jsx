@@ -36,7 +36,7 @@ export default function CategoryTab() {
             whileHover="hover"
             initial="initial"
           >
-            {/* Main Image */}
+            {}
             <img
               src={image.src}
               alt={image.title || `Gallery image ${index + 1}`}
@@ -44,14 +44,14 @@ export default function CategoryTab() {
               loading="lazy"
             />
 
-            {/* Hover Overlay */}
+            {}
             <div className="absolute inset-0 bg-zinc-950/0 group-hover:bg-zinc-950/80 transition-all duration-500 flex flex-col justify-center items-center p-4 text-center">
-              {/* Animated background elements */}
+              {}
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1)_0%,rgba(0,0,0,0)_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               </div>
 
-              {/* Text Content with staggered animation */}
+              {}
               <motion.p
                 variants={{
                   initial: { y: 20, opacity: 0 },

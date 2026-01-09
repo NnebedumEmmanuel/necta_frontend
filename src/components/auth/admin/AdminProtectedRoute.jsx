@@ -1,11 +1,9 @@
-// components/auth/AdminProtectedRoute.jsx
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
 const AdminProtectedRoute = ({ children }) => {
   const { session, user, loading } = useAuth();
 
-  // Wait for auth to hydrate before making decisions
   if (loading) return null;
 
   if (!session) return <Navigate to="/login" replace />;

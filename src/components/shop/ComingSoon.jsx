@@ -1,4 +1,3 @@
-// ComingSoon.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -17,7 +16,6 @@ const ComingSoon = ({ category }) => {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
-  // Get icon based on category
   const getCategoryIcon = () => {
     switch(category.toLowerCase()) {
       case "smartphones": 
@@ -41,7 +39,6 @@ const ComingSoon = ({ category }) => {
     }
   };
 
-  // Get category description
   const getCategoryDescription = () => {
     switch(category.toLowerCase()) {
       case "smartphones": 
@@ -77,7 +74,7 @@ const ComingSoon = ({ category }) => {
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-white py-8 px-4">
       <div className="w-full">
-        {/* Back Button */}
+        {}
         <div className="max-w-7xl mx-auto px-4">
           <Link 
             to="/shop" 
@@ -88,11 +85,11 @@ const ComingSoon = ({ category }) => {
           </Link>
         </div>
 
-        {/* Main Content - Full Width */}
+        {}
         <div className="w-full">
           <div className="bg-white">
             <div className="max-w-7xl mx-auto px-4 py-12 md:py-16 lg:py-20">
-              {/* Icon & Badge */}
+              {}
               <div className="flex flex-col items-center mb-8">
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-50 mb-6">
                   {getCategoryIcon()}
@@ -102,7 +99,7 @@ const ComingSoon = ({ category }) => {
                 </span>
               </div>
 
-              {/* Title */}
+              {}
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 text-center">
                 {category} 
                 <span className="block text-gray-600 mt-2">
@@ -110,12 +107,12 @@ const ComingSoon = ({ category }) => {
                 </span>
               </h1>
 
-              {/* Description */}
+              {}
               <p className="text-lg text-gray-600 mb-12 text-center max-w-3xl mx-auto leading-relaxed">
                 {getCategoryDescription()}
               </p>
 
-              {/* Features Preview */}
+              {}
               <div className="mb-12">
                 <h3 className="text-lg font-semibold text-gray-700 mb-6 text-center">What to Expect</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -148,7 +145,7 @@ const ComingSoon = ({ category }) => {
                 </div>
               </div>
 
-              {/* Newsletter Subscription */}
+              {}
               <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl p-8 max-w-4xl mx-auto">
                 <div className="flex items-center justify-center gap-3 mb-6">
                   <Bell size={24} className="text-gray-600" />
@@ -191,7 +188,7 @@ const ComingSoon = ({ category }) => {
                 </p>
               </div>
 
-              {/* Explore Other Categories */}
+              {}
               <div className="mt-12 pt-8 border-t border-gray-200 max-w-7xl mx-auto">
                 <h4 className="text-lg font-semibold text-gray-700 mb-6 text-center">
                   Currently Available

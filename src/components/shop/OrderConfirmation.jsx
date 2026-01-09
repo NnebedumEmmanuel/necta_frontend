@@ -1,4 +1,3 @@
-// src/pages/OrderConfirmation.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getOrders } from "../../../services/authServices";
@@ -52,14 +51,14 @@ const OrderConfirmation = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Header */}
+          {}
           <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-8 text-white text-center">
             <CheckCircle className="w-20 h-20 mx-auto mb-4" />
             <h1 className="text-3xl font-bold mb-2">Order Confirmed!</h1>
             <p className="text-green-100">Thank you for your purchase</p>
           </div>
 
-          {/* Order Details */}
+          {}
           <div className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div>
@@ -105,7 +104,7 @@ const OrderConfirmation = () => {
               </div>
             </div>
 
-            {/* Order Items */}
+            {}
             <h2 className="text-xl font-bold text-gray-900 mb-4">Order Items</h2>
             <div className="border rounded-lg overflow-hidden">
               <div className="bg-gray-50 px-6 py-3 grid grid-cols-4 text-sm font-semibold text-gray-700">
@@ -132,7 +131,7 @@ const OrderConfirmation = () => {
               </div>
             </div>
 
-            {/* Order Summary */}
+            {}
             <div className="mt-8 p-6 bg-gray-50 rounded-lg">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-gray-900">Order Summary</h3>
@@ -161,7 +160,7 @@ const OrderConfirmation = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {}
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <Link
                 to="/dashboard"

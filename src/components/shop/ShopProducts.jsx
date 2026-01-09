@@ -24,7 +24,7 @@ const ProductCard = ({
 
   return (
     <div className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
-      {/* Product Image Container */}
+      {}
       <div className="relative h-64 bg-gray-50 overflow-hidden">
         <img
           src={image}
@@ -32,7 +32,7 @@ const ProductCard = ({
           className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
         />
         
-        {/* Badges */}
+        {}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {isNew && (
             <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
@@ -46,7 +46,7 @@ const ProductCard = ({
           )}
         </div>
 
-        {/* Wishlist Button */}
+        {}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -67,21 +67,21 @@ const ProductCard = ({
         </button>
       </div>
 
-      {/* Product Info */}
+      {}
       <div className="p-5">
-        {/* Brand */}
+        {}
         <div className="mb-2">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
             {brand}
           </span>
         </div>
 
-        {/* Product Name */}
+        {}
         <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 h-14">
           {name}
         </h3>
 
-        {/* Rating */}
+        {}
         <div className="flex items-center mb-4">
           <StarRating 
             rating={rating} 
@@ -93,7 +93,7 @@ const ProductCard = ({
           </span>
         </div>
 
-        {/* Price Section */}
+        {}
         <div className="mb-5">
           <div className="flex items-center gap-3">
             <span className="text-2xl font-bold text-gray-900">
@@ -110,7 +110,7 @@ const ProductCard = ({
           </div>
         </div>
 
-        {/* Add to Cart Button */}
+        {}
         <button
           onClick={() => {
             onAddToCart?.(product);

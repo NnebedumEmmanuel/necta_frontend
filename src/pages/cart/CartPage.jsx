@@ -1,4 +1,3 @@
-// src/pages/CartPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
@@ -7,7 +6,6 @@ import { useCart } from "../../../context/useCartHook";
 const CartPage = () => {
   const { state, removeFromCart, updateQuantity, clearCart, getTotalPrice, getTotalItems } = useCart();
 
-  // Show empty cart message
   if (state.items.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -31,14 +29,14 @@ const CartPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Breadcrumb */}
+      {}
       <nav className="flex text-sm text-gray-500 mb-8">
         <Link to="/" className="hover:text-black transition-colors">Home</Link>
         <span className="mx-2">/</span>
         <span className="text-black font-semibold">Shopping Cart</span>
       </nav>
 
-      {/* Page Title */}
+      {}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Shopping Cart</h1>
         <p className="text-gray-600">
@@ -47,10 +45,10 @@ const CartPage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Cart Items */}
+        {}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {/* Cart Header */}
+            {}
             <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b">
               <div className="col-span-6"><span className="text-sm font-semibold text-gray-900">PRODUCT</span></div>
               <div className="col-span-2 text-center"><span className="text-sm font-semibold text-gray-900">QUANTITY</span></div>
@@ -58,12 +56,9 @@ const CartPage = () => {
               <div className="col-span-2 text-center"><span className="text-sm font-semibold text-gray-900">ACTION</span></div>
             </div>
 
-            {/* Cart Items List */}
+            {}
             <div className="divide-y">
               {state.items.map((item) => {
-                // Price in items sometimes arrives as a number or a string with
-                // currency symbols. Normalize safely to a Number for
-                // calculations and fall back to 0 when missing/invalid.
                 const rawPrice = item?.price;
                 const price = typeof rawPrice === 'number'
                   ? Number(rawPrice || 0)
@@ -73,7 +68,7 @@ const CartPage = () => {
                 return (
                   <div key={item.id} className="p-4 md:p-6">
                     <div className="flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center">
-                      {/* Product Info */}
+                      {}
                       <div className="flex items-start gap-4 md:col-span-6">
                         <img src={item.image} alt={item.name} className="w-20 h-20 object-contain rounded-lg bg-gray-50"/>
                         <div className="flex-1">
@@ -87,7 +82,7 @@ const CartPage = () => {
                         </div>
                       </div>
 
-                      {/* Quantity Controls */}
+                      {}
                       <div className="flex justify-between items-center md:col-span-2 mt-4 md:mt-0">
                         <span className="md:hidden font-medium text-gray-600">Qty:</span>
                         <div className="flex items-center border border-gray-300 rounded-lg">
@@ -108,13 +103,13 @@ const CartPage = () => {
                         </div>
                       </div>
 
-                      {/* Total */}
+                      {}
                       <div className="flex flex-col md:col-span-2 mt-4 md:mt-0">
                         <span className="md:hidden font-medium text-gray-600 mb-2">Total:</span>
                         <span className="font-bold text-lg text-gray-900 ml-4">₦{total.toFixed(2)}</span>
                       </div>
 
-                      {/* Remove Item */}
+                      {}
                       <div className="flex justify-end md:col-span-2 md:justify-center mt-4 md:mt-0">
                         <button
                           onClick={() => removeFromCart(item.id)}
@@ -130,7 +125,7 @@ const CartPage = () => {
               })}
             </div>
 
-            {/* Cart Actions */}
+            {}
             <div className="p-6 border-t bg-gray-50 flex flex-col sm:flex-row justify-between gap-4">
               <Link
                 to="/shop"
@@ -148,7 +143,7 @@ const CartPage = () => {
           </div>
         </div>
 
-        {/* Order Summary */}
+        {}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
@@ -174,7 +169,7 @@ const CartPage = () => {
               </div>
             </div>
 
-            {/* Fixed Checkout Button */}
+            {}
             <Link
               to="/checkout"
               className="w-full block bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold text-center"
@@ -186,7 +181,7 @@ const CartPage = () => {
               Free shipping on orders over ₦50,000
             </p>
 
-            {/* Promo Code */}
+            {}
             <div className="mt-8 pt-6 border-t">
               <h3 className="font-semibold text-gray-900 mb-3">Promo Code</h3>
               <div className="flex gap-2">

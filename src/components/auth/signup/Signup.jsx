@@ -1,4 +1,3 @@
-// components/auth/signup/Signup.jsx - Updated
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -33,7 +32,6 @@ const SignUp = () => {
       ...formData, 
       [name]: type === "checkbox" ? checked : value 
     });
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
     }
@@ -106,8 +104,6 @@ const SignUp = () => {
       const res = await signUp({ email, password })
       if (res?.error) throw res.error
 
-      // After sign up, Supabase auth will create the user; our DB trigger
-      // inserts a matching profile row with default role 'user'. Fetch role.
       const userId = res?.data?.user?.id || (await supabase.auth.getUser()).data?.user?.id
       let role = null
       if (userId) {
@@ -126,7 +122,6 @@ const SignUp = () => {
     }
   };
 
-  // Country options (simplified for demo)
   const countries = [
     "United States", "Canada", "United Kingdom", "Australia", 
     "Germany", "France", "Japan", "India", "Brazil", "Mexico"
@@ -135,7 +130,7 @@ const SignUp = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl flex bg-white rounded-2xl shadow-2xl overflow-hidden">
-        {/* Left Side - Visual */}
+        {}
         <div className="hidden lg:flex flex-col justify-between w-1/2 bg-gradient-to-br from-slate-800 to-slate-900 p-10 text-white">
           <div>
             <h1 className="text-4xl font-bold">
@@ -195,7 +190,7 @@ const SignUp = () => {
           </div>
         </div>
 
-        {/* Right Side - Form */}
+        {}
         <div className="w-full lg:w-1/2 p-8 md:p-10">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-slate-800">

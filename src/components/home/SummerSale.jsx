@@ -1,7 +1,6 @@
 import React from 'react';
 
 const BigSummerSale = ({
-  // Desktop images (leave exactly as before)
   topFarLeftImage = '/images/px16.png',
   topLeftImage = '/images/px10.png',
   topRightImage = '/images/px11.png',
@@ -9,7 +8,6 @@ const BigSummerSale = ({
   bottomLeftImage = '/images/px9.png',
   bottomRightImage = '/images/px12.png',
 
-  // Mobile images (you can set your own)
   mobileTopFarLeftImage = '/images/px16.png',
   mobileTopLeftImage = '/images/px10.png',
   mobileTopRightImage = '/images/px11.png',
@@ -17,16 +15,15 @@ const BigSummerSale = ({
   mobileBottomRightImage = '/images/px12.png',
 }) => {
   const handleShopNow = () => {
-    // Simple navigation without Next.js router
     window.location.href = '/shop?category=all';
   };
 
   return (
     <div className="relative w-full h-96 bg-gradient-to-br from-[#231306] to-[#000000] overflow-hidden">
 
-      {/* ---------- DESKTOP (unchanged) ---------- */}
+      {}
       <div className="hidden md:block">
-        {/* New Top Far Left Image */}
+        {}
         <div className="absolute top-2 -left-10 z-10">
           <div className="w-full h-full transform overflow-hidden">
             {topFarLeftImage && (
@@ -41,7 +38,7 @@ const BigSummerSale = ({
           </div>
         </div>
 
-        {/* Top Left Image */}
+        {}
         <div className="absolute top-15 left-20">
           {topLeftImage && (
             <img
@@ -54,7 +51,7 @@ const BigSummerSale = ({
           )}
         </div>
 
-        {/* Top Right Image */}
+        {}
         <div className="absolute top-2 -right-10">
           {topRightImage && (
             <img
@@ -66,7 +63,7 @@ const BigSummerSale = ({
             />
           )}
         </div>
-        {/* Top Right Image2 */}
+        {}
         <div className="absolute top-15 right-20">
           {topRightImage && (
             <img
@@ -79,7 +76,7 @@ const BigSummerSale = ({
           )}
         </div>
 
-        {/* Bottom Left Image */}
+        {}
         <div className="absolute -bottom-5 left-0">
           {bottomLeftImage && (
             <img
@@ -92,7 +89,7 @@ const BigSummerSale = ({
           )}
         </div>
 
-        {/* Bottom Right Image */}
+        {}
         <div className="absolute -bottom-5 -right-1">
           {bottomRightImage && (
             <img
@@ -106,7 +103,7 @@ const BigSummerSale = ({
         </div>
       </div>
 
-      {/* ---------- MOBILE (5 absolute images) ---------- */}
+      {}
       <div className="relative md:hidden w-full h-full">
         <div className="absolute top-0 left-0">
           <img
@@ -155,7 +152,7 @@ const BigSummerSale = ({
         </div>
       </div>
 
-      {/* ---------- CENTER TEXT CONTENT ---------- */}
+      {}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center text-white px-4">
      <h1 className="text-5xl md:text-7xl font-normal mb-6 tracking-tight">
   Big Seasonal <span class='font-bold'>Sale</span>

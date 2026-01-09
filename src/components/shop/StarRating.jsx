@@ -66,19 +66,19 @@ const StarRating = ({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {/* Stars */}
+      {}
       <div className="flex items-center">
         {[...Array(totalStars)].map((_, i) => renderStar(i + 1))}
       </div>
       
-      {/* Rating Number */}
+      {}
       {showNumber && (
         <span className="text-sm font-semibold text-gray-900">
           {rating.toFixed(1)}
         </span>
       )}
       
-      {/* Review Count */}
+      {}
       {showReviews && reviewCount > 0 && (
         <span className="text-sm text-gray-500">
           ({reviewCount.toLocaleString()})

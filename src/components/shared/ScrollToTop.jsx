@@ -4,7 +4,6 @@ import { ArrowUp } from "lucide-react";
 const ScrollToTopButton = () => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Show button when user scrolls down
   useEffect(() => {
     const toggleVisibility = () => {
       if (window.scrollY > 300) {
@@ -18,7 +17,6 @@ const ScrollToTopButton = () => {
     return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
 
-  // Scroll smoothly to top
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

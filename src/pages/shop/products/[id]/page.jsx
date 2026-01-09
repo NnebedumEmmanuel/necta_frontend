@@ -19,7 +19,6 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State for product customization (initialized after product loads)
   const [activeImage, setActiveImage] = useState("");
   const [activeColor, setActiveColor] = useState(null);
   const [activeStorage, setActiveStorage] = useState("128GB");
@@ -35,7 +34,6 @@ export default function ProductPage() {
         if (!mounted) return;
         const p = data?.product || data || null;
         if (!p) {
-          // Not found by UUID — navigate to 404
           navigate('/404');
           return;
         }
@@ -62,7 +60,6 @@ export default function ProductPage() {
 
   const isInWishlist = wishlistState?.items?.some(item => item.id === product.id) || false;
 
-  // Color mapping
   const colorClasses = {
     "#000000": "bg-black",
     "#7d4ac7": "bg-purple-600",
@@ -85,7 +82,6 @@ export default function ProductPage() {
     "#1e1e1e": "bg-gray-900",
   };
 
-  // Camera extraction functions
   const extractMainCamera = (specs) => {
     if (specs?.mainCamera) return specs.mainCamera;
     
@@ -151,7 +147,6 @@ export default function ProductPage() {
     return "12 MP";
   };
 
-  // Extract dynamic specs with fallbacks
   const screenSize = product.specs?.screenSize || 
                     product.specs?.screen?.match(/([\d.]+)[”"]/)?.[1] + "”" || 
                     "6.7”";
@@ -196,7 +191,6 @@ export default function ProductPage() {
     }
   };
 
-  // Function to determine product category
   const getProductCategory = () => {
     const name = product.name.toLowerCase();
     
@@ -219,7 +213,6 @@ export default function ProductPage() {
     }
   };
 
-  // Function to determine product brand
   const getProductBrand = () => {
     const name = product.name.toLowerCase();
     
@@ -242,7 +235,7 @@ export default function ProductPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
-      {/* Breadcrumb Navigation */}
+      {}
       <nav className="hidden sm:flex text-gray-500 text-sm mb-6 sm:mb-8">
         <Link to="/" className="hover:text-black transition-colors cursor-pointer">
           Home
@@ -263,7 +256,7 @@ export default function ProductPage() {
         <span className="text-black font-semibold">{product.name}</span>
       </nav>
 
-      {/* Mobile Breadcrumb */}
+      {}
       <nav className="sm:hidden flex text-gray-500 text-xs mb-4 overflow-x-auto pb-2">
         <Link to="/" className="hover:text-black transition-colors cursor-pointer whitespace-nowrap">
           Home
@@ -283,9 +276,9 @@ export default function ProductPage() {
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12">
-        {/* Left Section - Images */}
+        {}
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-          {/* Thumbnail Gallery */}
+          {}
           {product.gallery && (
             <div className="flex sm:flex-col gap-3 sm:gap-4 order-2 sm:order-1 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0">
               {product.gallery.map((img, i) => (
@@ -305,7 +298,7 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* Main Image */}
+          {}
           <div className="relative w-full h-80 sm:h-[400px] lg:h-[600px] rounded-2xl border overflow-hidden order-1 sm:order-2">
             <img
               src={activeImage}
@@ -315,13 +308,13 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Right Section - Info */}
+        {}
         <div className="flex flex-col justify-between">
           <div>
-            {/* Product Title */}
+            {}
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3">{product.name}</h1>
 
-            {/* Pricing */}
+            {}
             <div className="flex items-center gap-4 mb-4 sm:mb-6">
               <p className="text-2xl sm:text-3xl font-semibold text-black">{product.price}</p>
               {product.oldPrice && (
@@ -331,7 +324,7 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* Color Selector */}
+            {}
             {product.colors && product.colors.length > 0 && (
               <div className="mb-4 sm:mb-5">
                 <div className="flex items-center gap-3 sm:gap-4">
@@ -350,7 +343,7 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* Storage Selector */}
+            {}
             <div className="flex gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto pb-2 sm:pb-0">
               {product.storage && product.storage.length > 0 ? (
                 product.storage.map((size) => (
@@ -375,7 +368,7 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* Dynamic Specs Grid */}
+            {}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
               <SpecItem icon="/icons/screensize.png" label="Screen size" value={screenSize} />
               <SpecItem icon="/icons/cpu.png" label="CPU" value={cpu} />
@@ -385,13 +378,13 @@ export default function ProductPage() {
               <SpecItem icon="/icons/battery.png" label="Capacity" value={capacity} />
             </div>
 
-            {/* Description */}
+            {}
             <p className="text-gray-600 leading-relaxed text-sm max-w-lg mb-4 sm:mb-6">
               {product.description || "Enhanced capabilities thanks to an enlarged display of 6.7 inches and work without recharging throughout the day, incredible photos in weak, and in bright light using the new system with two cameras more..."}
             </p>
           </div>
 
-          {/* Buttons */}
+          {}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8">
             <button
               onClick={handleToggleWishlist}
@@ -408,7 +401,7 @@ export default function ProductPage() {
             </button>
           </div>
 
-          {/* Delivery Info */}
+          {}
           <div className="grid grid-cols-3 gap-4 sm:flex sm:items-center sm:gap-20 mt-6 sm:mt-10 text-[#717171] border-t pt-4 sm:pt-6">
             <DeliveryInfo icon="/icons/Delivery.png" label="Free Delivery" detail="1-2 day" />
             <DeliveryInfo icon="/icons/Stock.png" label="In Stock" detail="Today" />
@@ -417,19 +410,18 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Details Section */}
+      {}
       <DetailsSection product={product} />
 
-      {/* Reviews Section */}
+      {}
       <ReviewsSection product={product} />
       
-      {/* Related Products */}
+      {}
       <RelatedProducts />
     </div>
   );
 }
 
-// Helper components
 function SpecItem({ icon, label, value }) {
   return (
     <div className="bg-gray-100 rounded-lg p-3 sm:p-4">

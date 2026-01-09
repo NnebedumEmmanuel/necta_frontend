@@ -12,7 +12,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
 
-  // single place to update session/user from Supabase
   const applySession = (nextSession) => {
     setSession(nextSession ?? null);
     setUser(nextSession?.user ?? null);
@@ -22,28 +21,23 @@ export const AuthProvider = ({ children }) => {
     mountedRef.current = true;
     setLoading(true);
 
-    // initial getSession
     supabase.auth.getSession()
       .then(({ data }) => {
         if (!mountedRef.current) return;
         applySession(data?.session ?? null);
-        // Attach token to API client when session is present (for Authorization header)
         if (data?.session?.access_token) attachAuthToken(data.session.access_token)
       })
       .catch(() => {
-        /* ignore */
+        
       })
       .finally(() => {
         if (mountedRef.current) setLoading(false);
       });
 
-    // single onAuthStateChange listener
     const { data } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mountedRef.current) return;
       applySession(newSession ?? null);
-      // update API token when auth state changes
       if (newSession?.access_token) attachAuthToken(newSession.access_token)
-      // ensure loading is cleared when an auth event occurs
       setLoading(false);
     });
 
@@ -51,24 +45,20 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       mountedRef.current = false;
-      // unsubscribe if possible
       if (subscription?.unsubscribe) {
         try {
           subscription.unsubscribe();
         } catch (err) {
-          // ignore
         }
       } else if (typeof subscription === 'function') {
         try {
           subscription();
         } catch (err) {
-          // ignore
         }
       }
     };
   }, []);
 
-  // Auth helpers should not directly mutate session/user — rely on Supabase events
   const signUp = async ({ email, password, options = {} }) => {
     setLoading(true);
     try {

@@ -21,8 +21,6 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
     { id: "products", label: "Products", icon: <Package size={20} /> },
     { id: "orders", label: "Orders", icon: <ShoppingCart size={20} /> },
     { id: "users", label: "Users", icon: <Users size={20} /> },
-    // { id: "analytics", label: "Analytics", icon: <BarChart size={20} /> },
-    // { id: "reports", label: "Reports", icon: <FileText size={20} /> },
   ];
 
   const LinkItem = ({ id, label, icon }) => (
@@ -46,7 +44,7 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
     <aside className={`bg-gradient-to-b from-slate-900 via-slate-800 to-orange-950 text-gray-200 h-screen sticky top-0 overflow-y-auto flex flex-col shadow-2xl transition-all duration-300 ${
       isCollapsed ? 'w-20' : 'w-64'
     }`}>
-      {/* Header */}
+      {}
       <div className="p-6 border-b border-purple-700">
         <div className="flex items-center justify-between">
           {!isCollapsed ? (
@@ -80,7 +78,7 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
         </div>
       </div>
 
-      {/* Close button for mobile */}
+      {}
       {onClose && (
         <div className="p-4 border-b border-purple-700 lg:hidden">
           <button 
@@ -93,7 +91,7 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
         </div>
       )}
 
-      {/* Navigation Menu */}
+      {}
       <nav className="flex-1 p-4 space-y-1">
         {menuItems.map((item) => (
           <LinkItem 
@@ -105,7 +103,7 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
         ))}
       </nav>
 
-      {/* Footer Section */}
+      {}
       <div className="p-4 border-t border-purple-700 space-y-2">
         <button 
           className="flex items-center gap-3 p-3 w-full rounded-xl text-gray-200 hover:bg-white/10 hover:text-white transition font-medium"
@@ -124,11 +122,11 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
         </button>
       </div>
 
-      {/* Collapsed Tooltip Container */}
+      {}
       {isCollapsed && (
         <div className="fixed left-20 top-0 h-screen pointer-events-none z-50">
           <div className="relative h-full">
-            {/* Tooltip will appear on hover of parent sidebar items */}
+            {}
           </div>
         </div>
       )}

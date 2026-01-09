@@ -1,4 +1,3 @@
-// services/authServices.js - wired to backend via central API client
 import { api, attachAuthToken, handleApiError } from '../src/lib/api';
 
 const TOKEN_KEY = 'auth_token';
@@ -7,16 +6,13 @@ const IS_ADMIN_KEY = 'is_admin';
 
 class AuthService {
   constructor() {
-    // Ensure any persisted token is attached to the shared axios instance on init
     try {
       const token = this.getToken();
       if (token) attachAuthToken(token);
     } catch (e) {
-      // ignore in non-browser envs
     }
   }
 
-  // ============ USER AUTHENTICATION ============
   
   async login(identifier, password) {
     try {
@@ -31,7 +27,6 @@ class AuthService {
       }
       throw new Error('No token received from backend');
     } catch (error) {
-      // fallback to email flow if backend returned a 400 and identifier is an email
       if (error.response?.status === 400 && identifier.includes('@')) {
         return await this.loginWithEmail(identifier, password);
       }
@@ -41,7 +36,6 @@ class AuthService {
 
   async loginWithEmail(email, password) {
     try {
-      // Rely on backend to support email login; send the same payload and let server resolve
       const res = await api.post('/auth/login', { identifier: email, password });
       const data = res.data;
       if (data?.access_token || data?.token) {
@@ -123,7 +117,6 @@ class AuthService {
         }
       });
 
-      // Attempt login after signup
       const loginResponse = await this.login(userData.email, userData.password);
       return loginResponse;
     } catch (error) {
@@ -131,7 +124,6 @@ class AuthService {
     }
   }
 
-  // ============ ADMIN AUTHENTICATION ============
   
   async adminLogin(email, password) {
     const adminCredentials = {
@@ -199,7 +191,6 @@ class AuthService {
     this.logout();
   }
 
-  // ============ COMMON METHODS ============
   
   logout() {
     localStorage.removeItem(TOKEN_KEY);
@@ -208,8 +199,7 @@ class AuthService {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(IS_ADMIN_KEY);
-    // Ensure axios instance does not keep Authorization header
-    try { attachAuthToken(null); } catch (e) { /* ignore */ }
+    try { attachAuthToken(null); } catch (e) {  }
   }
 
   setToken(token, rememberMe = false) {
@@ -218,8 +208,7 @@ class AuthService {
     } else {
       sessionStorage.setItem(TOKEN_KEY, token);
     }
-    // Attach token to shared API client
-    try { attachAuthToken(token); } catch (e) { /* ignore */ }
+    try { attachAuthToken(token); } catch (e) {  }
   }
 
   getToken() {
@@ -279,13 +268,10 @@ class AuthService {
   }
 }
 
-// Create singleton instance
 const authServiceInstance = new AuthService();
 
-// ============ EXPORTS ============
 export default authServiceInstance;
 
-// Named exports for convenience
 export const authService = authServiceInstance;
 export const getAdminInfo = () => authServiceInstance.getAdminInfo();
 export const logoutAdmin = () => authServiceInstance.logoutAdmin();

@@ -3,7 +3,6 @@ export default function ReviewSection({ product }) {
 
   const { reviews } = product;
 
-  // Function to render star ratings
   const renderStars = (rating) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -21,7 +20,6 @@ export default function ReviewSection({ product }) {
     return stars;
   };
 
-  // Calculate rating percentages
   const getRatingPercentage = (count) => {
     const total = reviews.totalReviews;
     return total > 0 ? Math.round((count / total) * 100) : 0;
@@ -32,7 +30,7 @@ export default function ReviewSection({ product }) {
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="text-xl font-semibold mb-6">Customer Reviews</h2>
 
-        {/* Overall Rating Summary */}
+        {}
         <div className="flex flex-col md:flex-row gap-8 mb-8 pb-8 border-b border-gray-200">
           <div className="flex flex-col items-center md:items-start">
             <div className="text-4xl font-bold text-gray-900 mb-2">
@@ -46,7 +44,7 @@ export default function ReviewSection({ product }) {
             </div>
           </div>
 
-          {/* Rating Breakdown */}
+          {}
           <div className="flex-1">
             {Object.entries(reviews.ratingCounts).map(([rating, count]) => {
                 const percentage = getRatingPercentage(count);
@@ -69,7 +67,7 @@ export default function ReviewSection({ product }) {
               })}
           </div>
 
-          {/* Write Review Button */}
+          {}
           <div className="flex items-center">
             <button className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 px-6 rounded-lg transition duration-200">
               Write a Review
@@ -77,7 +75,7 @@ export default function ReviewSection({ product }) {
           </div>
         </div>
 
-        {/* Individual Reviews */}
+        {}
         <div className="space-y-8">
           {reviews.reviews && reviews.reviews.length > 0 ? (
             reviews.reviews.map((review) => (
@@ -108,7 +106,7 @@ export default function ReviewSection({ product }) {
                 </div>
                 <p className="text-gray-700 leading-relaxed">{review.comment}</p>
                 
-                {/* Helpful Actions */}
+                {}
                 <div className="flex items-center gap-4 mt-4">
                   <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +133,7 @@ export default function ReviewSection({ product }) {
           )}
         </div>
 
-        {/* View More Reviews Button */}
+        {}
         {reviews.reviews && reviews.reviews.length > 0 && (
           <div className="flex justify-center mt-8">
             <button className="text-gray-700 border border-gray-300 rounded-lg px-6 py-2.5 hover:bg-gray-50 flex items-center gap-2 transition duration-200 font-medium">

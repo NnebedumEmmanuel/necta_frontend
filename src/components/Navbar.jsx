@@ -6,19 +6,16 @@ const Navbar = () => {
   const { session, signOut } = useAuth();
 
   const handleLogout = async () => {
-    // Sign the user out via the auth context. Do not perform navigation here.
-    // ProtectedRoute and route-level logic should handle post-signout behavior.
     try {
       await signOut();
     } catch (err) {
-      // ignore errors here; UI components may show toasts if desired
       console.error('Logout error', err);
     }
   };
 
   return (
     <nav className="navbar">
-      {/* ...other nav items... */}
+      {}
       <div className="user-section">
         {!session ? (
           <Link to="/login" className="flex items-center px-3 py-1 rounded bg-orange-500 text-white hover:bg-orange-600" aria-label="Sign In">

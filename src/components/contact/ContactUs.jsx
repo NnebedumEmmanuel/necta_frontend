@@ -1,4 +1,3 @@
-// ContactUs.jsx
 import React, { useState } from 'react';
 import { 
   Phone, 
@@ -42,7 +41,6 @@ const ContactUs = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-    // Add your form submission logic here
   };
 
   return (
@@ -50,7 +48,7 @@ const ContactUs = () => {
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* Left Column - Contact Info */}
+          {}
           <div className="bg-white rounded-xl shadow-md p-6 lg:p-8">
             <h2 className="text-xl font-bold text-gray-800 mb-6">Contact Information</h2>
             <div className="space-y-6">
@@ -67,7 +65,7 @@ const ContactUs = () => {
               ))}
             </div>
 
-            {/* Chat Prompt */}
+            {}
             <div className="mt-8 p-4 bg-orange-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
@@ -84,7 +82,7 @@ const ContactUs = () => {
             </div>
           </div>
 
-          {/* Right Column - Contact Form */}
+          {}
           <div className="bg-white rounded-xl shadow-md p-6 lg:p-8">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Contact Us</h1>
             <p className="text-gray-600 text-sm mb-6">Any question or remarks? Just write us a message!</p>
@@ -183,7 +181,7 @@ const ContactUs = () => {
           </div>
         </div>
 
-        {/* Footer */}
+        {}
         <div className="mt-8 text-center text-gray-500 text-sm">
           <p>© 2025 Your Company. All rights reserved.</p>
         </div>

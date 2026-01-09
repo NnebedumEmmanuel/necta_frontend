@@ -1,4 +1,3 @@
-// OurServices.jsx
 import React from 'react';
 import { Truck, Headphones, Tag, RefreshCw } from 'lucide-react';
 
@@ -44,7 +43,7 @@ const OurServices = () => {
               key={index}
               className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 transform hover:-translate-y-2"
             >
-              {/* Icon Container - Blue to Orange Gradient */}
+              {}
               <div className="inline-flex items-center justify-center p-4 mb-6 rounded-xl bg-gradient-to-br from-blue-500 to-orange-500 text-white group-hover:from-blue-600 group-hover:to-orange-600 transition-all duration-300">
                 {service.icon}
               </div>
@@ -57,13 +56,13 @@ const OurServices = () => {
                 {service.description}
               </p>
 
-              {/* Decorative line with gradient */}
+              {}
               <div className="mt-6 h-1 w-16 bg-gradient-to-r from-blue-500 to-orange-500 rounded-full"></div>
             </div>
           ))}
         </div>
 
-        {/* Additional decorative elements */}
+        {}
         <div className="mt-16 text-center">
           <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-orange-500 rounded-full text-white font-semibold hover:from-blue-600 hover:to-orange-600 transition-all duration-300 cursor-pointer">
             <span>Explore All Services</span>

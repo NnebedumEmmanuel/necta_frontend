@@ -1,4 +1,3 @@
-// ShopPage.jsx
 import React, { useState, Suspense, useMemo, useCallback } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useWishlist } from "../../../context/WishlistContext";
@@ -15,7 +14,6 @@ import ProductGrid from "../../components/home/home-products/ProductsGrid";
 import { Link } from "react-router-dom";
 import ComingSoon from "../../components/shop/ComingSoon";
 
-// Helper functions
 function getBrandFromName(name) {
   const brands = ["T&G", "JBL", "Sony", "Bose", "Amazon", "Yamaha", "Klipsch", "Anker", "Samsung"];
   const foundBrand = brands.find(brand => name.toLowerCase().includes(brand.toLowerCase()));
@@ -40,8 +38,6 @@ function getRandomRating() {
   return 3;
 }
 
-// Products will be fetched from backend — see useEffect inside ShopContent
-
 function ShopContent() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -51,25 +47,19 @@ function ShopContent() {
   const searchQuery = searchParams.get("search") || "";
   const itemsPerPage = 8;
 
-  // Products loaded from backend
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productsError, setProductsError] = useState(null);
 
-  // Sync collection query param from URL into filters so clicking a collection Link
-  // in `CollectionsDropdown` updates the filters state and triggers a fetch.
   const collectionParam = searchParams.get('collection') || null;
 
   const { state: wishlistState, toggleWishlist } = useWishlist();
 
-  // State for mobile filter visibility
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
-  // Add state for sort option
   const [sortOption, setSortOption] = useState("rating");
 
-  // Initialize unified filters state (single source of truth)
   const [filters, setFilters] = useState({
     minPrice: 0,
     maxPrice: 200000,
@@ -79,14 +69,12 @@ function ShopContent() {
     collections: [],
   });
 
-  // Keep filters.collections in sync with the collection URL param (if present)
   React.useEffect(() => {
     if (collectionParam) {
       setFilters(prev => ({ ...prev, collections: [collectionParam] }));
     }
   }, [collectionParam]);
 
-  // Derive available brands/categories from loaded products
   const availableBrands = useMemo(() => {
     const set = new Set();
     (products || []).forEach(p => { if (p.brand) set.add(p.brand); });
@@ -99,7 +87,6 @@ function ShopContent() {
     return Array.from(set).sort();
   }, [products]);
 
-  // Update individual filter functions
   const updateFilter = useCallback((key, value) => {
     setFilters(prev => ({
       ...prev,
@@ -107,7 +94,6 @@ function ShopContent() {
     }));
   }, []);
 
-  // Helpful derived active filter count for the mobile filters button
   const activeFilterCount = (
     (filters.brands?.length || 0) +
     (filters.categories?.length || 0) +
@@ -116,17 +102,14 @@ function ShopContent() {
     ((filters.minPrice || 0) > 0 || (filters.maxPrice || 0) < 200000 ? 1 : 0)
   );
 
-  // Handle sort change
   const handleSortChange = (e) => {
     setSortOption(e.target.value);
   };
 
-  // Get base products based on category
   const getBaseProducts = useCallback(() => {
     const lower = category.toLowerCase();
     switch (lower) {
       case "newarrivals":
-        // try filter by tag; fallback to first items
         return products.filter(p => (p.tags || []).includes('new')) || products.slice(0, itemsPerPage);
       case "bestsellers":
         return products.filter(p => (p.tags || []).includes('bestseller')) || products.slice(itemsPerPage, itemsPerPage*2);
@@ -137,7 +120,6 @@ function ShopContent() {
       case "inverter":
       case "tv":
       case "headphones":
-        // Return empty array for coming soon categories
         return [];
       case "speakers":
         return products.filter(p => p.category === "speakers");
@@ -147,7 +129,6 @@ function ShopContent() {
     }
   }, [category]);
 
-  // Get display category name
   const getDisplayCategory = () => {
     switch (category.toLowerCase()) {
       case "newarrivals": return "New Arrivals";
@@ -163,13 +144,11 @@ function ShopContent() {
     }
   };
 
-  // Check if category is coming soon
   const isComingSoonCategory = () => {
     const comingSoonCategories = ["phones", "solar", "inverter", "tv", "headphones"];
     return comingSoonCategories.includes(category.toLowerCase());
   };
 
-  // Handle search from mobile
   const [mobileSearchQuery, setMobileSearchQuery] = useState(searchQuery);
 
   const handleSearch = (e) => {
@@ -189,12 +168,8 @@ function ShopContent() {
     }
   };
 
-  // Filter products based on all selected filters and category
-  // After moving filtering to the server, the `products` state already represents
-  // the filtered & paginated results. We still perform client-side sorting.
   const filteredProducts = useMemo(() => products || [], [products]);
 
-  // Sort products client-side (API returns page items already)
   const sortedAndFilteredProducts = useMemo(() => {
     const items = [...(filteredProducts || [])];
 
@@ -228,7 +203,6 @@ function ShopContent() {
     navigate(`${location.pathname}?${params.toString()}`);
   };
 
-  // Fetch products whenever filters or page changes
   React.useEffect(() => {
     let mounted = true;
     setLoadingProducts(true);
@@ -236,7 +210,6 @@ function ShopContent() {
 
     const fetchProducts = async () => {
       try {
-  // Filters changed; fetch will run. (Debug logs removed for production)
         const filterPayload = {
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
@@ -247,8 +220,6 @@ function ShopContent() {
           q: searchQuery,
         };
 
-  // TEMP LOG: dump filter payload to help verify UI selections -> server query
-  // Remove this log after you've verified the values in your browser console.
   console.log("FETCH PARAMS", filterPayload);
 
   const skip = (page - 1) * itemsPerPage;
@@ -280,7 +251,6 @@ function ShopContent() {
     fetchProducts();
 
     return () => { mounted = false };
-  // required dependency set per request: ensure effect runs when any filter changes
   }, [filters.minPrice, filters.maxPrice, filters.rating, filters.brands, filters.categories, filters.collections, page, searchQuery, category]);
 
   const hasActiveFilters =
@@ -292,15 +262,12 @@ function ShopContent() {
     (filters.collections && filters.collections.length > 0) ||
     Boolean(searchQuery && searchQuery.length > 0);
 
-  // Pagination
-  // total comes from server; products are already paginated
   const totalProducts = total;
   const totalPages = Math.ceil((totalProducts || 0) / itemsPerPage);
-  const paginatedProducts = sortedAndFilteredProducts; // already one page from server
+  const paginatedProducts = sortedAndFilteredProducts;
 
   const displayCategory = getDisplayCategory();
 
-  // If coming soon category, show coming soon page
   if (loadingProducts) {
     return <ShopLoading />;
   }
@@ -313,14 +280,13 @@ function ShopContent() {
     );
   }
 
-  // If coming soon category, show coming soon page
   if (isComingSoonCategory()) {
     return <ComingSoon category={getDisplayCategory()} />;
   }
 
   return (
     <section className="max-w-7xl mx-auto px-4 py-8">
-      {/* Breadcrumb Navigation */}
+      {}
       <div className="mb-6">
         <nav className="flex text-sm text-gray-500 mb-4">
           <Link to="/" className="hover:text-black transition-colors">
@@ -342,9 +308,9 @@ function ShopContent() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Sidebar - Filters and Categories (Desktop) */}
+        {}
         <div className="hidden lg:block lg:w-64">
-             {/* Filters */}
+             {}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg text-gray-900 mb-4">Filters</h3>
               
@@ -372,15 +338,15 @@ function ShopContent() {
               />
             </div>
           <div className="sticky top-6 mt-4 space-y-6">
-            {/* Shop By Category */}
+            {}
             <ShopByCategoryDropdown />
             
-            {/* Collections */}
+            {}
             <CollectionsDropdown />
             
          
             
-            {/* Clear All Filters Button */}
+            {}
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
@@ -392,9 +358,9 @@ function ShopContent() {
           </div>
         </div>
 
-        {/* Main content - Right side */}
+        {}
         <div className="flex-1">
-          {/* Page Header */}
+          {}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               {searchQuery ? (
@@ -420,7 +386,7 @@ function ShopContent() {
             )}
           </div>
 
-          {/* Mobile Search Bar */}
+          {}
           <div className="lg:hidden mb-6">
             <form onSubmit={handleSearch} className="relative">
               <input
@@ -442,7 +408,7 @@ function ShopContent() {
             </form>
           </div>
 
-          {/* Mobile Filter and Sort Row */}
+          {}
           <div className="lg:hidden mb-6 flex items-center gap-3">
             <button
               onClick={() => setIsFilterOpen(true)}
@@ -469,7 +435,7 @@ function ShopContent() {
             </select>
           </div>
 
-          {/* Desktop Controls */}
+          {}
           <div className="hidden lg:flex items-center justify-between mb-6">
             <p className="text-gray-600">
               Showing {paginatedProducts.length} of {totalProducts} products
@@ -499,7 +465,7 @@ function ShopContent() {
             </div>
           </div>
 
-          {/* Product Grid */}
+          {}
           {sortedAndFilteredProducts.length > 0 ? (
             <>
               <ProductGrid 
@@ -508,7 +474,7 @@ function ShopContent() {
                 toggleWishlist={toggleWishlist}
               />
 
-              {/* Pagination */}
+              {}
               {totalPages > 1 && (
                 <div className="mt-8">
                   <Pagination totalPages={totalPages} currentPage={page} />
@@ -541,7 +507,7 @@ function ShopContent() {
         </div>
       </div>
 
-      {/* Mobile Filter Sidebar */}
+      {}
       {isFilterOpen && (
         <>
           <div 
@@ -560,7 +526,7 @@ function ShopContent() {
                 </svg>
               </button>
             </div>
-               {/* Filters */}
+               {}
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-gray-900">Rating</h3>
                 <RatingFilter 
@@ -594,19 +560,19 @@ function ShopContent() {
                 />
               </div>
             <div className="space-y-6">
-              {/* Shop By Category */}
+              {}
               <div className="border-b pb-4">
                 <ShopByCategoryDropdown />
               </div>
               
-              {/* Collections */}
+              {}
               <div className="border-b pb-4">
                 <CollectionsDropdown />
               </div>
               
            
               
-              {/* Action Buttons */}
+              {}
               <div className="space-y-3 pt-4">
                 {hasActiveFilters && (
                   <button
@@ -637,14 +603,14 @@ function ShopLoading() {
     <div className="max-w-7xl mx-auto px-4 py-10">
       <div className="animate-pulse">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar skeleton */}
+          {}
           <div className="lg:col-span-1 space-y-6">
             <div className="h-32 bg-gray-200 rounded"></div>
             <div className="h-32 bg-gray-200 rounded"></div>
             <div className="h-32 bg-gray-200 rounded"></div>
           </div>
           
-          {/* Main content skeleton */}
+          {}
           <div className="lg:col-span-3">
             <div className="flex justify-between mb-6">
               <div className="h-6 bg-gray-200 rounded w-32"></div>

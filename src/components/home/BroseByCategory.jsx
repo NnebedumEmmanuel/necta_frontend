@@ -1,4 +1,3 @@
-// BrowseByCategory.jsx
 import React from "react";
 import { 
   Smartphone,
@@ -48,7 +47,7 @@ export default function BrowseByCategory() {
     <section className="py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
 
-        {/* Section Header */}
+        {}
         <div className="flex items-center justify-between mb-12">
           <h2 className="text-3xl font-bold">Browse By Category</h2>
 
@@ -93,7 +92,7 @@ export default function BrowseByCategory() {
           </div>
         </div>
 
-        {/* Categories Grid */}
+        {}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {categories.map((category, index) => (
             <Link

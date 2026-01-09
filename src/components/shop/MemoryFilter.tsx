@@ -45,7 +45,7 @@ export default function MemoryFilter({ selected = [], onSelectionChange }: Memor
 
   return (
     <div className="border rounded-lg p-4 w-full max-w-sm">
-      {/* Header */}
+      {}
       <button
         onClick={toggleOpen}
         className="flex justify-between items-center w-full font-semibold text-lg focus:outline-none"
@@ -54,13 +54,13 @@ export default function MemoryFilter({ selected = [], onSelectionChange }: Memor
         {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
       </button>
 
-      {/* Collapsible content */}
+      {}
       <div
         className={`transition-all duration-300 ease-in-out overflow-hidden ${
           isOpen ? "max-h-[300px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"
         }`}
       >
-        {/* Search bar */}
+        {}
         <div className="relative mb-3">
           <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
           <input
@@ -74,7 +74,7 @@ export default function MemoryFilter({ selected = [], onSelectionChange }: Memor
           />
         </div>
 
-        {/* Options with visible scrollbar */}
+        {}
         <div
           className="space-y-2 max-h-60 overflow-y-auto pr-4 mr-[-6px]
             [&::-webkit-scrollbar]:w-2

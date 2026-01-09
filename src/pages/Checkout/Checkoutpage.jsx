@@ -1,4 +1,3 @@
-// src/pages/CheckoutPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../../context/useCartHook";
@@ -23,7 +22,6 @@ const CheckoutPage = () => {
     state: "",
   });
 
-  // Calculate subtotal from cart
   const subtotal = state.items.reduce((acc, item) => {
     const rawPrice = item?.price;
     const price = typeof rawPrice === 'number' ? Number(rawPrice || 0) : parseFloat(String(rawPrice || '').replace(/[^\d.-]/g, '')) || 0;
@@ -32,7 +30,6 @@ const CheckoutPage = () => {
 
   const deliveryFee = 1500;
 
-  // Place order handler
   const handlePlaceOrder = async () => {
     if (!formData.fullName || !formData.email || !formData.phone || !formData.address) {
       showToast("Please fill in all required fields", "error");
@@ -41,8 +38,6 @@ const CheckoutPage = () => {
 
     if (!user?.id) {
       showToast("Please log in to place an order.", "error");
-      // Optionally redirect to login page
-      // navigate('/login');
       return;
     }
 
@@ -77,25 +72,19 @@ const CheckoutPage = () => {
     };
 
     try {
-      // Save the order
       const res = await orderService.addOrder(orderData);
 
-      // res is the backend response object (e.g. { success: true, data: { order, paystack } })
       if (res?.success) {
         const order = res.data?.order;
         const paystack = res.data?.paystack;
 
-        // If Paystack returned an authorization_url, redirect the browser to complete payment
         const authorizationUrl = paystack?.authorization_url || paystack?.data?.authorization_url;
         if (authorizationUrl) {
-          // Original behavior: clear cart before redirecting to payment and then
-          // navigate to Paystack. Restoring that flow during revert.
           clearCart();
           window.location.href = authorizationUrl;
           return;
         }
 
-        // Fallback: if no paystack URL, but order exists, navigate to confirmation
         if (order?.id) {
           clearCart();
           showToast(`Order placed successfully! Order Number: ${order.id}`, "success");
@@ -116,7 +105,7 @@ const CheckoutPage = () => {
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT: Shipping Form */}
+        {}
         <div className="lg:col-span-2">
           <CheckoutForm
             formData={formData}
@@ -124,7 +113,7 @@ const CheckoutPage = () => {
           />
         </div>
 
-        {/* RIGHT: Order Summary */}
+        {}
         <OrderSummary
           cartItems={state.items}
           subtotal={subtotal}

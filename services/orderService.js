@@ -1,4 +1,3 @@
-// services/orderService.js — use central API client
 import { api, handleApiError } from '../src/lib/api';
 
 class OrderService {
@@ -22,8 +21,6 @@ class OrderService {
 
   async addOrder(orderData) {
     try {
-      // The backend expects a payload like: { items: [...], email: 'user@example.com', shipping_address: '...' }
-      // Translate the frontend orderData shape into the backend shape.
       const payload = {
         items: (orderData.items || []).map(i => ({
           id: i.id,
@@ -51,11 +48,6 @@ class OrderService {
 
   async getUserOrders(userId, token = null) {
     try {
-      // Prefer authenticated endpoint that returns orders for the current
-      // session: `/api/me/orders`. If a token is provided we'll include it
-      // in the Authorization header for the request. Keep backward
-      // compatibility by accepting userId but prefer the authenticated
-      // endpoint.
   const url = '/me/orders';
       const config = {};
       if (token) {

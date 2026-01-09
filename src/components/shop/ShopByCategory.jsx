@@ -1,10 +1,9 @@
-// ShopByCategoryDropdown.jsx
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Grid } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const ShopByCategoryDropdown = () => {
-  const [isOpen, setIsOpen] = useState(true); // Open by default
+  const [isOpen, setIsOpen] = useState(true);
 
   const categories = [
     { name: "Speakers", href: "/shop?category=speakers", available: true },
@@ -17,7 +16,7 @@ const ShopByCategoryDropdown = () => {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {/* Dropdown Header */}
+      {}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
@@ -33,7 +32,7 @@ const ShopByCategoryDropdown = () => {
         )}
       </button>
 
-      {/* Dropdown Content */}
+      {}
       {isOpen && (
         <div className="border-t">
           <div className="p-2 max-h-60 overflow-y-auto">

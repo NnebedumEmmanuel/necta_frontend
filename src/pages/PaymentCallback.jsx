@@ -22,19 +22,15 @@ const PaymentCallback = () => {
           return
         }
 
-        // Call backend verify endpoint which will check Paystack and mark order as paid
         const res = await api.get('/paystack/verify', { params: { reference } })
         const body = res?.data ?? res
 
         if (body?.success && body?.orderId) {
-          // Successful verification: clear cart and navigate to order confirmation
-          try { clearCart() } catch (e) { /* non-fatal */ }
+          try { clearCart() } catch (e) {  }
           navigate(`/order-confirmation/${body.orderId}`)
           return
         }
 
-        // If not successful, surface a useful message. If Paystack returned a status
-        // the backend will include it so we can show appropriate guidance.
         const status = body?.status || 'unknown'
         showToast?.(`Payment verification: ${status}`, { type: 'error' })
         navigate('/')

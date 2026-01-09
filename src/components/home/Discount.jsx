@@ -51,7 +51,7 @@ const DiscountPage = () => {
 
   const handleViewDetails = (productId, e) => {
     e.stopPropagation();
-    window.scrollTo(0, 0); // Scroll to top before navigation
+    window.scrollTo(0, 0);
     navigate(`/shop/products/${productId}`);
   };
 
@@ -65,14 +65,14 @@ const DiscountPage = () => {
   };
 
   const handleProductClick = (product) => {
-    window.scrollTo(0, 0); // Scroll to top before navigation
+    window.scrollTo(0, 0);
     navigate(`/shop/products/${product.id}`);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-16">
       
-      {/* Header */}
+      {}
       <div className="mb-8 pl-1">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
           Premium Audio Collection
@@ -80,7 +80,7 @@ const DiscountPage = () => {
         <p className="text-gray-600">Limited time offers on trending speakers</p>
       </div>
 
-      {/* Grid */}
+      {}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {speakers.map((speaker) => (
           <div
@@ -93,7 +93,7 @@ const DiscountPage = () => {
               flex flex-col h-full cursor-pointer
             "
           >
-            {/* Badge */}
+            {}
             {speaker.badge && (
               <div className="absolute top-3 left-3 z-20">
                 <span className="
@@ -107,7 +107,7 @@ const DiscountPage = () => {
               </div>
             )}
 
-            {/* Discount Ribbon */}
+            {}
             {speaker.discountedPrice && (
               <div className="absolute top-3 right-3 z-20">
                 <div className="
@@ -121,7 +121,7 @@ const DiscountPage = () => {
               </div>
             )}
 
-            {/* Image */}
+            {}
             <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 h-56">
               <img
                 src={speaker.image}
@@ -134,7 +134,7 @@ const DiscountPage = () => {
               />
             </div>
 
-            {/* Content */}
+            {}
             <div className="p-5 flex-grow flex flex-col">
               <h3 className="
                 text-lg font-bold text-gray-900 mb-3 
@@ -143,7 +143,7 @@ const DiscountPage = () => {
                 {speaker.name}
               </h3>
 
-              {/* Price Section */}
+              {}
               <div className="mb-3 transition-opacity duration-300 group-hover:opacity-0">
                 {speaker.discountedPrice ? (
                   <div className="flex items-center gap-3">
@@ -161,7 +161,7 @@ const DiscountPage = () => {
                 )}
               </div>
 
-              {/* Rating */}
+              {}
               <div className="flex items-center gap-2 mb-4 transition-opacity duration-300 group-hover:opacity-0">
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
@@ -175,7 +175,7 @@ const DiscountPage = () => {
                 </span>
               </div>
 
-              {/* Buttons */}
+              {}
               <div className="
                 mt-auto opacity-0 group-hover:opacity-100 
                 translate-y-3 group-hover:translate-y-0
