@@ -54,14 +54,23 @@ const UserDashboard = () => {
       if (!mounted) return;
       setLoading(true);
       try {
-  const token = session?.access_token || session?.accessToken || null;
-  const ordersData = await orderService.getUserOrders(userId, token);
-        const sortedOrders = (ordersData?.carts || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        const ordersWithStatus = sortedOrders.map(order => ({
-          ...order,
-          status: order.status || 'pending'
-        }));
-        if (mounted) setOrders(ordersWithStatus);
+        const token = session?.access_token || session?.accessToken || null;
+        const ordersData = await orderService.getUserOrders(userId, token);
+        // API returns { success: true, data: [...] } — normalize to an array
+        const list = ordersData?.data ?? ordersData?.data?.data ?? ordersData ?? []
+        const normalized = (Array.isArray(list) ? list : []).map((order) => ({
+          id: order.id || order.orderNumber || order.order_number || null,
+          orderNumber: order.orderNumber || order.order_number || order.id || null,
+          createdAt: order.created_at || order.createdAt || order.createdAt || order.created_at || null,
+          status: order.payment_status || order.status || 'pending',
+          items: order.items || [],
+          total: order.total || order.subtotal || 0,
+          shippingAddress: order.shipping_address || order.shippingAddress || '',
+          // keep original payload for any other fields
+          __raw: order,
+        }))
+        const sortedOrders = normalized.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        if (mounted) setOrders(sortedOrders);
 
         const savedWishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
         if (mounted) setWishlist(savedWishlist);
