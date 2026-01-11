@@ -19,17 +19,22 @@ import {
   DollarSign
 } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
-import { orderService } from "../../../services/orderService";
+// orderService not used here; use api directly for per-tab requests
+import { useWishlist } from '../../../context/WishlistContext';
+import { api, attachAuthToken, handleApiError } from '../../../src/lib/api';
 import { useToast } from "../../context/useToastHook";
 
 const UserDashboard = () => {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileForm, setProfileForm] = useState({});
   const [activeTab, setActiveTab] = useState("overview");
   const { showToast } = useToast();
   const { user: authUser, session, loading: authLoading, signOut } = useAuth();
+  const { state: wishlistState } = useWishlist();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,54 +53,153 @@ const UserDashboard = () => {
     }
   }, [location.search, showToast]);
 
+  // Fetch per-tab: each tab independently requests the server for its data.
   useEffect(() => {
     let mounted = true;
-    const loadUserData = async (userId) => {
-      if (!mounted) return;
+
+    async function fetchOrdersForTab(page = 1, limit = 100) {
       setLoading(true);
       try {
         const token = session?.access_token || session?.accessToken || null;
-        const ordersData = await orderService.getUserOrders(userId, token);
-        // API returns { success: true, data: [...] } — normalize to an array
-        const list = ordersData?.data ?? ordersData?.data?.data ?? ordersData ?? []
+        attachAuthToken(token);
+        const url = `/me/orders?page=${page}&limit=${limit}`;
+        const res = await api.get(url);
+        const list = res?.data?.data ?? res?.data ?? [];
         const normalized = (Array.isArray(list) ? list : []).map((order) => ({
-          id: order.id || order.orderNumber || order.order_number || null,
-          orderNumber: order.orderNumber || order.order_number || order.id || null,
-          createdAt: order.created_at || order.createdAt || order.createdAt || order.created_at || null,
+          id: order.id || order.order_number || order.orderNumber || null,
+          orderNumber: order.order_number || order.orderNumber || order.id || null,
+          createdAt: order.created_at || order.createdAt || null,
           status: order.payment_status || order.status || 'pending',
           items: order.items || [],
           total: order.total || order.subtotal || 0,
           shippingAddress: order.shipping_address || order.shippingAddress || '',
-          // keep original payload for any other fields
           __raw: order,
-        }))
-        const sortedOrders = normalized.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-        if (mounted) setOrders(sortedOrders);
-
-        const savedWishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-        if (mounted) setWishlist(savedWishlist);
+        }));
+        const sorted = normalized.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        if (!mounted) return;
+        setOrders(sorted);
       } catch (err) {
-        console.error("Failed to load user data:", err);
-        if (mounted) showToast("Failed to load user data", "error");
+        console.error('Failed to fetch orders for tab:', err);
+        showToast?.('Failed to load orders', 'error');
       } finally {
         if (mounted) setLoading(false);
       }
-    };
+    }
 
-    if (!authLoading && authUser) {
-      setUser(authUser);
-      loadUserData(authUser.id);
-    } else if (!authLoading && !authUser) {
+    async function fetchWishlistForTab() {
+      setLoading(true);
+      try {
+        const token = session?.access_token || session?.accessToken || null;
+        attachAuthToken(token);
+        const res = await api.get('/me/wishlist');
+        const rows = res?.data?.data ?? res?.data ?? [];
+        const normalized = (rows || []).map((r) => {
+          const product = r.product || null;
+          return {
+            id: product?.id ?? r.product_id,
+            name: product?.name || product?.title || product?.product_name || '',
+            price: product?.price || product?.variants?.[0]?.price || product?.amount || 0,
+            image: product?.image || product?.images?.[0] || product?.thumbnail || '',
+            _wishlistId: r.id,
+            __raw: r,
+          };
+        });
+        if (!mounted) return;
+        setWishlist(normalized);
+      } catch (err) {
+        console.error('Failed to fetch wishlist:', err);
+        showToast?.('Failed to load wishlist', 'error');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    async function fetchProfileForTab() {
+      setLoading(true);
+      try {
+        const token = session?.access_token || session?.accessToken || null;
+        attachAuthToken(token);
+        const res = await api.get('/me');
+        const payload = res?.data?.data ?? res?.data ?? {};
+        if (!mounted) return;
+        setUser(payload.user || authUser || null);
+        // profile may be null if profile row missing
+        const prof = payload.profile || null;
+        setProfile(prof);
+        setProfileForm({
+          first_name: prof?.first_name ?? prof?.firstName ?? payload.user?.user_metadata?.first_name ?? payload.user?.firstName ?? '',
+          last_name: prof?.last_name ?? prof?.lastName ?? payload.user?.user_metadata?.last_name ?? payload.user?.lastName ?? '',
+          email: payload.user?.email ?? prof?.email ?? '',
+          phone: prof?.phone ?? prof?.phone_number ?? payload.user?.phone ?? ''
+        });
+      } catch (err) {
+        console.error('Failed to fetch profile:', handleApiError(err));
+        showToast?.('Failed to load profile', 'error');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    async function fetchSecurityForTab() {
+      setLoading(true);
+      try {
+        const token = session?.access_token || session?.accessToken || null;
+        attachAuthToken(token);
+        const res = await api.get('/me');
+        const payload = res?.data?.data ?? res?.data ?? {};
+        if (!mounted) return;
+        setUser(payload.user || authUser || null);
+      } catch (err) {
+        console.error('Failed to fetch security info:', err);
+        showToast?.('Failed to load security info', 'error');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    if (!authLoading && !authUser) {
       setUser(null);
       setOrders([]);
       setWishlist([]);
       setLoading(false);
+      return () => { mounted = false };
     }
 
-    return () => {
-      mounted = false;
-    };
-  }, [authLoading, authUser, showToast]);
+    // Decide which tab to fetch
+    if (!authLoading && authUser) {
+      setUser(authUser);
+      if (activeTab === 'orders') fetchOrdersForTab(1, 100);
+      else if (activeTab === 'wishlist') fetchWishlistForTab();
+      else if (activeTab === 'profile') fetchProfileForTab();
+      else if (activeTab === 'security') fetchSecurityForTab();
+      else if (activeTab === 'overview') {
+        // load a small recent orders set for overview
+        fetchOrdersForTab(1, 5);
+        // wishlist count: prefer wishlist context if available
+        if (wishlistState?.items && wishlistState.items.length > 0) setWishlist(wishlistState.items);
+      }
+    }
+
+    return () => { mounted = false };
+  }, [activeTab, authLoading, authUser, session, showToast, wishlistState]);
+
+  async function saveProfile() {
+    setLoading(true);
+    try {
+      const token = session?.access_token || session?.accessToken || null;
+      attachAuthToken(token);
+      const payload = { ...profileForm };
+      const res = await api.patch('/me', payload);
+      const data = res?.data?.data ?? res?.data ?? res;
+      setProfile(data?.[0] || data || profile);
+      showToast?.('Profile updated', 'success');
+    } catch (err) {
+      console.error('Failed to save profile:', handleApiError(err));
+      showToast?.('Failed to save profile', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleLogout = async () => {
     try {
@@ -520,7 +624,8 @@ const UserDashboard = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                       <input
                         type="text"
-                        defaultValue={user?.firstName || ''}
+                        value={profileForm.first_name ?? ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                       />
                     </div>
@@ -528,7 +633,8 @@ const UserDashboard = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
                       <input
                         type="text"
-                        defaultValue={user?.lastName || ''}
+                        value={profileForm.last_name ?? ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                       />
                     </div>
@@ -536,7 +642,8 @@ const UserDashboard = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                       <input
                         type="email"
-                        defaultValue={user?.email || ''}
+                        value={profileForm.email ?? ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                       />
                     </div>
@@ -544,7 +651,8 @@ const UserDashboard = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                       <input
                         type="tel"
-                        defaultValue={user?.phone || ''}
+                        value={profileForm.phone ?? ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                       />
                     </div>
@@ -552,8 +660,8 @@ const UserDashboard = () => {
                 </div>
                 
                 <div className="pt-6 border-t border-gray-200">
-                  <button className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold">
-                    Save Changes
+                  <button onClick={saveProfile} disabled={loading} className="px-6 py-3 bg-orange-600 disabled:opacity-50 text-white rounded-lg hover:bg-orange-700 font-semibold">
+                    {loading ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </div>
@@ -565,36 +673,25 @@ const UserDashboard = () => {
               <h2 className="text-xl font-bold text-gray-800 mb-6">Security Settings</h2>
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Change Password</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Authentication Info</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                      <input
-                        type="password"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                      />
+                      <p className="text-xs text-gray-500">Email</p>
+                      <p className="font-medium mt-1">{user?.email || '—'}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                      <input
-                        type="password"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                      />
+                      <p className="text-xs text-gray-500">Created At</p>
+                      <p className="font-medium mt-1">{user?.created_at ? new Date(user.created_at).toLocaleString() : '—'}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                      <input
-                        type="password"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                      />
+                      <p className="text-xs text-gray-500">Last Sign In</p>
+                      <p className="font-medium mt-1">{user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">User ID</p>
+                      <p className="font-mono text-sm mt-1 text-gray-800">{user?.id || '—'}</p>
                     </div>
                   </div>
-                </div>
-                
-                <div className="pt-6 border-t border-gray-200">
-                  <button className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold">
-                    Update Password
-                  </button>
                 </div>
               </div>
             </div>
