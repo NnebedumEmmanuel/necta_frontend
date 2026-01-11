@@ -24,19 +24,46 @@ const PaymentCallback = () => {
           return
         }
 
+        // Call verify once and handle result safely
         const res = await api.get('/paystack/verify', { params: { reference } })
         const body = res?.data ?? res
 
         if (body?.success) {
           try { clearCart() } catch (e) { }
           showToast?.('Payment verified. Redirecting to orders...', { type: 'success' })
-          // Explicit, deterministic navigation to dashboard orders tab
           navigate('/dashboard?tab=orders&paystatus=success')
           return
         }
 
-        const status = body?.status || body?.error || 'unknown'
-        setError(`Payment verification failed: ${status}`)
+  // If verify failed, poll the user's orders for up to 10s to see if webhook finalized the payment.
+        const poll = async () => {
+          const maxAttempts = 10
+          const delayMs = 1000
+          for (let i = 0; i < maxAttempts; i++) {
+            try {
+              const ordersRes = await api.get('/me/orders')
+              const orders = ordersRes?.data?.data || []
+              const matched = orders.find(o => o.paystack_reference === reference || o.payment_status === 'paid' || (o.status && o.status === 'paid'))
+              if (matched) {
+                try { clearCart() } catch (e) { }
+                showToast?.('Payment confirmed. Redirecting to orders...', { type: 'success' })
+                navigate('/dashboard?tab=orders&paystatus=success')
+                return true
+              }
+            } catch (pollErr) {
+              // ignore and retry until timeout
+            }
+            // wait
+            await new Promise(r => setTimeout(r, delayMs))
+          }
+          return false
+        }
+
+        const polled = await poll()
+        if (!polled) {
+          const status = body?.status || body?.error || 'unknown'
+          setError(`Payment verification failed: ${status}`)
+        }
       } catch (err) {
         console.error('Payment callback verify error', err)
         setError('Failed to verify payment. If you were charged, contact support.')
