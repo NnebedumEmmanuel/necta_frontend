@@ -113,38 +113,88 @@ export const WishlistProvider = ({ children }) => {
     if (!productId) return false;
     const isInWishlist = state.items.find(item => item.id === productId);
 
-    if (isInWishlist) {
-      dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: productId });
+    // Helper to resolve wishlist row id for a given product for this user
+    const resolveWishlistRowId = async () => {
       try {
-        await api.delete(`/me/wishlist/${productId}`);
+        const checkRes = await api.get(`/me/wishlist/check?product_id=${encodeURIComponent(productId)}`);
+        const body = checkRes?.data ?? {};
+        if (body?.success && body?.present && body?.id) return body.id;
+      } catch (e) {
+        // ignore - will return undefined
+      }
+      return undefined;
+    };
+
+    if (isInWishlist) {
+      // Remove flow: prefer using stored wishlist row id (_wishlistId) when available
+      const rowId = isInWishlist._wishlistId || isInWishlist._wishlistRow?.id;
+      let resolvedId = rowId;
+      if (!resolvedId) {
+        resolvedId = await resolveWishlistRowId();
+      }
+
+      // Optimistically remove from UI
+      dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: productId });
+
+      if (!resolvedId) {
+        // nothing to delete on server; treat as removed
+        try { setTimeout(() => window.dispatchEvent(new CustomEvent('necta_wishlist_updated')), 0) } catch {}
+        return true;
+      }
+
+      try {
+        const res = await api.delete(`/me/wishlist/${resolvedId}`);
+        // success — ensure UI consistency (server returns deleted row(s))
+        try { setTimeout(() => window.dispatchEvent(new CustomEvent('necta_wishlist_updated')), 0) } catch {}
         return true;
       } catch (err) {
-        const status = err?.response?.status;
+        // revert optimistic removal
         dispatch({ type: 'ADD_TO_WISHLIST', payload: { id: productId } });
+        const status = err?.response?.status;
         if (status === 401) showToast?.('Please sign in to remove wishlist items', { type: 'error' });
         else showToast?.('Failed to remove from wishlist', { type: 'error' });
         console.error('toggleWishlist.remove error', handleApiError(err));
         return false;
       }
     } else {
+      // Add flow: prevent duplicates locally
+      if (state.items.some(i => i.id === productId)) return true;
+
+      // Optimistically add a lightweight placeholder so UI updates immediately
       dispatch({ type: 'ADD_TO_WISHLIST', payload: { id: productId } });
+
       try {
-        const res = await api.post('/me/wishlist', { product_id: productId });
-        if (res?.data?.product) {
-          dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: productId });
-          dispatch({ type: 'ADD_TO_WISHLIST', payload: res.data.product });
-        }
+        const postRes = await api.post('/me/wishlist', { product_id: productId });
+        const data = postRes?.data ?? {};
+
+        // server returned inserted wishlist rows in data
+        const inserted = Array.isArray(data) ? data[0] : (data?.data ? (Array.isArray(data.data) ? data.data[0] : data.data) : null);
+
+        // attempt to hydrate product details from productService if available
+        let productPayload = null;
+        try {
+          productPayload = await productService.getProduct(productId).catch(() => null);
+        } catch (ignore) {}
+
+        const finalPayload = productPayload ? { ...productPayload, _wishlistId: inserted?.id ?? null, _wishlistRow: inserted ?? null } : { id: productId, _wishlistId: inserted?.id ?? null, _wishlistRow: inserted ?? null };
+
+        // replace placeholder with hydrated payload
+        dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: productId });
+        dispatch({ type: 'ADD_TO_WISHLIST', payload: finalPayload });
+        try { setTimeout(() => window.dispatchEvent(new CustomEvent('necta_wishlist_updated')), 0) } catch {}
         return true;
       } catch (err) {
-        const status = err?.response?.status;
+        // revert optimistic add
         dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: productId });
+        const status = err?.response?.status;
         if (status === 409) {
           showToast?.('Item already in wishlist', { type: 'info' });
+          // fetch the existing wishlist row and product to sync state
           try {
-            const prod = await productService.getProduct(productId);
-            if (prod) dispatch({ type: 'ADD_TO_WISHLIST', payload: prod });
-          } catch (e) {
-          }
+            const id = await resolveWishlistRowId();
+            const prod = await productService.getProduct(productId).catch(() => null);
+            if (id) dispatch({ type: 'ADD_TO_WISHLIST', payload: { ...(prod || { id: productId }), _wishlistId: id } });
+          } catch (e) {}
           return true;
         }
         if (status === 401) showToast?.('Please sign in to add wishlist items', { type: 'error' });
