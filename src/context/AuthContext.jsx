@@ -2,20 +2,56 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import supabase from '../lib/supabaseClient';
-import { attachAuthToken } from '../lib/api';
+import { attachAuthToken, api } from '../lib/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
+  const [me, setMe] = useState(null); // application-level user (id, email, role)
   const [loading, setLoading] = useState(true);
+  const [meLoading, setMeLoading] = useState(false);
   const mountedRef = useRef(true);
 
   const applySession = (nextSession) => {
     setSession(nextSession ?? null);
     setUser(nextSession?.user ?? null);
   };
+
+  // Fetch application-level user info from backend (/api/me) whenever a session is available
+  useEffect(() => {
+    let mounted = true;
+    const fetchMe = async () => {
+      if (!session) {
+        setMe(null);
+        setMeLoading(false);
+        return;
+      }
+
+      setMeLoading(true);
+      try {
+        if (session?.access_token) attachAuthToken(session.access_token);
+        const res = await api.get('/me');
+        const payload = res?.data?.data ?? null;
+        if (!mounted) return;
+        setMe(payload);
+      } catch (err) {
+        // Non-fatal: if backend call fails, keep me as null
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch /api/me', err);
+        if (mounted) setMe(null);
+      } finally {
+        if (mounted) setMeLoading(false);
+      }
+    };
+
+    fetchMe();
+
+    return () => {
+      mounted = false;
+    };
+  }, [session]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -98,6 +134,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     session,
     user,
+    me,
+    meLoading,
     loading,
     signUp,
     signIn,

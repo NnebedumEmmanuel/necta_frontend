@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ShoppingCart, 
   Package, 
@@ -15,30 +16,35 @@ import {
   ChevronRight
 } from "lucide-react";
 
-export default function AdminSidebar({ activePage, setActivePage, isCollapsed, onClose, onToggleCollapse }) {
+export default function AdminSidebar({ isCollapsed, onClose, onToggleCollapse, user }) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
     { id: "products", label: "Products", icon: <Package size={20} /> },
     { id: "orders", label: "Orders", icon: <ShoppingCart size={20} /> },
     { id: "users", label: "Users", icon: <Users size={20} /> },
   ];
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const LinkItem = ({ id, label, icon }) => (
-    <button
-      onClick={() => {
-        setActivePage(id);
-        if (onClose) onClose();
-      }}
-      className={`flex items-center gap-3 p-3 w-full rounded-xl transition text-left font-medium
-        ${activePage === id 
-          ? "bg-gradient-to-r from-slate-600 to-orange-800 text-white shadow-lg" 
-          : "text-gray-200 hover:bg-white/10 hover:text-white"}`}
-      title={isCollapsed ? label : ""}
-    >
-      <span className="flex-shrink-0">{icon}</span>
-      {!isCollapsed && <span className="truncate">{label}</span>}
-    </button>
-  );
+  const LinkItem = ({ id, label, icon, path }) => {
+    const isActive = location.pathname === path || location.pathname === '/admin' && path === '/admin';
+    return (
+      <button
+        onClick={() => {
+          navigate(path);
+          if (onClose) onClose();
+        }}
+        className={`flex items-center gap-3 p-3 w-full rounded-xl transition text-left font-medium
+          ${isActive 
+            ? "bg-gradient-to-r from-slate-600 to-orange-800 text-white shadow-lg" 
+            : "text-gray-200 hover:bg-white/10 hover:text-white"}`}
+        title={isCollapsed ? label : ""}
+      >
+        <span className="flex-shrink-0">{icon}</span>
+        {!isCollapsed && <span className="truncate">{label}</span>}
+      </button>
+    );
+  };
 
   return (
     <aside className={`bg-gradient-to-b from-slate-900 via-slate-800 to-orange-950 text-gray-200 h-screen sticky top-0 overflow-y-auto flex flex-col shadow-2xl transition-all duration-300 ${
@@ -99,6 +105,7 @@ export default function AdminSidebar({ activePage, setActivePage, isCollapsed, o
             id={item.id} 
             label={item.label} 
             icon={item.icon} 
+            path={item.id === 'dashboard' ? '/admin' : `/admin/${item.id}`}
           />
         ))}
       </nav>

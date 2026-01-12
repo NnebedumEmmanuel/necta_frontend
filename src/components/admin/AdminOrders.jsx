@@ -17,57 +17,8 @@ import {
 } from "lucide-react";
 import { useToast } from "../../context/useToastHook";
 import { useEffect, useState } from "react";
-
-const generateMockOrders = () => {
-  const mockOrders = [];
-  const statuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
-  const customerNames = ["John Doe", "Jane Smith", "Peter Jones", "Mary Williams", "David Brown"];
-
-  const sampleProducts = [
-    { id: 1, name: 'Sample Speaker', price: '₦7,500', image: '/images/img1.png' },
-    { id: 2, name: 'Sample Headset', price: '₦12,000', image: '/images/img2.png' },
-    { id: 3, name: 'Sample Phone', price: '₦85,000', image: '/images/img3.png' },
-  ];
-
-  for (let i = 1; i <= 20; i++) {
-    const items = [];
-    let subtotal = 0;
-    const numItems = Math.floor(Math.random() * 3) + 1;
-
-    for (let j = 0; j < numItems; j++) {
-  const product = sampleProducts[Math.floor(Math.random() * sampleProducts.length)];
-      const quantity = Math.floor(Math.random() * 2) + 1;
-      const price = parseFloat(product.price.replace(/[^0-9.-]+/g,""));
-      items.push({
-        ...product,
-        quantity,
-        total: price * quantity,
-      });
-      subtotal += price * quantity;
-    }
-    
-    const tax = subtotal * 0.05;
-    const total = subtotal + tax;
-
-    mockOrders.push({
-      id: i,
-      orderNumber: `NECTA-00${i}`,
-      userId: Math.floor(Math.random() * 100),
-      customer: {
-        name: customerNames[i % customerNames.length],
-        email: `${customerNames[i % customerNames.length].toLowerCase().replace(" ", ".")}@example.com`,
-      },
-      createdAt: new Date(new Date() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      status: statuses[i % statuses.length],
-      items,
-      subtotal,
-      tax,
-      total,
-      shippingAddress: `${i * 123} Mockingbird Lane, Faketown, USA`,
-    });
-  }
-  return mockOrders;
-};
+import { api } from '../../lib/api';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -77,23 +28,47 @@ export default function AdminOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadOrders();
   }, []);
 
-  const loadOrders = () => {
+  const loadOrders = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const data = generateMockOrders();
-      const sortedOrders = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      
+      const res = await api.get('/admin/orders');
+      const data = res?.data?.orders ?? res?.data ?? [];
+
+      const normalized = (Array.isArray(data) ? data : []).map((order) => ({
+        id: order.id,
+        orderNumber: order.order_number || order.orderNumber || order.id,
+        customer: order.customer || order.customer_info || { name: order.email || 'Customer' },
+        createdAt: order.created_at || order.createdAt || null,
+        status: order.payment_status || order.status || 'pending',
+        items: order.items || order.line_items || [],
+        subtotal: order.subtotal || order.total || 0,
+        total: order.total || order.subtotal || 0,
+        shippingAddress: order.shipping_address || order.shippingAddress || '',
+        __raw: order,
+      }));
+
+      const sortedOrders = normalized.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       setOrders(sortedOrders);
       setFilteredOrders(sortedOrders);
-    } catch (error) {
-      console.error('Error loading orders:', error);
-      showToast("Error loading orders", "error");
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 403) {
+        showToast('Access denied: Admins only', 'error');
+        navigate('/');
+        return;
+      }
+      console.error('Error loading orders:', err);
+      setError(err?.message || 'Failed to load orders');
+      showToast('Error loading orders', 'error');
     } finally {
       setIsLoading(false);
     }
