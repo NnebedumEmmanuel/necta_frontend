@@ -61,11 +61,16 @@ export default function AdminOrders() {
       setFilteredOrders(sortedOrders);
     } catch (err) {
       const status = err?.response?.status;
-      if (status === 403) {
-        showToast('Access denied: Admins only', 'error');
-        navigate('/');
-        return;
-      }
+        if (status === 401) {
+          showToast('Unauthorized. Please login.', 'error');
+          navigate('/login');
+          return;
+        }
+        if (status === 403) {
+          showToast('Access denied: Admins only', 'error');
+          navigate('/');
+          return;
+        }
       console.error('Error loading orders:', err);
       setError(err?.message || 'Failed to load orders');
       showToast('Error loading orders', 'error');
@@ -91,15 +96,8 @@ export default function AdminOrders() {
     setFilteredOrders(filtered);
   }, [searchTerm, statusFilter, orders]);
 
-  const updateStatus = (id, status) => {
-    if (window.confirm(`Change order status to ${status}?`)) {
-      setOrders(prevOrders => {
-        const newOrders = prevOrders.map(o => o.id === id ? { ...o, status } : o);
-        return newOrders;
-      });
-      showToast("Order status updated", "success");
-    }
-   };
+  // No client-side editing of orders yet; read-only view only.
+
 
   const getStatusInfo = (status) => {
     switch (status) {
@@ -218,28 +216,17 @@ export default function AdminOrders() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-slate-700">Update Status</label>
-              <select
-                value={order.status}
-                onChange={(e) => updateStatus(order.id, e.target.value)}
-                className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-              >
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
+            <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
+              <div className="text-sm">
+                <div className="font-medium text-slate-700 mb-1">Payment Status</div>
+                <div className="text-slate-600">{order.status}</div>
+              </div>
 
-            <button
-              onClick={() => setSelectedOrder(order)}
-              className="w-full flex items-center justify-center gap-2 p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors"
-            >
-              <Eye size={14} />
-              View Full Details
-            </button>
+              <div className="text-sm">
+                <div className="font-medium text-slate-700 mb-1">Customer Email</div>
+                <div className="text-slate-600">{order.customer?.email}</div>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -373,6 +360,14 @@ export default function AdminOrders() {
             <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
             <p className="mt-4 text-slate-600">Loading orders...</p>
           </div>
+        ) : error ? (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+            <p className="text-lg font-semibold text-slate-700">Error loading orders</p>
+            <p className="text-sm text-slate-500 mt-2">{String(error)}</p>
+            <div className="mt-4">
+              <button onClick={loadOrders} className="px-6 py-2 bg-purple-600 text-white rounded-lg">Retry</button>
+            </div>
+          </div>
         ) : (
           <>
             {}
@@ -400,12 +395,10 @@ export default function AdminOrders() {
                     <thead>
                       <tr className="bg-gradient-to-r from-purple-50 to-indigo-50">
                         <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Order #</th>
-                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Customer</th>
-                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Date</th>
-                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Items</th>
+                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Customer Email</th>
                         <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Total</th>
-                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Status</th>
-                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Actions</th>
+                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Payment Status</th>
+                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Date</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -426,36 +419,9 @@ export default function AdminOrders() {
                             <tr key={order.id} className="hover:bg-slate-50 transition-colors">
                               <td className="py-3 px-4">
                                 <div className="font-semibold text-slate-900">{order.orderNumber}</div>
-                                <button
-                                  onClick={() => setSelectedOrder(order)}
-                                  className="text-xs text-purple-600 hover:text-purple-800 mt-1"
-                                >
-                                  View Details
-                                </button>
                               </td>
                               <td className="py-3 px-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-slate-100 rounded-lg">
-                                    <User className="w-4 h-4 text-slate-600" />
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-slate-900">{order.customer?.name}</div>
-                                    <div className="text-xs text-slate-600">{order.customer?.email}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-2 text-slate-700 text-sm">
-                                  <Calendar className="w-4 h-4" />
-                                  {formatDate(order.createdAt)}
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="font-medium text-slate-900">{order.items?.length || 0} items</div>
-                                <div className="text-xs text-slate-600 truncate max-w-xs">
-                                  {(order.items || []).slice(0, 2).map(item => item.name).join(', ')}
-                                  {(order.items || []).length > 2 && '...'}
-                                </div>
+                                <div className="text-sm text-slate-700">{order.customer?.email || order.customer?.name || '—'}</div>
                               </td>
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-2">
@@ -464,27 +430,13 @@ export default function AdminOrders() {
                                 </div>
                               </td>
                               <td className="py-3 px-4">
-                                <div className="flex items-center gap-2">
-                                  <div className={`p-2 rounded-lg ${statusInfo.bgColor}`}>
-                                    <StatusIcon className={`w-4 h-4 ${statusInfo.textColor}`} />
-                                  </div>
-                                  <span className={`font-semibold text-sm ${statusInfo.textColor}`}>
-                                    {order.status && order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                                  </span>
-                                </div>
+                                <div className="text-sm font-medium text-slate-900">{order.status}</div>
                               </td>
                               <td className="py-3 px-4">
-                                <select
-                                  value={order.status}
-                                  onChange={(e) => updateStatus(order.id, e.target.value)}
-                                  className="p-2 bg-slate-100 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm w-32"
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="processing">Processing</option>
-                                  <option value="shipped">Shipped</option>
-                                  <option value="delivered">Delivered</option>
-                                  <option value="cancelled">Cancelled</option>
-                                </select>
+                                <div className="flex items-center gap-2 text-slate-700 text-sm">
+                                  <Calendar className="w-4 h-4" />
+                                  {formatDate(order.createdAt)}
+                                </div>
                               </td>
                             </tr>
                           );

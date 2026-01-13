@@ -21,8 +21,11 @@ import CheckoutPage from './pages/Checkout/Checkoutpage';
 import PaymentCallback from './pages/PaymentCallback';
 import UserDashboard from './pages/dashboard/UserDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminPanel from './components/admin/AdminPanel';
+import AdminLayout from './components/admin/AdminLayout';
 import AdminProtectedRoute from './components/auth/admin/AdminProtectedRoute';
+import AdminProducts from './components/admin/AdminProducts';
+import AdminOrders from './components/admin/AdminOrders';
+import AdminUsers from './components/admin/AdminUsers';
 
 function AppWrapper() {
   const location = useLocation();
@@ -80,14 +83,19 @@ function AppWrapper() {
           />
           
           {/* Protected Admin Panel */}
-          <Route 
-            path="/admin/*" 
+          <Route
+            path="/admin"
             element={
               <AdminProtectedRoute>
-                <AdminPanel />
+                <AdminLayout />
               </AdminProtectedRoute>
-            } 
-          />
+            }
+          >
+            <Route index element={<AdminProducts />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="users" element={<AdminUsers />} />
+          </Route>
           
           {/* Redirect any unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

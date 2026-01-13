@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useToast } from "../../context/useToastHook.js";
-import { productService } from '../../../services/productService';
+import { api } from '../../lib/api';
 
 const formatProducts = (products) => {
   return products.map(p => {
@@ -52,12 +52,13 @@ export default function AdminProducts() {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    productService.getProducts(1000, 0)
+    setError(null);
+    api.get('/admin/products')
       .then((res) => {
         if (!mounted) return;
-        const items = Array.isArray(res)
-          ? res
-          : res?.data ?? res?.items ?? res?.products ?? res ?? [];
+        const items = Array.isArray(res?.data?.products)
+          ? res.data.products
+          : res?.data ?? [];
         const formatted = formatProducts(items);
         setProducts(formatted);
 
@@ -65,7 +66,19 @@ export default function AdminProducts() {
         setCategories(uniqueCategories);
       })
       .catch((err) => {
+        const status = err?.response?.status;
+        if (status === 401) {
+          showToast('Unauthorized. Please login.', 'error');
+          navigate('/login');
+          return;
+        }
+        if (status === 403) {
+          showToast('Access denied: Admins only', 'error');
+          navigate('/');
+          return;
+        }
         console.error('Failed to load admin products', err);
+        setError(err?.message || 'Failed to load products');
       })
       .finally(() => mounted && setLoading(false));
 
@@ -193,7 +206,7 @@ export default function AdminProducts() {
             <p className="text-slate-600 mt-2">Manage your product catalog with ease</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
             <div className="relative flex-1 min-w-[300px]">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -223,10 +236,10 @@ export default function AdminProducts() {
               </div>
             </div>
 
-            <button onClick={openAddModal} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              <span>Add Product</span>
-            </button>
+            {/* Read-only: Add Product disabled for now */}
+            <div className="w-full sm:w-auto flex items-center justify-center">
+              <div className="px-4 py-2 text-sm text-slate-500 rounded-2xl">Read-only</div>
+            </div>
           </div>
         </div>
 
@@ -271,14 +284,7 @@ export default function AdminProducts() {
                           </div>
                         )}
                         
-                        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-2">
-                            <button onClick={() => openEditModal(p)} className="p-2 rounded-full bg-white/70 backdrop-blur-sm shadow-md hover:bg-white text-slate-700 hover:text-purple-600 transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg>
-                            </button>
-                            <button onClick={() => deleteProduct(p.id)} className="p-2 rounded-full bg-white/70 backdrop-blur-sm shadow-md hover:bg-white text-slate-700 hover:text-red-600 transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
-                        </div>
+                      {/* read-only: no edit/delete actions */}
                         
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${stockStatus.color} backdrop-blur-sm`}>
@@ -313,62 +319,8 @@ export default function AdminProducts() {
           </>
         )}
 
-        {showModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="p-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                      {editing ? "Edit Product" : "Create Product"}
-                    </h2>
-                  <button onClick={cancelEdit} className="p-2 hover:bg-slate-100 rounded-xl"><svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Product Name *</label>
-                    <input ref={productNameInputRef} name="name" placeholder="Enter product name" value={form.name} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Price (₦) *</label>
-                    <input name="price" type="number" placeholder="0.00" value={form.price} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl" />
-                  </div>
-                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Stock Quantity *</label>
-                    <input name="inStock" type="number" placeholder="0" value={form.inStock} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Discount (%)</label>
-                    <input name="discPercent" type="number" placeholder="0" value={form.discPercent} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Category</label>
-                    <select name="category" value={form.category} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                      <option value="speakers">Speakers</option>
-                      <option value="electronics">Electronics</option>
-                    </select>
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Image URL</label>
-                    <input name="image" placeholder="https://example.com/image.jpg" value={form.image} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl" />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Description</label>
-                    <textarea name="description" placeholder="Enter product description..." value={form.description} onChange={handleChange} rows={3} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl resize-none" />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-8">
-                  <button onClick={editing ? saveEdit : handleAdd} className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl font-semibold flex-1">
-                    {editing ? 'Save Changes' : 'Add Product'}
-                  </button>
-                  <button onClick={cancelEdit} className="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+            {showModal && (
+          <div className="hidden" />
         )}
       </div>
     </div>

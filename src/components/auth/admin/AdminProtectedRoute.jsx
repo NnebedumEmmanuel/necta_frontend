@@ -1,10 +1,8 @@
-import { Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
 const AdminProtectedRoute = ({ children }) => {
-  const { session, loading: authLoading } = useAuth();
   const [validating, setValidating] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const navigate = useNavigate();
@@ -12,19 +10,22 @@ const AdminProtectedRoute = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    const validateAdmin = async () => {
+    const validate = async () => {
       setValidating(true);
-
       try {
-        // Call a backend admin-protected endpoint. backend returns 200 for admins, 403 for forbidden, 401 for unauthenticated.
-        const res = await api.get('/admin/orders');
+        const res = await api.get('/admin/me');
         if (!mounted) return;
         if (res?.status === 200) {
           setAllowed(true);
-        } else {
-          // Any other 2xx? treat as allowed
-          setAllowed(true);
+          return;
         }
+        // handle unexpected 2xx as allow
+        if (res && res.status >= 200 && res.status < 300) {
+          setAllowed(true);
+          return;
+        }
+        // fallback
+        navigate('/login', { replace: true });
       } catch (err) {
         if (!mounted) return;
         const status = err?.response?.status;
@@ -33,7 +34,6 @@ const AdminProtectedRoute = ({ children }) => {
         } else if (status === 403) {
           navigate('/', { replace: true });
         } else {
-          // For other errors, redirect to login as a safe default
           navigate('/login', { replace: true });
         }
       } finally {
@@ -41,18 +41,12 @@ const AdminProtectedRoute = ({ children }) => {
       }
     };
 
-    // Only attempt validation once initial auth loading is finished
-    if (!authLoading) {
-      validateAdmin();
-    }
-
+    validate();
     return () => { mounted = false; };
-  }, [authLoading, navigate]);
+  }, [navigate]);
 
-  // Show nothing while validating or while auth state is initializing
-  if (authLoading || validating) return null;
-
-  if (!allowed) return null; // navigation already performed on failure
+  if (validating) return null;
+  if (!allowed) return null;
 
   return children;
 };
