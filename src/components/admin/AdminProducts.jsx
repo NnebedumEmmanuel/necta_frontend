@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useToast } from "../../context/useToastHook.js";
 import { api } from '../../lib/api';
+import { useNavigate } from 'react-router-dom';
 
 const formatProducts = (products) => {
   return products.map(p => {
@@ -37,6 +38,7 @@ export default function AdminProducts() {
   const [selectedCategory, setSelectedCategory] = useState(() => localStorage.getItem('adminProducts_selectedCategory') || "all");
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState(["all"]);
+  const [error, setError] = useState(null);
   
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -48,41 +50,45 @@ export default function AdminProducts() {
   const productNameInputRef = useRef(null);
   const searchInputRef = useRef(null);
   const toast = useToast();
+  const navigate = useNavigate();
 
-  useEffect(() => {
+  const loadProducts = async () => {
     let mounted = true;
     setLoading(true);
     setError(null);
-    api.get('/admin/products')
-      .then((res) => {
-        if (!mounted) return;
-        const items = Array.isArray(res?.data?.products)
-          ? res.data.products
-          : res?.data ?? [];
-        const formatted = formatProducts(items);
-        setProducts(formatted);
+    try {
+      const res = await api.get('/admin/products');
+      if (!mounted) return;
+      const items = Array.isArray(res?.data?.products)
+        ? res.data.products
+        : res?.data ?? [];
+      const formatted = formatProducts(items);
+      setProducts(formatted);
 
-        const uniqueCategories = ["all", ...new Set(formatted.map(p => p.category).filter(Boolean))];
-        setCategories(uniqueCategories);
-      })
-      .catch((err) => {
-        const status = err?.response?.status;
-        if (status === 401) {
-          showToast('Unauthorized. Please login.', 'error');
-          navigate('/login');
-          return;
-        }
-        if (status === 403) {
-          showToast('Access denied: Admins only', 'error');
-          navigate('/');
-          return;
-        }
-        console.error('Failed to load admin products', err);
-        setError(err?.message || 'Failed to load products');
-      })
-      .finally(() => mounted && setLoading(false));
+      const uniqueCategories = ["all", ...new Set(formatted.map(p => p.category).filter(Boolean))];
+      setCategories(uniqueCategories);
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401) {
+        toast.showToast('Unauthorized. Please login.', 'error');
+        navigate('/login');
+        return;
+      }
+      if (status === 403) {
+        toast.showToast('Access denied: Admins only', 'error');
+        navigate('/');
+        return;
+      }
+      console.error('Failed to load admin products', err);
+      setError(err?.message || 'Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    return () => { mounted = false };
+  useEffect(() => {
+    loadProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -247,7 +253,15 @@ export default function AdminProducts() {
           <div className="flex justify-center items-center py-12"><div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div></div>
         )}
 
-        {!loading && (
+        {error ? (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 text-center shadow-sm border border-slate-200">
+            <p className="text-lg font-semibold text-slate-700">Error loading products</p>
+            <p className="text-sm text-slate-500 mt-2">{String(error)}</p>
+            <div className="mt-4">
+              <button onClick={loadProducts} className="px-6 py-2 bg-purple-600 text-white rounded-lg">Retry</button>
+            </div>
+          </div>
+        ) : !loading && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {}
