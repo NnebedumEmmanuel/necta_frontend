@@ -58,10 +58,29 @@ export default function AdminProducts() {
     setError(null);
     try {
       const res = await api.get('/admin/products');
+      // If the backend returns a non-200 status explicitly, treat as error
+      if (res && typeof res.status === 'number' && res.status !== 200) {
+        const msg = res?.data?.error || `Unexpected response status: ${res.status}`;
+        setError(msg);
+        setProducts([]);
+        setFilteredProducts([]);
+        return;
+      }
       if (!mounted) return;
       const items = Array.isArray(res?.data?.products)
         ? res.data.products
         : res?.data ?? [];
+
+      // Ensure we have an array before attempting to format
+      if (!Array.isArray(items)) {
+        const msg = 'Invalid products response';
+        console.error('[admin-products] invalid products payload', { payload: res?.data })
+        setError(msg);
+        setProducts([]);
+        setFilteredProducts([]);
+        return;
+      }
+
       const formatted = formatProducts(items);
       setProducts(formatted);
 
