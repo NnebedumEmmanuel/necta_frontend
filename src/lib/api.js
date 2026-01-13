@@ -1,4 +1,5 @@
 import axios from 'axios'
+import supabase from './supabaseClient'
 
 const RAW_API_BASE = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL
   ? String(import.meta.env.VITE_API_BASE_URL)
@@ -21,6 +22,27 @@ export const api = axios.create({
   timeout: 20000,
   withCredentials: true,
 })
+
+// Attach Supabase access token (if any) to every request using an interceptor.
+// This reads the current session via supabase.auth.getSession() and sets
+// Authorization: Bearer <access_token> when present. If no session exists,
+// requests proceed without the header.
+api.interceptors.request.use(async (config) => {
+  try {
+    if (!supabase || !supabase.auth || typeof supabase.auth.getSession !== 'function') return config
+    const sessionRes = await supabase.auth.getSession()
+    const token = sessionRes?.data?.session?.access_token
+    if (token) {
+      config.headers = config.headers || {}
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+  } catch (err) {
+    // If anything goes wrong, don't block the request; proceed without token
+    // eslint-disable-next-line no-console
+    console.warn('api interceptor: failed to attach supabase token', err)
+  }
+  return config
+}, (error) => Promise.reject(error))
 
 export function attachAuthToken(token) {
   if (token) api.defaults.headers.common['Authorization'] = `Bearer ${token}`
