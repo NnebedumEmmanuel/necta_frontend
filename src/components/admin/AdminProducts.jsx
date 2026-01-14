@@ -43,6 +43,8 @@ export default function AdminProducts() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [form, setForm] = useState({
     name: '', price: '', discPercent: '', inStock: '', category: 'speakers', brand: 'T&G', image: '', description: ''
   });
@@ -178,45 +180,155 @@ export default function AdminProducts() {
     setCurrentProduct(null);
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.name || !form.price || !form.inStock) {
       toast.showToast("Please fill all required fields.", { type: "error" });
       return;
     }
-    const newProduct = {
-      id: Date.now(),
-      ...form,
-      price: Number(form.price),
-      inStock: Number(form.inStock),
-      discPercent: Number(form.discPercent) || 0,
-      oldPrice: form.discPercent > 0 ? Math.round(Number(form.price) / (1 - Number(form.discPercent) / 100)) : 0
-    };
-    setProducts(prev => [newProduct, ...prev]);
-    cancelEdit();
-    toast.showToast("Product added successfully!", { type: "success" });
+    setSubmitting(true);
+    try {
+      const body = {
+        ...form,
+        price: Number(form.price),
+        inStock: Number(form.inStock),
+        discPercent: Number(form.discPercent) || 0,
+      };
+      const res = await api.post('/admin/products', body);
+      const status = res?.status;
+      if (status === 401) {
+        toast.showToast('Unauthorized. Please login.', 'error');
+        navigate('/login');
+        return;
+      }
+      if (status === 403) {
+        toast.showToast('Access denied: Admins only', 'error');
+        navigate('/');
+        return;
+      }
+      const product = res?.data?.product ?? null;
+      if (!product) {
+        const msg = res?.data?.error || 'Invalid response from server';
+        toast.showToast(msg, { type: 'error' });
+        return;
+      }
+      const formatted = formatProducts([product])[0];
+      setProducts(prev => [formatted, ...prev]);
+      cancelEdit();
+      toast.showToast('Product added', { type: 'success' });
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401) {
+        toast.showToast('Unauthorized. Please login.', 'error');
+        navigate('/login');
+        return;
+      }
+      if (status === 403) {
+        toast.showToast('Access denied: Admins only', 'error');
+        navigate('/');
+        return;
+      }
+      const message = err?.response?.data?.error || err?.message || 'Failed to add product';
+      toast.showToast(message, { type: 'error' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!form.name || !form.price || !form.inStock) {
       toast.showToast("Please fill all required fields.", { type: "error" });
       return;
     }
-    setProducts(prev => prev.map(p => p.id === currentProduct.id ? { 
-        ...p, 
-        ...form, 
-        price: Number(form.price), 
-        inStock: Number(form.inStock), 
-        discPercent: Number(form.discPercent) || 0,
-        oldPrice: form.discPercent > 0 ? Math.round(Number(form.price) / (1 - Number(form.discPercent) / 100)) : 0
-    } : p));
-    cancelEdit();
-    toast.showToast("Product updated successfully!", { type: "success" });
+    if (!currentProduct) return;
+    // compute changed fields only
+    const changes = {};
+    ['name','price','inStock','discPercent','oldPrice','category','brand','image','description'].forEach(k => {
+      const newVal = (k === 'price' || k === 'inStock' || k === 'discPercent') ? Number(form[k]) : form[k];
+      const oldVal = currentProduct[k];
+      if ((newVal ?? null) !== (oldVal ?? null)) changes[k] = newVal;
+    })
+    if (Object.keys(changes).length === 0) {
+      cancelEdit();
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await api.patch(`/admin/products/${currentProduct.id}`, changes);
+      const status = res?.status;
+      if (status === 401) {
+        toast.showToast('Unauthorized. Please login.', 'error');
+        navigate('/login');
+        return;
+      }
+      if (status === 403) {
+        toast.showToast('Access denied: Admins only', 'error');
+        navigate('/');
+        return;
+      }
+      const product = res?.data?.product ?? null;
+      if (!product) {
+        const msg = res?.data?.error || 'Invalid response from server';
+        toast.showToast(msg, { type: 'error' });
+        return;
+      }
+      const formatted = formatProducts([product])[0];
+      setProducts(prev => prev.map(p => p.id === formatted.id ? formatted : p));
+      cancelEdit();
+      toast.showToast('Product updated', { type: 'success' });
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401) {
+        toast.showToast('Unauthorized. Please login.', 'error');
+        navigate('/login');
+        return;
+      }
+      if (status === 403) {
+        toast.showToast('Access denied: Admins only', 'error');
+        navigate('/');
+        return;
+      }
+      const message = err?.response?.data?.error || err?.message || 'Failed to update product';
+      toast.showToast(message, { type: 'error' });
+    } finally {
+      setSubmitting(false);
+    }
   };
   
-  const deleteProduct = (id) => {
-    if (window.confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
-      setProducts(products.filter(p => p.id !== id));
+  const deleteProduct = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this product? This action cannot be undone.")) return;
+    setDeletingId(id);
+    try {
+      const res = await api.delete(`/admin/products/${id}`);
+      const status = res?.status;
+      if (status === 401) {
+        toast.showToast('Unauthorized. Please login.', 'error');
+        navigate('/login');
+        return;
+      }
+      if (status === 403) {
+        toast.showToast('Access denied: Admins only', 'error');
+        navigate('/');
+        return;
+      }
+      const removedId = res?.data?.id ?? id;
+      setProducts(prev => prev.filter(p => p.id !== removedId));
       toast.showToast("Product deleted successfully", { type: "success" });
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401) {
+        toast.showToast('Unauthorized. Please login.', 'error');
+        navigate('/login');
+        return;
+      }
+      if (status === 403) {
+        toast.showToast('Access denied: Admins only', 'error');
+        navigate('/');
+        return;
+      }
+      const message = err?.response?.data?.error || err?.message || 'Failed to delete product';
+      toast.showToast(message, { type: 'error' });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -263,7 +375,7 @@ export default function AdminProducts() {
 
             {/* Read-only: Add Product disabled for now */}
             <div className="w-full sm:w-auto flex items-center justify-center">
-              <div className="px-4 py-2 text-sm text-slate-500 rounded-2xl">Read-only</div>
+              <button onClick={openAddModal} className="px-4 py-2 bg-purple-600 text-white rounded-2xl hover:opacity-95">Add Product</button>
             </div>
           </div>
         </div>
@@ -304,6 +416,10 @@ export default function AdminProducts() {
                   
                   return (
                     <div key={p.id} className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 hover:-translate-y-1">
+                      <div className="absolute top-3 left-3 right-3 flex justify-end gap-2 z-10">
+                        <button onClick={() => openEditModal(p)} disabled={submitting || deletingId === p.id} className="px-2 py-1 bg-white/90 text-slate-700 rounded-md shadow-sm hover:bg-white">Edit</button>
+                        <button onClick={() => deleteProduct(p.id)} disabled={submitting || deletingId === p.id} className="px-2 py-1 bg-red-600 text-white rounded-md shadow-sm hover:opacity-95">{deletingId === p.id ? 'Deleting...' : 'Delete'}</button>
+                      </div>
                       <div className="relative h-48 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
                         {p.image ? (
                           <img src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -353,7 +469,55 @@ export default function AdminProducts() {
         )}
 
             {showModal && (
-          <div className="hidden" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={cancelEdit} />
+            <div className="relative bg-white rounded-2xl p-6 w-full max-w-2xl z-50 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold">{editing ? 'Edit product' : 'Add product'}</h3>
+                <button onClick={cancelEdit} className="text-slate-500 hover:text-slate-700">Cancel</button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-slate-600">Name</label>
+                  <input ref={productNameInputRef} name="name" value={form.name} onChange={handleChange} className="w-full mt-1 p-3 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-600">Price (₦)</label>
+                  <input name="price" value={form.price} onChange={handleChange} className="w-full mt-1 p-3 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-600">Discount %</label>
+                  <input name="discPercent" value={form.discPercent} onChange={handleChange} className="w-full mt-1 p-3 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-600">In Stock</label>
+                  <input name="inStock" value={form.inStock} onChange={handleChange} className="w-full mt-1 p-3 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-600">Category</label>
+                  <input name="category" value={form.category} onChange={handleChange} className="w-full mt-1 p-3 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-600">Brand</label>
+                  <input name="brand" value={form.brand} onChange={handleChange} className="w-full mt-1 p-3 border rounded-lg" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm text-slate-600">Image URL</label>
+                  <input name="image" value={form.image} onChange={handleChange} className="w-full mt-1 p-3 border rounded-lg" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm text-slate-600">Description</label>
+                  <textarea name="description" value={form.description} onChange={handleChange} rows={4} className="w-full mt-1 p-3 border rounded-lg" />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button onClick={cancelEdit} disabled={submitting} className="px-4 py-2 bg-white border rounded-lg">Cancel</button>
+                <button onClick={editing ? saveEdit : handleAdd} disabled={submitting} className="px-4 py-2 bg-purple-600 text-white rounded-lg">{submitting ? (editing ? 'Saving...' : 'Adding...') : (editing ? 'Save' : 'Add')}</button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
