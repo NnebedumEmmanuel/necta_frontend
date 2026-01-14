@@ -181,19 +181,65 @@ export default function AdminProducts() {
   };
 
   const handleAdd = async () => {
-    if (!form.name || !form.price || !form.inStock) {
-      toast.showToast("Please fill all required fields.", { type: "error" });
+    // Ensure required fields are present and valid
+    if (!form.name) {
+      toast.showToast("Please provide a product name.", { type: "error" });
       return;
     }
+
+    // Convert price to number and validate
+    const priceNumber = Number(form.price)
+    if (Number.isNaN(priceNumber)) {
+      toast.showToast('Price must be a valid number', { type: 'error' })
+      return
+    }
+
+    // Convert stock to number (default 0)
+    const stockNumber = form.inStock !== '' && form.inStock !== undefined ? Number(form.inStock) : 0
+    if (form.inStock !== '' && form.inStock !== undefined && Number.isNaN(stockNumber)) {
+      toast.showToast('Stock must be a valid number', { type: 'error' })
+      return
+    }
+
+    // Auto-generate slug from name if missing
+    const slugFromName = String(form.name || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '') // strip invalid chars except space and -
+      .replace(/\s+/g, '-') // spaces -> -
+      .replace(/-+/g, '-')
+
+    const slug = slugFromName || undefined
+
+    // Build payload, converting empty strings to undefined so the backend normalizer can drop them
+    const rawPayload = {
+      name: form.name || undefined,
+      slug: slug,
+      price: priceNumber,
+      stock: Number.isFinite(stockNumber) ? stockNumber : 0,
+      category: form.category || undefined,
+      brand: form.brand || undefined,
+      image: form.image || undefined,
+      description: form.description || undefined,
+      // include discount percent as provided (numeric) so callers can decide how to persist
+      discPercent: form.discPercent !== '' && form.discPercent !== undefined ? Number(form.discPercent) : undefined,
+    }
+
+    // Remove properties that are explicitly empty strings or undefined to avoid sending them
+    const payload = {}
+    Object.keys(rawPayload).forEach((k) => {
+      const v = rawPayload[k]
+      if (v === undefined) return
+      // avoid sending empty strings
+      if (typeof v === 'string' && v.trim() === '') return
+      payload[k] = v
+    })
+
+    console.log('CREATE PRODUCT PAYLOAD', payload)
+
     setSubmitting(true);
     try {
-      const body = {
-        ...form,
-        price: Number(form.price),
-        inStock: Number(form.inStock),
-        discPercent: Number(form.discPercent) || 0,
-      };
-      const res = await api.post('/admin/products', body);
+      const res = await api.post('/admin/products', payload);
       const status = res?.status;
       if (status === 401) {
         toast.showToast('Unauthorized. Please login.', 'error');
