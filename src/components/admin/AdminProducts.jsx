@@ -378,6 +378,32 @@ export default function AdminProducts() {
     }
   };
 
+  const toggleStatus = async (product) => {
+    if (!product) return
+    const id = product.id
+    // Draft -> Publish, Published -> Unpublish, Unpublished -> Publish
+    const current = product.status || 'draft'
+    let next = 'published'
+    if (current === 'draft') next = 'published'
+    else if (current === 'published') next = 'unpublished'
+    else if (current === 'unpublished') next = 'published'
+
+    // optimistic update
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: next } : p))
+    setFilteredProducts(prev => prev.map(p => p.id === id ? { ...p, status: next } : p))
+
+    try {
+      await api.patch(`/admin/products/${id}/status`, { status: next })
+      toast.showToast(`Product ${next}`, { type: 'success' })
+    } catch (err) {
+      // rollback on error
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, status: product.status } : p))
+      setFilteredProducts(prev => prev.map(p => p.id === id ? { ...p, status: product.status } : p))
+      const message = err?.response?.data?.error || err?.message || 'Failed to update status'
+      toast.showToast(message, { type: 'error' })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -465,6 +491,10 @@ export default function AdminProducts() {
                       <div className="absolute top-3 left-3 right-3 flex justify-end gap-2 z-10">
                         <button onClick={() => openEditModal(p)} disabled={submitting || deletingId === p.id} className="px-2 py-1 bg-white/90 text-slate-700 rounded-md shadow-sm hover:bg-white">Edit</button>
                         <button onClick={() => deleteProduct(p.id)} disabled={submitting || deletingId === p.id} className="px-2 py-1 bg-red-600 text-white rounded-md shadow-sm hover:opacity-95">{deletingId === p.id ? 'Deleting...' : 'Delete'}</button>
+                        {/* Publish / Unpublish toggle */}
+                        <button onClick={() => toggleStatus(p)} disabled={submitting || deletingId === p.id} className="px-2 py-1 bg-emerald-600 text-white rounded-md shadow-sm hover:opacity-95">
+                          {p.status === 'published' ? 'Unpublish' : 'Publish'}
+                        </button>
                       </div>
                       <div className="relative h-48 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
                         {p.image ? (
@@ -491,7 +521,12 @@ export default function AdminProducts() {
                       <div className="p-5 space-y-4">
                         <div>
                           <h3 className="font-bold text-slate-900 text-lg line-clamp-2 leading-tight h-14">{p.name}</h3>
-                          <p className="text-sm text-slate-600 mt-1">{p.category}</p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <p className="text-sm text-slate-600">{p.category}</p>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${p.status === 'published' ? 'bg-green-100 text-green-800' : p.status === 'unpublished' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              {p.status ? (p.status.charAt(0).toUpperCase() + p.status.slice(1)) : 'Draft'}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-end justify-between">
                           <div>
