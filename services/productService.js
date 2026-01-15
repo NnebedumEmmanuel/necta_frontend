@@ -1,4 +1,4 @@
-import { api, handleApiError, API_BASE_URL } from '../src/lib/api';
+import { publicApi as api, handleApiError, API_BASE_URL } from '../src/lib/api';
 
 export function buildProductsQuery(filters = {}) {
   const params = new URLSearchParams();

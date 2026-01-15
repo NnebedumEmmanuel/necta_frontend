@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
-import { api } from "@/lib/api";
+import { publicApi as api } from "@/lib/api";
 
 const CollectionsDropdown = () => {
   const [isOpen, setIsOpen] = useState(true);

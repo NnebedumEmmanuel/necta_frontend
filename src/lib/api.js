@@ -16,18 +16,35 @@ if (!RAW_API_BASE) {
   console.info(`api: using backend base ${API_BASE_URL}`)
 }
 
-export const api = axios.create({
+const authApi = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
   withCredentials: true,
 })
-
+// authApi: credentialed client used for authenticated/admin endpoints.
 // Attach Supabase access token (if any) to every request using an interceptor.
 // This reads the current session via supabase.auth.getSession() and sets
 // Authorization: Bearer <access_token> when present. If no session exists,
 // requests proceed without the header.
-api.interceptors.request.use(async (config) => {
+
+export const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 20000,
+  // Important: do NOT send credentials to public endpoints (CORS wildcard)
+  withCredentials: false,
+})
+
+// Keep `api` name for backwards compatibility with existing imports that
+// expect a credentialed client. Export `api` as the auth client.
+export { authApi as api }
+
+// local binding named `api` for convenience & default export consumers
+const api = authApi
+
+// Attach interceptor only to the credentialed/auth client (authApi)
+authApi.interceptors.request.use(async (config) => {
   try {
     if (!supabase || !supabase.auth || typeof supabase.auth.getSession !== 'function') return config
     const sessionRes = await supabase.auth.getSession()
@@ -45,8 +62,8 @@ api.interceptors.request.use(async (config) => {
 }, (error) => Promise.reject(error))
 
 export function attachAuthToken(token) {
-  if (token) api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-  else delete api.defaults.headers.common['Authorization']
+  if (token) authApi.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  else delete authApi.defaults.headers.common['Authorization']
 }
 
 export function handleApiError(error) {
