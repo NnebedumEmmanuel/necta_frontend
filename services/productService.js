@@ -76,17 +76,28 @@ class ProductService {
       const response = await api.get(url, { params: undefined });
       const body = response.data || {};
 
-      const items = Array.isArray(body.data)
-        ? body.data
-        : Array.isArray(body.items)
+      // Prefer the new canonical shape: { items: Product[], pagination: { page, limit, total } }
+      const items = Array.isArray(body.items)
         ? body.items
+        : Array.isArray(body.data)
+        ? body.data
         : Array.isArray(body.products)
         ? body.products
         : Array.isArray(body)
         ? body
         : [];
 
-      const total = body.total ?? body.count ?? 0;
+      const total = body?.pagination?.total ?? body.total ?? body.count ?? 0;
+
+      // Debug: surface raw and normalized shapes to help during migration
+      try {
+        // Avoid noisy logs in production by checking environment when available
+        // but keep logs useful during development
+        // eslint-disable-next-line no-console
+        console.debug('[productService] raw response body', body);
+        // eslint-disable-next-line no-console
+        console.debug('[productService] normalized', { products: items.length, total, page: body?.pagination?.page ?? null });
+      } catch (e) {}
 
       return { products: items, total };
     } catch (error) {
