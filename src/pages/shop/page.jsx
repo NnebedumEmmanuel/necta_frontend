@@ -153,7 +153,8 @@ function ShopContent() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const query = mobileSearchQuery.trim();
+    // Normalize input: trim and collapse multiple spaces to improve backend matching
+    const query = String(mobileSearchQuery || '').trim().replace(/\s+/g, ' ');
     if (query) {
       const params = new URLSearchParams(searchParams.toString());
       params.set('search', query);
@@ -225,8 +226,17 @@ function ShopContent() {
   const skip = (page - 1) * itemsPerPage;
   const res = await productService.getProducts({ limit: itemsPerPage, skip, filters: filterPayload });
 
+        // Debug: surface API response and normalized summary for migration verification
+        try {
+          // eslint-disable-next-line no-console
+          console.debug('[shop page] products response', res);
+          // eslint-disable-next-line no-console
+          console.debug('[shop page] normalized', { products: (res?.products ?? []).length, total: res?.total ?? null, requestedPage: page });
+        } catch (e) {}
+
         if (!mounted) return;
 
+        // Prefer the normalized shape from productService
         const items = res?.products ?? [];
         const enhanced = items.map(product => ({
           ...product,
@@ -239,7 +249,8 @@ function ShopContent() {
         }));
 
         setProducts(enhanced);
-        setTotal(res?.total ?? 0);
+        // Do not overwrite total unless API explicitly provides it. Keep total accurate.
+        setTotal(res?.total ?? total);
       } catch (err) {
         if (!mounted) return;
         setProductsError(err?.message || String(err));
@@ -252,6 +263,14 @@ function ShopContent() {
 
     return () => { mounted = false };
   }, [filters.minPrice, filters.maxPrice, filters.rating, filters.brands, filters.categories, filters.collections, page, searchQuery, category]);
+
+  // Important: reset page to 1 when filters/search/category change
+  React.useEffect(() => {
+    if (page === 1) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', '1');
+    navigate(`${location.pathname}?${params.toString()}`);
+  }, [filters.minPrice, filters.maxPrice, filters.rating, filters.brands, filters.categories, filters.collections, searchQuery, category, page, searchParams, navigate, location.pathname]);
 
   const hasActiveFilters =
     (filters.minPrice || 0) > 0 ||
@@ -491,8 +510,8 @@ function ShopContent() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
                 <p className="text-gray-600 mb-6">
-                  {searchQuery 
-                    ? `No products match your search "${searchQuery}". Try a different search term.`
+                  {searchQuery
+                    ? `No products match '${searchQuery}'. Try a different search term.`
                     : "Check out our available speakers collection below."}
                 </p>
                 <Link
