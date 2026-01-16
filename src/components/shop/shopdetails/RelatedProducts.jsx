@@ -14,9 +14,7 @@ const RelatedProducts = () => {
     productService.getProducts(8, 0)
       .then((res) => {
         if (!mounted) return;
-        const items = Array.isArray(res)
-          ? res
-          : res?.data ?? res?.items ?? res?.products ?? res ?? [];
+        const items = res?.products ?? [];
         setProducts(items);
       })
       .catch((err) => console.error('Failed to load related products', err));

@@ -18,9 +18,7 @@ const ProductTabs = () => {
     productService.getProducts(12, 0)
       .then((res) => {
         if (!mounted) return;
-        const items = Array.isArray(res)
-          ? res
-          : res?.data ?? res?.items ?? res?.products ?? res ?? [];
+        const items = res?.products ?? [];
         setProducts(items);
       })
       .catch((err) => {
