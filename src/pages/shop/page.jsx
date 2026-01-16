@@ -211,7 +211,7 @@ function ShopContent() {
 
     const fetchProducts = async () => {
       try {
-        const filterPayload = {
+        const rawFilterPayload = {
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           rating: filters.rating,
@@ -220,6 +220,14 @@ function ShopContent() {
           collections: filters.collections,
           q: searchQuery,
         };
+
+        // Strip empty arrays / empty values before sending request
+        const filterPayload = Object.fromEntries(Object.entries(rawFilterPayload).filter(([k, v]) => {
+          if (v == null) return false
+          if (Array.isArray(v)) return v.length > 0
+          if (typeof v === 'string') return String(v).trim() !== ''
+          return true
+        }))
 
   console.log("FETCH PARAMS", filterPayload);
 
@@ -281,7 +289,8 @@ function ShopContent() {
     (filters.collections && filters.collections.length > 0) ||
     Boolean(searchQuery && searchQuery.length > 0);
 
-  const totalProducts = total;
+  // Ensure we never show total=0 when items exist (fallback for backend count anomalies)
+  const totalProducts = (typeof total === 'number' && total > 0) ? total : ((products && products.length) ? products.length : 0);
   const totalPages = Math.ceil((totalProducts || 0) / itemsPerPage);
   const paginatedProducts = sortedAndFilteredProducts;
 
@@ -510,9 +519,9 @@ function ShopContent() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
                 <p className="text-gray-600 mb-6">
-                  {searchQuery
-                    ? `No products match '${searchQuery}'. Try a different search term.`
-                    : "Check out our available speakers collection below."}
+                  {totalProducts === 0
+                    ? "No products match your filters"
+                    : (searchQuery ? `No products match '${searchQuery}'. Try a different search term.` : "Check out our available speakers collection below.")}
                 </p>
                 <Link
                   to="/shop?category=speakers"
