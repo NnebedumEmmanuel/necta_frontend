@@ -117,6 +117,22 @@ class ProductService {
     }
   }
 
+  async getRelated(id, limit = 8) {
+    try {
+      if (!id) return { products: [], total: 0 }
+      const url = `/products/${id}/related?limit=${encodeURIComponent(String(limit))}`
+      const response = await api.get(url)
+      const body = response.data || {}
+      const items = Array.isArray(body.data) ? body.data : []
+      return { products: items }
+    } catch (error) {
+      // keep calling code resilient
+      // eslint-disable-next-line no-console
+      console.error('[productService.getRelated] error', error)
+      return { products: [] }
+    }
+  }
+
   async addProduct(product) {
     try {
   const response = await api.post(`/products/add`, product);

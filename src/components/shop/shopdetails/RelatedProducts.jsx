@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { useWishlist } from "../../../../context/WishlistContext";
 import { useToast } from "../../../context/useToastHook";
@@ -9,17 +10,22 @@ const RelatedProducts = () => {
   const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist();
   const { showToast } = useToast();
 
+  const { id } = useParams();
+
   useEffect(() => {
     let mounted = true;
-    productService.getProducts({ limit: 8, page: 1 })
+    if (!id) return () => { mounted = false };
+
+    productService.getRelated(id, 8)
       .then((res) => {
         if (!mounted) return;
         const items = res?.products ?? [];
         setProducts(items);
       })
       .catch((err) => console.error('Failed to load related products', err));
+
     return () => { mounted = false };
-  }, []);
+  }, [id]);
 
   const toggleWishlist = (product, e) => {
     e.preventDefault();
@@ -34,13 +40,8 @@ const RelatedProducts = () => {
     }
   };
 
-  if (!products || products.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">No related products found.</p>
-      </div>
-    );
-  }
+  // Hide the related carousel completely when there are no related items.
+  if (!products || products.length === 0) return null;
 
   return (
     <section className="px-4 sm:px-6 md:px-12 lg:px-16 py-10">

@@ -69,7 +69,14 @@ const ProductTabs = () => {
       ) : error ? (
         <div className="text-center py-6 text-red-500">Failed to load products</div>
       ) : (
-        <ProductGrid products={getTabProducts()} />
+        (() => {
+          const tabProducts = getTabProducts();
+          if (!tabProducts || tabProducts.length === 0) {
+            // Hide the grid completely when there are no items for the active tab
+            return null;
+          }
+          return <ProductGrid products={tabProducts} />
+        })()
       )}
     </div>
   );
