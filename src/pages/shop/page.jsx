@@ -272,12 +272,39 @@ function ShopContent() {
   }, [filters.minPrice, filters.maxPrice, filters.rating, filters.brands, filters.categories, filters.collections, page, searchQuery, category]);
 
   // Important: reset page to 1 when filters/search/category change
+  // Important: reset page to 1 only when filters/search/category truly change.
+  // Use a ref to track previous filter signature so we don't reset on mount
+  // or when page changes.
+  const prevFiltersRef = React.useRef(null);
   React.useEffect(() => {
-    if (page === 1) return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('page', '1');
-    navigate(`${location.pathname}?${params.toString()}`);
-  }, [filters.minPrice, filters.maxPrice, filters.rating, filters.brands, filters.categories, filters.collections, searchQuery, category, page, searchParams, navigate, location.pathname]);
+    const signature = JSON.stringify({
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      rating: filters.rating,
+      brands: filters.brands || [],
+      categories: filters.categories || [],
+      collections: filters.collections || [],
+      searchQuery,
+      category,
+    });
+
+    if (prevFiltersRef.current === null) {
+      // first render: record signature but do not reset page
+      prevFiltersRef.current = signature;
+      return;
+    }
+
+    if (prevFiltersRef.current !== signature) {
+      // filters truly changed -> reset page to 1 in URL
+      prevFiltersRef.current = signature;
+      if (page !== 1) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('page', '1');
+        navigate(`${location.pathname}?${params.toString()}`);
+      }
+    }
+    // only run when filter primitives change
+  }, [filters.minPrice, filters.maxPrice, filters.rating, filters.brands, filters.categories, filters.collections, searchQuery, category, navigate, location.pathname, searchParams, page]);
 
   const hasActiveFilters =
     (filters.minPrice || 0) > 0 ||

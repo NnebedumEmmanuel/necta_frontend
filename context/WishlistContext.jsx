@@ -68,8 +68,9 @@ export const WishlistProvider = ({ children }) => {
 
         let products = [];
         if (uniqueIds.length > 0) {
-          try {
-            const resp = await productService.getProducts({ filters: { ids: uniqueIds } });
+            try {
+            // request wishlist products page=1; ensure page-based pagination is explicit
+            const resp = await productService.getProducts({ filters: { ids: uniqueIds }, page: 1, limit: Math.max(20, uniqueIds.length) });
             products = resp?.products ?? [];
           } catch (batchErr) {
             products = await Promise.all(uniqueIds.map(id => productService.getProduct(id).catch(() => null)));
