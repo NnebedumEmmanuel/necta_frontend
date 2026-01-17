@@ -231,8 +231,7 @@ function ShopContent() {
 
   console.log("FETCH PARAMS", filterPayload);
 
-  const skip = (page - 1) * itemsPerPage;
-  const res = await productService.getProducts({ limit: itemsPerPage, skip, filters: filterPayload });
+  const res = await productService.getProducts({ limit: itemsPerPage, page, filters: filterPayload });
 
         // Debug: surface API response and normalized summary for migration verification
         try {

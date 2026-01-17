@@ -48,19 +48,19 @@ export function buildProductsQuery(filters = {}) {
 
 class ProductService {
   
-  async getProducts(limit = 10, skip = 0, search = '', filters = null) {
+  async getProducts(limit = 10, page = 1, search = '', filters = null) {
     try {
       if (typeof limit === 'object' && limit !== null) {
         const opts = limit;
         limit = opts.limit ?? 10;
-        skip = opts.skip ?? 0;
+        page = opts.page ?? 1;
         search = opts.search ?? '';
         filters = opts.filters ?? null;
       }
 
       const params = new URLSearchParams();
-      if (limit != null) params.set('limit', String(limit));
-      if (skip != null) params.set('skip', String(skip));
+  if (limit != null) params.set('limit', String(limit));
+  if (page != null) params.set('page', String(page));
 
       if (filters && typeof filters === 'object') {
         const filterParams = buildProductsQuery(filters);
@@ -96,10 +96,12 @@ class ProductService {
         // eslint-disable-next-line no-console
         console.debug('[productService] raw response body', body);
         // eslint-disable-next-line no-console
-        console.debug('[productService] normalized', { products: items.length, total, page: body?.pagination?.page ?? null });
+        console.debug('[productService] normalized', { products: items.length, total, page: body?.pagination?.page ?? page });
       } catch (e) {}
 
-      return { products: items, total };
+      // Normalize page from response when present
+      const respPage = body?.pagination?.page ?? page;
+      return { products: items, total, page: respPage };
     } catch (error) {
       throw handleApiError(error);
     }

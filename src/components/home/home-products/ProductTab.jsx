@@ -15,7 +15,7 @@ const ProductTabs = () => {
     setLoading(true);
     setError(null);
 
-    productService.getProducts(12, 0)
+    productService.getProducts({ limit: 12, page: 1 })
       .then((res) => {
         if (!mounted) return;
         const items = res?.products ?? [];

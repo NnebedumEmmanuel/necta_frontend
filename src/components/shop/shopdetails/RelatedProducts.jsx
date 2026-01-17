@@ -11,7 +11,7 @@ const RelatedProducts = () => {
 
   useEffect(() => {
     let mounted = true;
-    productService.getProducts(8, 0)
+    productService.getProducts({ limit: 8, page: 1 })
       .then((res) => {
         if (!mounted) return;
         const items = res?.products ?? [];
