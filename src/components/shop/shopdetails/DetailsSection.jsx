@@ -1,19 +1,9 @@
+import formatFeatureList from '../../../lib/formatFeatureList';
+
 export default function DetailsSection({ product }) {
   if (!product.details) return null;
 
   const { details } = product;
-  
-  const formatArray = (val) => {
-    if (!Array.isArray(val)) return String(val ?? '');
-    if (val.length <= 3) return val.join(', ');
-    return (
-      <ul className="list-disc list-inside space-y-1">
-        {val.map((it, i) => (
-          <li key={i} className="text-gray-900">{String(it)}</li>
-        ))}
-      </ul>
-    );
-  };
 
   return (
     <section className="mt-12 bg-[#FAFAFA] p-6">
@@ -45,7 +35,7 @@ export default function DetailsSection({ product }) {
                   <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Screen type</span><span className="font-medium text-gray-900">{details.screen.type}</span></div>
                 )}
                 {details.screen.additionalFeatures && (
-                  <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Additional features</span><span className="font-medium text-gray-900">{formatArray(details.screen.additionalFeatures)}</span></div>
+                  <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Additional features</span><span className="font-medium text-gray-900">{formatFeatureList(details.screen.additionalFeatures)}</span></div>
                 )}
               </div>
             </div>
@@ -61,14 +51,14 @@ export default function DetailsSection({ product }) {
                     <div key={label} className="flex justify-between py-1.5 border-b border-gray-200">
                       <span className="text-gray-600">{label}</span>
                       <span className="font-medium text-gray-900 text-right">
-                        {Array.isArray(value) ? formatArray(value) : (typeof value === 'string' || typeof value === 'number' ? String(value) : JSON.stringify(value))}
+                        {Array.isArray(value) ? formatFeatureList(value) : (typeof value === 'string' || typeof value === 'number' ? String(value) : JSON.stringify(value))}
                       </span>
                     </div>
                   ))
                 ) : (
                   <div className="flex justify-between py-1.5 border-b border-gray-200">
                     <span className="text-gray-600">{sectionKey}</span>
-                    <span className="font-medium text-gray-900 text-right">{formatArray(sectionVal)}</span>
+                    <span className="font-medium text-gray-900 text-right">{formatFeatureList(sectionVal)}</span>
                   </div>
                 )}
               </div>

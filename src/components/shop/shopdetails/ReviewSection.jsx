@@ -6,17 +6,29 @@ export default function ReviewSection({ product }) {
   const { reviews } = product;
 
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(1);
+  // Local UI-only reviews state. We initialize from the backend-provided
+  // sample (`reviews.reviews`) but all UI rendering and calculations use this
+  // local source of truth after initialization. New reviews are appended here
+  // (frontend-only) until persistence is implemented.
+  const [localReviews, setLocalReviews] = useState(Array.isArray(reviews.reviews) ? reviews.reviews.slice() : []);
 
-  const reviewsArray = Array.isArray(reviews.reviews) ? reviews.reviews : [];
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formRating, setFormRating] = useState(5);
+  const [formComment, setFormComment] = useState('');
+  const [formErrors, setFormErrors] = useState({});
+
+  const reviewsArray = localReviews;
   const arrayCount = reviewsArray.length;
 
+  // Only derive average/total from the reviews.reviews array. Do not fall back
+  // to backend-provided averages for display — that would give a false sense
+  // of confidence when we only have a partial sample.
   const displayAverage = arrayCount > 0
     ? reviewsArray.reduce((s, r) => s + (Number(r.rating) || 0), 0) / arrayCount
-    : (typeof reviews.averageRating === 'number' ? reviews.averageRating : 0);
+    : null;
 
-  const displayTotal = arrayCount > 0
-    ? arrayCount
-    : (typeof reviews.totalReviews === 'number' ? reviews.totalReviews : 0);
+  const displayTotal = arrayCount;
 
   const renderStars = (rating) => {
     const stars = [];
@@ -35,8 +47,19 @@ export default function ReviewSection({ product }) {
     return stars;
   };
 
+  // Compute rating counts and percentages solely from the reviews.reviews array.
+  // We ignore any backend-provided `ratingCounts` to avoid optimistic UI.
+  const ratingCountsFromArray = { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 };
+  if (arrayCount > 0) {
+    reviewsArray.forEach((r) => {
+      const rating = Math.min(5, Math.max(1, Number(r.rating) || 0));
+      const key = String(rating >= 1 && rating <= 5 ? rating : 0);
+      if (ratingCountsFromArray[key] !== undefined) ratingCountsFromArray[key] += 1;
+    });
+  }
+
   const getRatingPercentage = (count) => {
-    const total = displayTotal;
+    const total = arrayCount; // percentage denominator is the sample size
     return total > 0 ? Math.round((count / total) * 100) : 0;
   };
 
@@ -49,33 +72,29 @@ export default function ReviewSection({ product }) {
         <div className="flex flex-col md:flex-row gap-8 mb-8 pb-8 border-b border-gray-200">
           <div className="flex flex-col items-center md:items-start">
             <div className="text-4xl font-bold text-gray-900 mb-2">
-              {Number.isFinite(displayAverage) ? displayAverage.toFixed(1) : '0.0'}
+              {displayAverage !== null ? displayAverage.toFixed(1) : '—'}
             </div>
             <div className="flex mb-2">
-              {renderStars(Math.round(displayAverage))}
+              {displayAverage !== null ? renderStars(Math.round(displayAverage)) : null}
             </div>
             <div className="text-gray-600 text-sm">
-              {arrayCount > 0 ? (
-                reviews.totalReviews && reviews.totalReviews > arrayCount ? (
-                  <span>Showing {arrayCount} of {reviews.totalReviews} reviews</span>
-                ) : (
-                  <span>Based on {arrayCount} review{arrayCount !== 1 ? 's' : ''}</span>
-                )
+              {reviews.totalReviews > arrayCount ? (
+                <span>Showing {arrayCount} of {reviews.totalReviews} reviews</span>
+              ) : arrayCount > 0 ? (
+                <span>Based on {arrayCount} review{arrayCount !== 1 ? 's' : ''}</span>
               ) : (
-                reviews.totalReviews ? (
-                  <span>Based on {reviews.totalReviews} review{reviews.totalReviews !== 1 ? 's' : ''}</span>
-                ) : (
-                  <span>No reviews yet</span>
-                )
+                <span>No reviews yet</span>
               )}
             </div>
           </div>
 
           {}
           <div className="flex-1">
-            {Object.entries(reviews.ratingCounts).map(([rating, count]) => {
+            {arrayCount > 0 ? (
+              [5,4,3,2,1].map((rating) => {
+                const count = ratingCountsFromArray[String(rating)] || 0;
                 const percentage = getRatingPercentage(count);
-                const label = rating.charAt(0).toUpperCase() + rating.slice(1);
+                const label = `${rating} star${rating !== 1 ? 's' : ''}`;
 
                 return (
                   <div key={rating} className="flex items-center gap-3 mb-2">
@@ -91,21 +110,89 @@ export default function ReviewSection({ product }) {
                     </span>
                   </div>
                 );
-              })}
+              })
+            ) : (
+              <div className="text-sm text-gray-600">No rating breakdown available</div>
+            )}
           </div>
 
           {}
           <div className="flex items-center">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 px-6 rounded-lg transition duration-200">
+            <button onClick={() => setIsModalOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 px-6 rounded-lg transition duration-200">
               Write a Review
             </button>
           </div>
         </div>
 
+        {/* Modal (frontend-only). Form is validated and appended to localReviews on submit. */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black opacity-40" onClick={() => setIsModalOpen(false)} />
+            <div className="bg-white rounded-lg shadow-xl z-10 w-full max-w-md p-6">
+              <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-700">Name</label>
+                  <input value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full border rounded px-3 py-2 mt-1" />
+                  {formErrors.name && <div className="text-red-500 text-sm mt-1">{formErrors.name}</div>}
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-700">Rating</label>
+                  <select value={formRating} onChange={(e) => setFormRating(Number(e.target.value))} className="w-full border rounded px-3 py-2 mt-1">
+                    {[5,4,3,2,1].map((r) => (
+                      <option key={r} value={r}>{r} star{r !== 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
+                  {formErrors.rating && <div className="text-red-500 text-sm mt-1">{formErrors.rating}</div>}
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-700">Comment</label>
+                  <textarea value={formComment} onChange={(e) => setFormComment(e.target.value)} className="w-full border rounded px-3 py-2 mt-1" rows={4} />
+                  {formErrors.comment && <div className="text-red-500 text-sm mt-1">{formErrors.comment}</div>}
+                </div>
+
+                <div className="flex items-center justify-end gap-3 mt-4">
+                  <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded border">Cancel</button>
+                  <button onClick={() => {
+                    // Validate
+                    const errs = {};
+                    if (!formName || String(formName).trim().length === 0) errs.name = 'Please enter your name';
+                    if (!formRating || formRating < 1 || formRating > 5) errs.rating = 'Please select a rating between 1 and 5';
+                    if (!formComment || String(formComment).trim().length < 3) errs.comment = 'Please enter a comment (min 3 chars)';
+                    setFormErrors(errs);
+                    if (Object.keys(errs).length > 0) return;
+
+                    // Create review object (frontend-only)
+                    const newReview = {
+                      id: `local-${Date.now()}-${Math.floor(Math.random()*10000)}`,
+                      name: String(formName).trim(),
+                      rating: Number(formRating),
+                      comment: String(formComment).trim(),
+                      date: new Date().toLocaleDateString(),
+                      avatar: null,
+                    };
+
+                    // Prepend to local reviews so new review is immediately visible
+                    setLocalReviews((prev) => [newReview, ...prev]);
+                    // Ensure at least one review is visible
+                    setVisibleReviewsCount((c) => Math.max(1, c));
+
+                    // Reset and close
+                    setFormName(''); setFormRating(5); setFormComment(''); setFormErrors({}); setIsModalOpen(false);
+                  }} className="px-4 py-2 rounded bg-orange-500 text-white">Submit</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {}
         <div className="space-y-8">
-          {reviews.reviews && reviews.reviews.length > 0 ? (
-            reviews.reviews.slice(0, visibleReviewsCount).map((review) => (
+          {reviewsArray && reviewsArray.length > 0 ? (
+            reviewsArray.slice(0, visibleReviewsCount).map((review) => (
               <div key={review.id} className="pb-6 border-b border-gray-200 last:border-0 last:pb-0">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -161,14 +248,14 @@ export default function ReviewSection({ product }) {
         </div>
 
         {}
-        {reviews.reviews && reviews.reviews.length > 0 && (
+        {reviewsArray && reviewsArray.length > 0 && (
           <div className="flex justify-center mt-8">
             <button
-              onClick={() => setVisibleReviewsCount((c) => Math.min(reviews.reviews.length, c + 2))}
-              disabled={visibleReviewsCount >= reviews.reviews.length}
-              className={`text-gray-700 border border-gray-300 rounded-lg px-6 py-2.5 hover:bg-gray-50 flex items-center gap-2 transition duration-200 font-medium ${visibleReviewsCount >= reviews.reviews.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => setVisibleReviewsCount((c) => Math.min(reviewsArray.length, c + 2))}
+              disabled={visibleReviewsCount >= reviewsArray.length}
+              className={`text-gray-700 border border-gray-300 rounded-lg px-6 py-2.5 hover:bg-gray-50 flex items-center gap-2 transition duration-200 font-medium ${visibleReviewsCount >= reviewsArray.length ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {visibleReviewsCount >= reviews.reviews.length ? 'All Reviews Loaded' : 'Load More Reviews'}
+              {visibleReviewsCount >= reviewsArray.length ? 'All Reviews Loaded' : 'Load More Reviews'}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>

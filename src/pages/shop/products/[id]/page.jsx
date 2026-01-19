@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import DetailsSection from "../../../../components/shop/shopdetails/DetailsSection";
 import ReviewsSection from "../../../../components/shop/shopdetails/ReviewSection";
 import RelatedProducts from "../../../../components/shop/shopdetails/RelatedProducts";
+import formatFeatureList from '../../../../lib/formatFeatureList';
 import { productService } from '../../../../../services/productService';
 import { useWishlist } from "../../../../../context/WishlistContext";
 import { Heart } from "lucide-react";
@@ -221,20 +222,10 @@ export default function ProductPage() {
 
 function SpecItem({ label, value }) {
   const renderValue = (val) => {
-    if (Array.isArray(val)) {
-      if (val.length <= 3) {
-        return val.map((v) => (typeof v === 'object' ? JSON.stringify(v) : String(v))).join(', ');
-      }
-      return (
-        <ul className="list-disc pl-5 space-y-1">
-          {val.map((v, i) => (
-            <li key={i}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</li>
-          ))}
-        </ul>
-      );
-    }
+    if (Array.isArray(val)) return formatFeatureList(val);
 
     if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+
     return val ?? '';
   };
 
