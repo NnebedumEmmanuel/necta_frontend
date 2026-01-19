@@ -3,13 +3,6 @@ export default function DetailsSection({ product }) {
 
   const { details } = product;
 
-  const renderSpecRow = (label, value) => (
-    <div className="flex justify-between py-1.5 border-b border-gray-200">
-      <span className="text-gray-600">{label}</span>
-      <span className="font-medium text-gray-900 text-right">{value}</span>
-    </div>
-  );
-
   return (
     <section className="mt-12 bg-[#FAFAFA] p-6">
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -19,33 +12,54 @@ export default function DetailsSection({ product }) {
 
         <div className="space-y-4">
           {}
+          {/* Render screen section if present */}
           {details.screen && (
             <div>
               <h3 className="font-semibold text-gray-900 mb-2 text-lg">Screen</h3>
               <div className="border-t border-gray-200 divide-y divide-gray-200">
-                {details.screen.diagonal && renderSpecRow("Screen diagonal", details.screen.diagonal)}
-                {details.screen.resolution && renderSpecRow("The screen resolution", details.screen.resolution)}
-                {details.screen.refreshRate && renderSpecRow("The screen refresh rate", details.screen.refreshRate)}
-                {details.screen.pixelDensity && renderSpecRow("The pixel density", details.screen.pixelDensity)}
-                {details.screen.type && renderSpecRow("Screen type", details.screen.type)}
-                {details.screen.additionalFeatures && renderSpecRow(
-                  "Additionally",
-                  <span>{details.screen.additionalFeatures.join(", ")}</span>
+                {details.screen.diagonal && (
+                  <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Screen diagonal</span><span className="font-medium text-gray-900">{details.screen.diagonal}</span></div>
+                )}
+                {details.screen.resolution && (
+                  <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Resolution</span><span className="font-medium text-gray-900">{details.screen.resolution}</span></div>
+                )}
+                {details.screen.refreshRate && (
+                  <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Refresh rate</span><span className="font-medium text-gray-900">{details.screen.refreshRate}</span></div>
+                )}
+                {details.screen.pixelDensity && (
+                  <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Pixel density</span><span className="font-medium text-gray-900">{details.screen.pixelDensity}</span></div>
+                )}
+                {details.screen.type && (
+                  <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Screen type</span><span className="font-medium text-gray-900">{details.screen.type}</span></div>
+                )}
+                {details.screen.additionalFeatures && (
+                  <div className="flex justify-between py-1.5 border-b border-gray-200"><span className="text-gray-600">Additional features</span><span className="font-medium text-gray-900">{details.screen.additionalFeatures.join(', ')}</span></div>
                 )}
               </div>
             </div>
           )}
 
-          {}
-          {details.cpu && (
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2 text-lg border-t">CPU</h3>
+          {/* Render remaining detail sections dynamically (excluding screen) */}
+          {Object.entries(details).filter(([k]) => k !== 'screen').map(([sectionKey, sectionVal]) => (
+            <div key={sectionKey}>
+              <h3 className="font-semibold text-gray-900 mb-2 text-lg border-t">{sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1)}</h3>
               <div className="border-gray-200 divide-y divide-gray-200">
-                {details.cpu.model && renderSpecRow("CPU", details.cpu.model)}
-                {details.cpu.cores && renderSpecRow("Number of Cores", details.cpu.cores)}
+                {sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal) ? (
+                  Object.entries(sectionVal).map(([label, value]) => (
+                    <div key={label} className="flex justify-between py-1.5 border-b border-gray-200">
+                      <span className="text-gray-600">{label}</span>
+                      <span className="font-medium text-gray-900 text-right">{typeof value === 'string' || typeof value === 'number' ? String(value) : JSON.stringify(value)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex justify-between py-1.5 border-b border-gray-200">
+                    <span className="text-gray-600">{sectionKey}</span>
+                    <span className="font-medium text-gray-900 text-right">{Array.isArray(sectionVal) ? sectionVal.join(', ') : String(sectionVal)}</span>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          ))}
         </div>
 
         <div className="flex justify-center mt-6">
