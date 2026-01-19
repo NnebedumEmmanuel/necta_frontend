@@ -1,7 +1,22 @@
+import { useState } from 'react';
+
 export default function ReviewSection({ product }) {
   if (!product.reviews) return null;
 
   const { reviews } = product;
+
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(1);
+
+  const reviewsArray = Array.isArray(reviews.reviews) ? reviews.reviews : [];
+  const arrayCount = reviewsArray.length;
+
+  const displayAverage = arrayCount > 0
+    ? reviewsArray.reduce((s, r) => s + (Number(r.rating) || 0), 0) / arrayCount
+    : (typeof reviews.averageRating === 'number' ? reviews.averageRating : 0);
+
+  const displayTotal = arrayCount > 0
+    ? arrayCount
+    : (typeof reviews.totalReviews === 'number' ? reviews.totalReviews : 0);
 
   const renderStars = (rating) => {
     const stars = [];
@@ -21,7 +36,7 @@ export default function ReviewSection({ product }) {
   };
 
   const getRatingPercentage = (count) => {
-    const total = reviews.totalReviews;
+    const total = displayTotal;
     return total > 0 ? Math.round((count / total) * 100) : 0;
   };
 
@@ -34,13 +49,25 @@ export default function ReviewSection({ product }) {
         <div className="flex flex-col md:flex-row gap-8 mb-8 pb-8 border-b border-gray-200">
           <div className="flex flex-col items-center md:items-start">
             <div className="text-4xl font-bold text-gray-900 mb-2">
-              {reviews.averageRating.toFixed(1)}
+              {Number.isFinite(displayAverage) ? displayAverage.toFixed(1) : '0.0'}
             </div>
             <div className="flex mb-2">
-              {renderStars(Math.round(reviews.averageRating))}
+              {renderStars(Math.round(displayAverage))}
             </div>
             <div className="text-gray-600 text-sm">
-              Based on {reviews.totalReviews} reviews
+              {arrayCount > 0 ? (
+                reviews.totalReviews && reviews.totalReviews > arrayCount ? (
+                  <span>Showing {arrayCount} of {reviews.totalReviews} reviews</span>
+                ) : (
+                  <span>Based on {arrayCount} review{arrayCount !== 1 ? 's' : ''}</span>
+                )
+              ) : (
+                reviews.totalReviews ? (
+                  <span>Based on {reviews.totalReviews} review{reviews.totalReviews !== 1 ? 's' : ''}</span>
+                ) : (
+                  <span>No reviews yet</span>
+                )
+              )}
             </div>
           </div>
 
@@ -78,7 +105,7 @@ export default function ReviewSection({ product }) {
         {}
         <div className="space-y-8">
           {reviews.reviews && reviews.reviews.length > 0 ? (
-            reviews.reviews.map((review) => (
+            reviews.reviews.slice(0, visibleReviewsCount).map((review) => (
               <div key={review.id} className="pb-6 border-b border-gray-200 last:border-0 last:pb-0">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -136,8 +163,12 @@ export default function ReviewSection({ product }) {
         {}
         {reviews.reviews && reviews.reviews.length > 0 && (
           <div className="flex justify-center mt-8">
-            <button className="text-gray-700 border border-gray-300 rounded-lg px-6 py-2.5 hover:bg-gray-50 flex items-center gap-2 transition duration-200 font-medium">
-              Load More Reviews
+            <button
+              onClick={() => setVisibleReviewsCount((c) => Math.min(reviews.reviews.length, c + 2))}
+              disabled={visibleReviewsCount >= reviews.reviews.length}
+              className={`text-gray-700 border border-gray-300 rounded-lg px-6 py-2.5 hover:bg-gray-50 flex items-center gap-2 transition duration-200 font-medium ${visibleReviewsCount >= reviews.reviews.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {visibleReviewsCount >= reviews.reviews.length ? 'All Reviews Loaded' : 'Load More Reviews'}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>

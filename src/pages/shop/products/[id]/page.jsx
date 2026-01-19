@@ -220,12 +220,30 @@ export default function ProductPage() {
 }
 
 function SpecItem({ label, value }) {
+  const renderValue = (val) => {
+    if (Array.isArray(val)) {
+      if (val.length <= 3) {
+        return val.map((v) => (typeof v === 'object' ? JSON.stringify(v) : String(v))).join(', ');
+      }
+      return (
+        <ul className="list-disc pl-5 space-y-1">
+          {val.map((v, i) => (
+            <li key={i}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+    return val ?? '';
+  };
+
   return (
     <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="flex-1 min-w-0">
           <div className="text-xs sm:text-sm font-semibold text-gray-700 truncate">{label}</div>
-          <div className="text-base sm:text-lg font-medium text-black truncate">{value}</div>
+          <div className="text-base sm:text-lg font-medium text-black truncate">{renderValue(value)}</div>
         </div>
       </div>
     </div>
