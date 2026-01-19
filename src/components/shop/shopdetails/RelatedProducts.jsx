@@ -27,6 +27,37 @@ const RelatedProducts = () => {
     return () => { mounted = false };
   }, [id]);
 
+  // Helper to pick a safe image src for a product.
+  // Priority:
+  // 1. product.image if it's a string
+  // 2. product.image[0] if product.image is an array of strings
+  // 3. product.images[0].url if product.images is an array of objects
+  // 4. product.images[0] if product.images is an array of strings
+  // 5. fallback placeholder
+  const getImageSrc = (product) => {
+    const FALLBACK = '/px8.jpg';
+    if (!product) return FALLBACK;
+
+    // Primary field: product.image
+    const imgField = product.image;
+    if (typeof imgField === 'string' && imgField.length > 0) return imgField;
+    if (Array.isArray(imgField) && imgField.length > 0) {
+      const first = imgField[0];
+      if (typeof first === 'string' && first.length > 0) return first;
+    }
+
+    // Secondary: product.images (could be array of objects or strings)
+    const imgs = product.images;
+    if (Array.isArray(imgs) && imgs.length > 0) {
+      const first = imgs[0];
+      if (!first) return FALLBACK;
+      if (typeof first === 'string' && first.length > 0) return first;
+      if (typeof first === 'object' && first.url && typeof first.url === 'string') return first.url;
+    }
+
+    return FALLBACK;
+  };
+
   const toggleWishlist = (product, e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -70,7 +101,7 @@ const RelatedProducts = () => {
               <a href={`/shop/products/${product.id}`}>
                 <div className="cursor-pointer">
                   <img
-                    src={product.image || product.images?.[0]?.url}
+                    src={getImageSrc(product)}
                     alt={product.name}
                     className="w-full h-32 sm:h-40 object-contain mb-3 sm:mb-4 mx-auto"
                   />

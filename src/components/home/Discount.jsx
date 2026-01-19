@@ -13,8 +13,6 @@ const DiscountPage = () => {
       image: "/images/img1.png",
       originalPrice: "₦10,000.00",
       discountedPrice: "₦7,500.00",
-      rating: 5,
-      reviewCount: 239,
       badge: "New"
     },
     {
@@ -23,8 +21,6 @@ const DiscountPage = () => {
       image: "/images/img2.png",
       originalPrice: "₦8,500",
       discountedPrice: null,
-      rating: 5,
-      reviewCount: 131,
       badge: null
     },
     {
@@ -33,8 +29,6 @@ const DiscountPage = () => {
       image: "/images/img3.png",
       originalPrice: "₦12,000",
       discountedPrice: "₦6,800",
-      rating: 5,
-      reviewCount: 27,
       badge: "New"
     },
     {
@@ -43,8 +37,6 @@ const DiscountPage = () => {
       image: "/images/img4.png",
       originalPrice: "₦43,000",
       discountedPrice: "₦35,000",
-      rating: 5,
-      reviewCount: 269,
       badge: "New"
     }
   ];
@@ -163,16 +155,20 @@ const DiscountPage = () => {
 
               {}
               <div className="flex items-center gap-2 mb-4 transition-opacity duration-300 group-hover:opacity-0">
-                <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-amber-400 text-lg">
-                      {i < speaker.rating ? '★' : '☆'}
-                    </span>
-                  ))}
-                </div>
-                <span className="text-gray-500 text-sm">
-                  ({speaker.reviewCount})
-                </span>
+                {typeof speaker.rating === 'number' && (
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i} className="text-amber-400 text-lg">
+                        {i < speaker.rating ? '★' : '☆'}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {speaker.reviewCount != null && (
+                  <span className="text-gray-500 text-sm">
+                    ({speaker.reviewCount})
+                  </span>
+                )}
               </div>
 
               {}

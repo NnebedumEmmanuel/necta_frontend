@@ -16,8 +16,8 @@ const ProductCard = ({
     name,
     price,
     oldPrice,
-    rating = 4.5,
-    reviewCount = 0,
+  rating = null,
+  reviewCount = null,
     discount,
     isNew
   } = product;
@@ -88,9 +88,12 @@ const ProductCard = ({
             totalStars={5} 
             size={16}
           />
-          <span className="text-sm text-gray-600 ml-2">
-            {rating.toFixed(1)} ({reviewCount})
-          </span>
+          {(typeof rating === 'number' || reviewCount != null) && (
+            <span className="text-sm text-gray-600 ml-2">
+              {typeof rating === 'number' ? rating.toFixed(1) : ''}
+              {reviewCount != null && ` (${reviewCount})`}
+            </span>
+          )}
         </div>
 
         {}

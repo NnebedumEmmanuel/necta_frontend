@@ -29,14 +29,7 @@ function parsePrice(price) {
   return numericPrice;
 }
 
-function getRandomRating() {
-  const random = Math.random();
-  if (random < 0.3) return 5;
-  if (random < 0.6) return 4.5;
-  if (random < 0.8) return 4;
-  if (random < 0.95) return 3.5;
-  return 3;
-}
+// Ratings and review counts should come from the backend (no client-side fakes)
 
 function ShopContent() {
   const [searchParams] = useSearchParams();
@@ -251,8 +244,10 @@ function ShopContent() {
           brand: product.brand || getBrandFromName(product.name || ''),
           memory: product.memory || getMemoryFromProduct(),
           priceValue: parsePrice(String(product.price || '0')),
-          rating: product.rating || getRandomRating(),
-          reviewCount: product.reviewCount || Math.floor(Math.random() * 500) + 100,
+          // Do not synthesize rating or review counts on the client.
+          // Use values provided by the backend API (product.rating, product.reviewCount).
+          rating: product.rating,
+          reviewCount: product.reviewCount,
         }));
 
         setProducts(enhanced);

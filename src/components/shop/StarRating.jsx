@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 const StarRating = ({ 
-  rating = 0, 
+  rating = null, 
   totalStars = 5, 
   size = "md",
   showNumber = true,
@@ -72,7 +72,7 @@ const StarRating = ({
       </div>
       
       {}
-      {showNumber && (
+      {showNumber && rating != null && (
         <span className="text-sm font-semibold text-gray-900">
           {rating.toFixed(1)}
         </span>

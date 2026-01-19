@@ -1,16 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export default function ReviewSection({ product }) {
-  if (!product.reviews) return null;
-
-  const { reviews } = product;
+export default function ReviewSection({ productId }) {
+  if (!productId) return null;
 
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(1);
-  // Local UI-only reviews state. We initialize from the backend-provided
-  // sample (`reviews.reviews`) but all UI rendering and calculations use this
-  // local source of truth after initialization. New reviews are appended here
-  // (frontend-only) until persistence is implemented.
-  const [localReviews, setLocalReviews] = useState(Array.isArray(reviews.reviews) ? reviews.reviews.slice() : []);
+  // localReviews is the UI source of truth and is refreshed from the backend.
+  const [localReviews, setLocalReviews] = useState([]);
+  // backendTotal is populated from the server response when available. If
+  // server-side pagination or partial shapes are returned, this lets the UI
+  // show "Showing X of Y reviews" transparently.
+  const [backendTotal, setBackendTotal] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formName, setFormName] = useState('');
@@ -63,6 +62,28 @@ export default function ReviewSection({ product }) {
     return total > 0 ? Math.round((count / total) * 100) : 0;
   };
 
+  // Load reviews from backend for this productId and populate local state.
+  async function loadReviews() {
+    if (!productId) return;
+    try {
+      const res = await fetch(`/api/products/${productId}/reviews`);
+      const body = await res.json();
+      const fetched = Array.isArray(body?.reviews) ? body.reviews : [];
+      setLocalReviews(fetched);
+      setBackendTotal(typeof body?.totalReviews === 'number' ? body.totalReviews : fetched.length);
+    } catch (e) {
+      // Keep UI resilient; show empty list on failure
+      console.error('Failed to load reviews', e);
+      setLocalReviews([]);
+      setBackendTotal(null);
+    }
+  }
+
+  useEffect(() => {
+    loadReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId]);
+
   return (
     <section className="mt-12 bg-[#FAFAFA] p-6">
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -78,8 +99,8 @@ export default function ReviewSection({ product }) {
               {displayAverage !== null ? renderStars(Math.round(displayAverage)) : null}
             </div>
             <div className="text-gray-600 text-sm">
-              {reviews.totalReviews > arrayCount ? (
-                <span>Showing {arrayCount} of {reviews.totalReviews} reviews</span>
+              {backendTotal != null && backendTotal > arrayCount ? (
+                <span>Showing {arrayCount} of {backendTotal} reviews</span>
               ) : arrayCount > 0 ? (
                 <span>Based on {arrayCount} review{arrayCount !== 1 ? 's' : ''}</span>
               ) : (
@@ -165,23 +186,29 @@ export default function ReviewSection({ product }) {
                     setFormErrors(errs);
                     if (Object.keys(errs).length > 0) return;
 
-                    // Create review object (frontend-only)
-                    const newReview = {
-                      id: `local-${Date.now()}-${Math.floor(Math.random()*10000)}`,
-                      name: String(formName).trim(),
-                      rating: Number(formRating),
-                      comment: String(formComment).trim(),
-                      date: new Date().toLocaleDateString(),
-                      avatar: null,
-                    };
+                      // Submit to backend
+                      (async () => {
+                        try {
+                          const payload = { name: String(formName).trim(), rating: Number(formRating), comment: String(formComment).trim() };
+                          const res = await fetch(`/api/products/${productId}/reviews`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                          });
+                          const body = await res.json();
+                          if (!res.ok) {
+                            setFormErrors({ submit: body?.error || 'Failed to submit review' });
+                            return;
+                          }
 
-                    // Prepend to local reviews so new review is immediately visible
-                    setLocalReviews((prev) => [newReview, ...prev]);
-                    // Ensure at least one review is visible
-                    setVisibleReviewsCount((c) => Math.max(1, c));
+                          // Re-fetch authoritative reviews from backend
+                          await loadReviews();
 
-                    // Reset and close
-                    setFormName(''); setFormRating(5); setFormComment(''); setFormErrors({}); setIsModalOpen(false);
+                          // Reset and close
+                          setFormName(''); setFormRating(5); setFormComment(''); setFormErrors({}); setIsModalOpen(false);
+                          setVisibleReviewsCount((c) => Math.max(1, c));
+                        } catch (e) {
+                          setFormErrors({ submit: String(e) });
+                        }
+                      })();
                   }} className="px-4 py-2 rounded bg-orange-500 text-white">Submit</button>
                 </div>
               </div>

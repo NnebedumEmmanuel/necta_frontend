@@ -212,7 +212,7 @@ export default function ProductPage() {
       <DetailsSection product={product} />
 
       {}
-      <ReviewsSection product={product} />
+  <ReviewsSection productId={product.id} />
       
       {}
       <RelatedProducts />
