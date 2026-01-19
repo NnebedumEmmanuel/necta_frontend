@@ -41,7 +41,14 @@ const RelatedProducts = () => {
   };
 
   // Hide the related carousel completely when there are no related items.
-  if (!products || products.length === 0) return null;
+  // Select a maximum number of related products to display.
+  // We slice the array here (before rendering) so the DOM only contains
+  // the items we intend to show. This keeps layout and accessibility
+  // predictable and avoids hiding items with CSS.
+  const MAX_DISPLAY = 4;
+  const displayedProducts = Array.isArray(products) ? products.slice(0, MAX_DISPLAY) : [];
+
+  if (!displayedProducts || displayedProducts.length === 0) return null;
 
   return (
     <section className="px-4 sm:px-6 md:px-12 lg:px-16 py-10">
@@ -50,7 +57,7 @@ const RelatedProducts = () => {
       </h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        {products.map((product) => {
+  {displayedProducts.map((product) => {
           const isInWishlist = wishlistState.items.some(
             (item) => item.id === product.id
           );
