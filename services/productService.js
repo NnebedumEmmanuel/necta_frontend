@@ -111,7 +111,17 @@ class ProductService {
     try {
   const response = await api.get(`/products/${id}`);
       const body = response.data || null;
-      return body?.product ?? body ?? null;
+      // Accept multiple backend shapes for compatibility:
+      // - { product: {...} }
+      // - { data: {...} } or { data: { product: {...} } }
+      // - product (raw object)
+      return (
+        body?.product ??
+        body?.data?.product ??
+        body?.data ??
+        body ??
+        null
+      );
     } catch (error) {
       throw handleApiError(error);
     }
