@@ -163,18 +163,36 @@ export default function ProductPage() {
             </div>
 
             {}
-            {/* Specs grid generated dynamically from product.specs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-              {product.specs && typeof product.specs === 'object' ? (
-                Object.entries(product.specs).map(([key, val]) => (
-                  <SpecItem key={key} label={String(key)} value={
-                    typeof val === 'string' || typeof val === 'number' ? String(val) : JSON.stringify(val)
-                  } />
-                ))
-              ) : (
-                <div className="text-gray-600">No specifications available.</div>
-              )}
-            </div>
+            {/* Specs grid generated dynamically from product.specs (excluding 'features') */}
+            {product.specs && typeof product.specs === 'object' ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                  {Object.entries(product.specs)
+                    .filter(([key]) => String(key).toLowerCase() !== 'features')
+                    .map(([key, val]) => (
+                      <SpecItem
+                        key={key}
+                        label={String(key)}
+                        value={typeof val === 'string' || typeof val === 'number' ? String(val) : JSON.stringify(val)}
+                      />
+                    ))}
+                </div>
+
+                {/* Dedicated features block — render strictly from product.specs.features */}
+                {Array.isArray(product.specs.features) && product.specs.features.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-2 text-lg">Features</h3>
+                    <div className="bg-gray-100 rounded-lg p-3">
+                      <div className="text-base font-medium text-black">
+                        {formatFeatureList(product.specs.features)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-gray-600">No specifications available.</div>
+            )}
 
             {}
             <p className="text-gray-600 leading-relaxed text-sm max-w-lg mb-4 sm:mb-6">

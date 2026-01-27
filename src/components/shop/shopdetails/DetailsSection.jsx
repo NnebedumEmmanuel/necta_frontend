@@ -1,16 +1,18 @@
 import formatFeatureList from '../../../lib/formatFeatureList';
 
 export default function DetailsSection({ product }) {
-  if (!product.details) return null;
+  // Prefer `product.specs` as canonical source for structured specs/details.
+  const specs = product.specs || product.details || null;
+  if (!specs) return null;
 
-  const { details } = product;
+  const details = specs;
 
   return (
     <section className="mt-12 bg-[#FAFAFA] p-6">
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="text-xl font-semibold mb-4">Details</h2>
 
-        <p className="text-gray-600 leading-relaxed mb-6">{details.description}</p>
+  <p className="text-gray-600 leading-relaxed mb-6">{details.description || ''}</p>
 
         <div className="space-y-4">
           {}
@@ -42,7 +44,7 @@ export default function DetailsSection({ product }) {
           )}
 
           {/* Render remaining detail sections dynamically (excluding screen) */}
-          {Object.entries(details).filter(([k]) => k !== 'screen').map(([sectionKey, sectionVal]) => (
+          {Object.entries(details).filter(([k]) => k !== 'screen' && String(k).toLowerCase() !== 'features').map(([sectionKey, sectionVal]) => (
             <div key={sectionKey}>
               <h3 className="font-semibold text-gray-900 mb-2 text-lg border-t">{sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1)}</h3>
               <div className="border-gray-200 divide-y divide-gray-200">
@@ -64,6 +66,17 @@ export default function DetailsSection({ product }) {
               </div>
             </div>
           ))}
+          {/* Render features if present on the canonical specs object */}
+          {Array.isArray(details.features) && details.features.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2 text-lg border-t">Features</h3>
+              <div className="border-gray-200 divide-y divide-gray-200">
+                <div className="py-2">
+                  {formatFeatureList(details.features)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-center mt-6">

@@ -22,6 +22,7 @@ import { useAuth } from '@/context/AuthContext';
 // orderService not used here; use api directly for per-tab requests
 import { useWishlist } from '../../../context/WishlistContext';
 import { api, attachAuthToken, handleApiError } from '../../../src/lib/api';
+import supabase from '../../lib/supabaseClient'
 import { useToast } from "../../context/useToastHook";
 
 const UserDashboard = () => {
@@ -117,6 +118,43 @@ const UserDashboard = () => {
     async function fetchProfileForTab() {
       setLoading(true);
       try {
+        // Prefer reading directly from Supabase (auth + profiles table)
+        let supUser = null
+        try {
+          const supRes = await supabase.auth.getUser();
+          supUser = supRes?.data?.user ?? null;
+        } catch (supErr) {
+          console.warn('supabase.auth.getUser() failed, falling back to API', supErr)
+          supUser = null
+        }
+
+        if (supUser) {
+          // try to fetch profile row by user id
+          const { data: profRow, error: profErr } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', supUser.id)
+            .limit(1)
+            .maybeSingle?.() ?? await (async () => {
+              // some supabase versions may not have maybeSingle; fall back to single and handle not found
+              const r = await supabase.from('profiles').select('*').eq('id', supUser.id).single().catch(e => ({ data: null, error: e }));
+              return r;
+            })();
+
+          if (!mounted) return;
+          setUser(supUser || authUser || null);
+          setProfile(profRow || null);
+          setProfileForm({
+            first_name: profRow?.first_name ?? profRow?.firstName ?? supUser?.user_metadata?.first_name ?? supUser?.first_name ?? '',
+            last_name: profRow?.last_name ?? profRow?.lastName ?? supUser?.user_metadata?.last_name ?? supUser?.last_name ?? '',
+            email: supUser?.email ?? profRow?.email ?? '',
+            phone: profRow?.phone ?? profRow?.phone_number ?? supUser?.phone ?? ''
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Fallback to existing API endpoint if supabase auth/profile is unavailable
         const token = session?.access_token || session?.accessToken || null;
         attachAuthToken(token);
         const res = await api.get('/me');
@@ -186,6 +224,32 @@ const UserDashboard = () => {
   async function saveProfile() {
     setLoading(true);
     try {
+      // Prefer updating the Supabase profiles table directly
+      try {
+        const supRes = await supabase.auth.getUser();
+        const supUser = supRes?.data?.user ?? null;
+        if (supUser) {
+          const upd = {
+            id: supUser.id,
+            first_name: profileForm.first_name ?? null,
+            last_name: profileForm.last_name ?? null,
+            email: profileForm.email ?? null,
+            phone: profileForm.phone ?? null,
+            updated_at: new Date().toISOString()
+          };
+          const { data: updData, error: updErr } = await supabase.from('profiles').upsert(upd, { returning: 'representation' });
+          if (updErr) throw updErr;
+          const newProfile = Array.isArray(updData) ? updData[0] : updData;
+          setProfile(newProfile || profile);
+          showToast?.('Profile updated', 'success');
+          setLoading(false);
+          return;
+        }
+      } catch (supErr) {
+        console.warn('Supabase profile update failed, falling back to API', supErr);
+      }
+
+      // Fallback to existing API
       const token = session?.access_token || session?.accessToken || null;
       attachAuthToken(token);
       const payload = { ...profileForm };

@@ -12,7 +12,6 @@ export default function ReviewSection({ productId }) {
   const [backendTotal, setBackendTotal] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formName, setFormName] = useState('');
   const [formRating, setFormRating] = useState(5);
   const [formComment, setFormComment] = useState('');
   const [formErrors, setFormErrors] = useState({});
@@ -51,8 +50,8 @@ export default function ReviewSection({ productId }) {
   const ratingCountsFromArray = { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 };
   if (arrayCount > 0) {
     reviewsArray.forEach((r) => {
-      const rating = Math.min(5, Math.max(1, Number(r.rating) || 0));
-      const key = String(rating >= 1 && rating <= 5 ? rating : 0);
+      const rating = Math.min(5, Math.max(1, Math.round(Number(r.rating) || 0)));
+      const key = String(rating);
       if (ratingCountsFromArray[key] !== undefined) ratingCountsFromArray[key] += 1;
     });
   }
@@ -153,11 +152,7 @@ export default function ReviewSection({ productId }) {
               <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
 
               <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-700">Name</label>
-                  <input value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full border rounded px-3 py-2 mt-1" />
-                  {formErrors.name && <div className="text-red-500 text-sm mt-1">{formErrors.name}</div>}
-                </div>
+                {/* Name removed: reviews are anonymous and stored without a name field */}
 
                 <div>
                   <label className="block text-sm text-gray-700">Rating</label>
@@ -180,7 +175,6 @@ export default function ReviewSection({ productId }) {
                   <button onClick={() => {
                     // Validate
                     const errs = {};
-                    if (!formName || String(formName).trim().length === 0) errs.name = 'Please enter your name';
                     if (!formRating || formRating < 1 || formRating > 5) errs.rating = 'Please select a rating between 1 and 5';
                     if (!formComment || String(formComment).trim().length < 3) errs.comment = 'Please enter a comment (min 3 chars)';
                     setFormErrors(errs);
@@ -189,7 +183,7 @@ export default function ReviewSection({ productId }) {
                       // Submit to backend
                       (async () => {
                         try {
-                          const payload = { name: String(formName).trim(), rating: Number(formRating), comment: String(formComment).trim() };
+                          const payload = { rating: Number(formRating), comment: String(formComment).trim() };
                           const res = await fetch(`/api/products/${productId}/reviews`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                           });
@@ -202,8 +196,8 @@ export default function ReviewSection({ productId }) {
                           // Re-fetch authoritative reviews from backend
                           await loadReviews();
 
-                          // Reset and close
-                          setFormName(''); setFormRating(5); setFormComment(''); setFormErrors({}); setIsModalOpen(false);
+                  // Reset and close
+                  setFormRating(5); setFormComment(''); setFormErrors({}); setIsModalOpen(false);
                           setVisibleReviewsCount((c) => Math.max(1, c));
                         } catch (e) {
                           setFormErrors({ submit: String(e) });
@@ -223,24 +217,15 @@ export default function ReviewSection({ productId }) {
               <div key={review.id} className="pb-6 border-b border-gray-200 last:border-0 last:pb-0">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-                      {review.avatar ? (
-                        <img 
-                          src={review.avatar} 
-                          alt={review.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-600">
-                          {review.name.charAt(0)}
-                        </div>
-                      )}
+                      <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center text-gray-600">
+                        {/* No name/avatar stored in reviews table; show generic avatar */}
+                        <span className="text-lg font-medium">👤</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">Customer</h4>
+                        <p className="text-sm text-gray-500">{review.created_at ? new Date(review.created_at).toLocaleDateString() : ''}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">{review.name}</h4>
-                      <p className="text-sm text-gray-500">{review.date}</p>
-                    </div>
-                  </div>
                   <div className="flex">
                     {renderStars(review.rating)}
                   </div>

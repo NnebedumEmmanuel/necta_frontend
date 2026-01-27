@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '@/lib/api'
 import { useCart } from '../../context/useCartHook'
 import { useToast } from '@/context/useToastHook'
+import supabase from '@/lib/supabaseClient'
 
 const PaymentCallback = () => {
   const navigate = useNavigate()
@@ -11,22 +12,39 @@ const PaymentCallback = () => {
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const ranRef = useRef(false)
 
   useEffect(() => {
+    if (ranRef.current) return
+    ranRef.current = true
+
     async function verify() {
       setLoading(true)
       setError(null)
       try {
         const params = new URLSearchParams(location.search)
         const reference = params.get('reference')
+        console.info('PaymentCallback verify invoked', { reference })
         if (!reference) {
           setError('Missing payment reference in URL.');
+          setLoading(false)
           return
+        }
+
+        // Log whether user session exists (this helps debug Authorization header presence)
+        try {
+          const sessionRes = await supabase.auth.getSession()
+          const token = sessionRes?.data?.session?.access_token
+          console.info('PaymentCallback: supabase session token present?', !!token)
+        } catch (sErr) {
+          console.warn('Failed to read supabase session for debugging', sErr)
         }
 
         // Call verify once and handle result safely
         const res = await api.get('/paystack/verify', { params: { reference } })
         const body = res?.data ?? res
+
+        console.info('Paystack verify response (frontend):', body)
 
         if (body?.success) {
           try { clearCart() } catch (e) { }
@@ -35,7 +53,7 @@ const PaymentCallback = () => {
           return
         }
 
-  // If verify failed, poll the user's orders for up to 10s to see if webhook finalized the payment.
+        // If verify failed, poll the user's orders for up to 10s to see if webhook finalized the payment.
         const poll = async () => {
           const maxAttempts = 10
           const delayMs = 1000
