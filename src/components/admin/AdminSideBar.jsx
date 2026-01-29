@@ -12,6 +12,7 @@ import {
   Users,
   FileText,
   HelpCircle,
+  LifeBuoy,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
@@ -22,6 +23,7 @@ export default function AdminSidebar({ isCollapsed, onClose, onToggleCollapse, u
     { id: "products", label: "Products", icon: <Package size={20} /> },
     { id: "orders", label: "Orders", icon: <ShoppingCart size={20} /> },
     { id: "users", label: "Users", icon: <Users size={20} /> },
+    { id: "support", label: "Support", icon: <LifeBuoy size={20} /> },
   ];
   const navigate = useNavigate();
   const location = useLocation();

@@ -1,6 +1,78 @@
-import React from "react";
+import React, { useEffect } from "react";
+import supabase from '../../lib/supabaseClient'
 
 const CheckoutForm = ({ formData, setFormData }) => {
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchProfile = async (userId) => {
+      try {
+        console.log('CheckoutForm: Fetching profile for:', userId);
+        const { data: profile, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.warn('CheckoutForm: profile query error', error);
+          return;
+        }
+
+        if (profile && mounted) {
+          console.log('CheckoutForm: Found Profile:', profile);
+          setFormData(prev => ({
+            ...prev,
+            fullName: profile.name || prev.fullName,
+            phone: profile.phone || prev.phone,
+            address: profile.shipping_address || profile.address || prev.address,
+            city: profile.city || prev.city,
+            state: profile.state || prev.state,
+            email: profile.email || prev.email,
+          }));
+        }
+      } catch (err) {
+        console.warn('CheckoutForm: error fetching profile', err);
+      }
+    };
+
+    // 1. Check current session immediately
+    if (supabase && supabase.auth && typeof supabase.auth.getUser === 'function') {
+      supabase.auth.getUser().then(res => {
+        const supUser = res?.data?.user ?? res?.user ?? null;
+        if (supUser) {
+          // ensure email is set immediately
+          setFormData(prev => ({ ...prev, email: supUser.email || prev.email }));
+          fetchProfile(supUser.id);
+        }
+      }).catch(err => {
+        console.warn('CheckoutForm: getUser() error', err);
+      });
+    }
+
+    // 2. ALSO listen for auth changes (in case of slow load)
+    let subscription = null;
+    try {
+      const subRes = supabase.auth.onAuthStateChange((event, session) => {
+        const uid = session?.user?.id ?? null;
+        if (uid) fetchProfile(uid);
+      });
+      // older/newer clients return different shapes; normalize
+      subscription = subRes?.data?.subscription ?? subRes?.subscription ?? subRes;
+    } catch (err) {
+      console.warn('CheckoutForm: failed to subscribe to auth changes', err);
+    }
+
+    return () => {
+      mounted = false;
+      try {
+        if (subscription?.unsubscribe) subscription.unsubscribe();
+        else if (typeof subscription === 'function') subscription();
+      } catch (err) {
+        // silent
+      }
+    };
+  }, [setFormData]);
 
   const handleChange = (e) => {
     setFormData({

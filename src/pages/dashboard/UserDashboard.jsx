@@ -6,6 +6,7 @@ import {
   ShoppingCart, 
   Settings, 
   User, 
+  Truck,
   MapPin, 
   Calendar, 
   LogOut,
@@ -24,6 +25,10 @@ import { useWishlist } from '../../../context/WishlistContext';
 import { api, attachAuthToken, handleApiError } from '../../../src/lib/api';
 import supabase from '../../lib/supabaseClient'
 import { useToast } from "../../context/useToastHook";
+import SupportTab from '../../components/dashboard/tabs/SupportTab'
+import OrdersTab from '../../components/dashboard/tabs/OrdersTab'
+import ProfileTab from '../../components/dashboard/tabs/ProfileTab'
+import SecurityTab from '../../components/dashboard/tabs/SecurityTab'
 
 const UserDashboard = () => {
   const [user, setUser] = useState(null);
@@ -38,6 +43,71 @@ const UserDashboard = () => {
   const { state: wishlistState } = useWishlist();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Make a reusable loader for profile/user data so child tabs can refresh it
+  async function loadUserData() {
+    setLoading(true);
+    try {
+      // Prefer reading directly from Supabase (auth + profiles table)
+      let supUser = null
+      try {
+        const supRes = await supabase.auth.getUser();
+        supUser = supRes?.data?.user ?? null;
+      } catch (supErr) {
+        console.warn('supabase.auth.getUser() failed, falling back to API', supErr)
+        supUser = null
+      }
+
+      if (supUser) {
+        const { data: profRow, error: profErr } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', supUser.id)
+          .limit(1)
+          .maybeSingle?.() ?? await (async () => {
+            const r = await supabase.from('users').select('*').eq('id', supUser.id).single().catch(e => ({ data: null, error: e }));
+            return r;
+          })();
+
+        // Merge auth user and db profile so components receive the full shape
+        setUser({ ...(supUser || {}), ...(profRow || {}) });
+        setProfile(profRow || null);
+        const fullName = profRow?.name ?? '';
+        const nameParts = fullName ? String(fullName).trim().split(/\s+/) : [];
+        const first = nameParts.length > 0 ? nameParts[0] : '';
+        const last = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+        setProfileForm({
+          first_name: first,
+          last_name: last,
+          email: supUser?.email ?? profRow?.email ?? '',
+          phone: profRow?.phone ?? profRow?.phone_number ?? supUser?.phone ?? ''
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Fallback to API
+      const token = session?.access_token || session?.accessToken || null;
+      attachAuthToken(token);
+      const res = await api.get('/me');
+      const payload = res?.data?.data ?? res?.data ?? {};
+  // Merge API user and profile so components receive the full shape
+  setUser({ ...(payload.user || {}), ...(payload.profile || {}) || authUser || null });
+  const prof = payload.profile || null;
+      setProfile(prof);
+      setProfileForm({
+        first_name: prof?.first_name ?? prof?.firstName ?? payload.user?.user_metadata?.first_name ?? payload.user?.firstName ?? '',
+        last_name: prof?.last_name ?? prof?.lastName ?? payload.user?.user_metadata?.last_name ?? payload.user?.lastName ?? '',
+        email: payload.user?.email ?? prof?.email ?? '',
+        phone: prof?.phone ?? prof?.phone_number ?? payload.user?.phone ?? ''
+      });
+    } catch (err) {
+      console.error('Failed to load user data:', err);
+      showToast?.('Failed to load profile', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -70,7 +140,12 @@ const UserDashboard = () => {
           id: order.id || order.order_number || order.orderNumber || null,
           orderNumber: order.order_number || order.orderNumber || order.id || null,
           createdAt: order.created_at || order.createdAt || null,
-          status: order.payment_status || order.status || 'pending',
+          // prefer fulfillment/order status, fall back to payment status
+          status: order.status || order.fulfillment_status || order.payment_status || order.paymentStatus || 'pending',
+          fulfillmentStatus: (order.status || order.fulfillment_status || '').toString().toLowerCase(),
+          // include tracking and shipment timestamps when available
+          tracking_number: order.tracking_number || order.trackingNumber || order.__raw?.tracking_number || null,
+          shipped_at: order.shipped_at || order.shippedAt || order.__raw?.shipped_at || null,
           items: order.items || [],
           total: order.total || order.subtotal || 0,
           shippingAddress: order.shipping_address || order.shippingAddress || '',
@@ -131,22 +206,28 @@ const UserDashboard = () => {
         if (supUser) {
           // try to fetch profile row by user id
           const { data: profRow, error: profErr } = await supabase
-            .from('profiles')
+            .from('users')
             .select('*')
             .eq('id', supUser.id)
             .limit(1)
             .maybeSingle?.() ?? await (async () => {
               // some supabase versions may not have maybeSingle; fall back to single and handle not found
-              const r = await supabase.from('profiles').select('*').eq('id', supUser.id).single().catch(e => ({ data: null, error: e }));
+              const r = await supabase.from('users').select('*').eq('id', supUser.id).single().catch(e => ({ data: null, error: e }));
               return r;
             })();
 
           if (!mounted) return;
-          setUser(supUser || authUser || null);
+          // Merge auth user and db profile so ProfileTab receives full data (email + shipping_address etc.)
+          setUser({ ...(supUser || authUser || {}), ...(profRow || {}) });
           setProfile(profRow || null);
+          // users table has a single `name` column; split it into first/last for the form
+          const fullName = profRow?.name ?? '';
+          const nameParts = fullName ? String(fullName).trim().split(/\s+/) : [];
+          const first = nameParts.length > 0 ? nameParts[0] : '';
+          const last = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
           setProfileForm({
-            first_name: profRow?.first_name ?? profRow?.firstName ?? supUser?.user_metadata?.first_name ?? supUser?.first_name ?? '',
-            last_name: profRow?.last_name ?? profRow?.lastName ?? supUser?.user_metadata?.last_name ?? supUser?.last_name ?? '',
+            first_name: first,
+            last_name: last,
             email: supUser?.email ?? profRow?.email ?? '',
             phone: profRow?.phone ?? profRow?.phone_number ?? supUser?.phone ?? ''
           });
@@ -159,10 +240,11 @@ const UserDashboard = () => {
         attachAuthToken(token);
         const res = await api.get('/me');
         const payload = res?.data?.data ?? res?.data ?? {};
-        if (!mounted) return;
-        setUser(payload.user || authUser || null);
-        // profile may be null if profile row missing
-        const prof = payload.profile || null;
+  if (!mounted) return;
+  // Merge API user and profile so components receive the full shape
+  setUser({ ...(payload.user || {}), ...(payload.profile || {}) || authUser || null });
+  // profile may be null if profile row missing
+  const prof = payload.profile || null;
         setProfile(prof);
         setProfileForm({
           first_name: prof?.first_name ?? prof?.firstName ?? payload.user?.user_metadata?.first_name ?? payload.user?.firstName ?? '',
@@ -205,7 +287,22 @@ const UserDashboard = () => {
 
     // Decide which tab to fetch
     if (!authLoading && authUser) {
-      setUser(authUser);
+      // Fetch DB profile to ensure header name is always correct
+      supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+        .then(({ data: dbProfile, error }) => {
+          if (error) {
+            // fallback to authUser only
+            setUser(authUser);
+          } else {
+            // Merge Auth User (email/ids) + DB profile (name, shipping_address, etc.)
+            setUser({ ...authUser, ...(dbProfile || {}) });
+          }
+        })
+        .catch(() => setUser(authUser));
       if (activeTab === 'orders') fetchOrdersForTab(1, 100);
       else if (activeTab === 'wishlist') fetchWishlistForTab();
       else if (activeTab === 'profile') fetchProfileForTab();
@@ -229,15 +326,16 @@ const UserDashboard = () => {
         const supRes = await supabase.auth.getUser();
         const supUser = supRes?.data?.user ?? null;
         if (supUser) {
-          const upd = {
-            id: supUser.id,
-            first_name: profileForm.first_name ?? null,
-            last_name: profileForm.last_name ?? null,
-            email: profileForm.email ?? null,
+          // users table stores a single `name` column; combine first + last
+          const combinedName = [profileForm.first_name, profileForm.last_name].filter(Boolean).join(' ').trim() || null;
+          const updPayload = {
+            name: combinedName,
             phone: profileForm.phone ?? null,
+            email: profileForm.email ?? null,
             updated_at: new Date().toISOString()
           };
-          const { data: updData, error: updErr } = await supabase.from('profiles').upsert(upd, { returning: 'representation' });
+
+          const { data: updData, error: updErr } = await supabase.from('users').update(updPayload).eq('id', supUser.id).select();
           if (updErr) throw updErr;
           const newProfile = Array.isArray(updData) ? updData[0] : updData;
           setProfile(newProfile || profile);
@@ -274,15 +372,33 @@ const UserDashboard = () => {
   };
 
   const getStatusColor = (status) => {
+    // Normalize to lower-case and map to the requested color scheme
     switch (status?.toLowerCase()) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'shipped': return 'bg-purple-100 text-purple-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'shipped': return 'bg-blue-100 text-blue-800';
+      case 'delivered': return 'bg-emerald-100 text-emerald-800';
+      case 'processing': return 'bg-yellow-100 text-yellow-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'pending': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const formatCurrency = (value) => {
+    const n = Number(value || 0);
+    return `₦${n.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+  }
+
+  const formatDate = (iso) => {
+    try {
+      return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return iso;
+    }
+  }
+
+  // derive a safe first name for the welcome header
+  const displayName = user?.name || user?.full_name || user?.firstName || user?.first_name || user?.username || 'Member';
+  const firstName = displayName ? String(displayName).trim().split(/\s+/)[0] : 'Member';
 
   if (loading) {
     return (
@@ -304,7 +420,7 @@ const UserDashboard = () => {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold">
-                  Welcome back, {user?.firstName || user?.username}!
+                  Welcome back, {(user?.name || user?.full_name || user?.firstName || 'Member').split(' ')[0]}!
                 </h1>
                 <p className="text-indigo-200 mt-1">
                   Member since {new Date().getFullYear()}
@@ -335,12 +451,13 @@ const UserDashboard = () => {
         {}
         <div className="flex flex-wrap gap-2 bg-white rounded-2xl p-2 mb-8 shadow-sm">
           {[
-            { id: "overview", label: "Overview", icon: TrendingUp },
-            { id: "orders", label: "Orders", icon: Package },
-            { id: "wishlist", label: "Wishlist", icon: Heart },
-            { id: "profile", label: "Profile", icon: User },
-            { id: "security", label: "Security", icon: Shield },
-          ].map((tab) => {
+              { id: "overview", label: "Overview", icon: TrendingUp },
+              { id: "orders", label: "Orders", icon: Package },
+              { id: "wishlist", label: "Wishlist", icon: Heart },
+              { id: "support", label: "Support", icon: HelpCircle },
+              { id: "profile", label: "Profile", icon: User },
+              { id: "security", label: "Security", icon: Shield },
+            ].map((tab) => {
             const Icon = tab.icon;
             return (
               <button
@@ -394,7 +511,7 @@ const UserDashboard = () => {
                     <div>
                       <p className="text-gray-600 text-sm font-medium">Total Spent</p>
                       <p className="text-3xl font-bold text-gray-900 mt-1">
-                        ₦{orders.reduce((total, order) => total + (order.total || 0), 0).toLocaleString()}
+                        {formatCurrency(orders.reduce((total, order) => total + (order.total || 0), 0))}
                       </p>
                     </div>
                     <div className="p-3 bg-green-100 rounded-xl">
@@ -500,17 +617,24 @@ const UserDashboard = () => {
                             <div className="flex items-center gap-3">
                               <p className="font-semibold text-gray-900">Order #{order.orderNumber}</p>
                               <span className={`px-3 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
+                                {order.status === 'shipped' && <Truck className="w-3 h-3 inline mr-1" />}
                                 {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
                               </span>
                             </div>
                             <p className="text-sm text-gray-600 mt-1">
                               <Calendar className="w-4 h-4 inline mr-1" />
-                              {new Date(order.createdAt).toLocaleDateString()}
+                              {formatDate(order.createdAt)}
                             </p>
                             <div className="mt-3">
                               <p className="text-sm text-gray-700">
-                                Items: {order.items?.length || 0} • Total: ₦{(order.total || 0).toLocaleString()}
+                                Items: {order.items?.length || 0} • Total: {formatCurrency(order.total)}
                               </p>
+                              {((order.tracking_number || order.trackingNumber || order.__raw?.tracking_number) && (order.status === 'shipped' || order.status === 'delivered')) && (
+                                <div className="mt-2 text-sm flex items-center gap-3">
+                                  <div className="text-slate-600">Tracking #: <span className="font-medium">{order.tracking_number || order.trackingNumber || order.__raw?.tracking_number}</span></div>
+                                  <a href={`https://giglogistics.com/track?id=${encodeURIComponent(order.tracking_number || order.trackingNumber || order.__raw?.tracking_number)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700">Track Order</a>
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="text-right">
@@ -542,83 +666,8 @@ const UserDashboard = () => {
           )}
 
           {activeTab === "orders" && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-bold text-gray-800">Order History</h2>
-                  <div className="text-sm text-gray-600">
-                    {orders.length} {orders.length === 1 ? "order" : "orders"}
-                  </div>
-                </div>
-              </div>
-              {orders.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-semibold text-gray-700">No orders yet</p>
-                  <p className="text-sm text-gray-500 mt-2">Start shopping to see your orders here</p>
-                  <Link
-                    to="/shop"
-                    className="inline-block mt-4 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-                  >
-                    Start Shopping
-                  </Link>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-200">
-                  {orders.map((order) => (
-                    <div key={order.id} className="p-6 hover:bg-gray-50 transition-colors">
-                      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <p className="font-semibold text-gray-900 text-lg">Order #{order.orderNumber}</p>
-                            <span className={`px-3 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
-                              {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
-                              <span>{new Date(order.createdAt).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Package className="w-4 h-4" />
-                              <span>{order.items?.length || 0} items</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4" />
-                              <span className="truncate">{order.shippingAddress?.substring(0, 30)}...</span>
-                            </div>
-                          </div>
-                          <div className="mt-3">
-                            <div className="flex flex-wrap gap-2">
-                              {order.items?.slice(0, 3).map((item, index) => (
-                                <div key={index} className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-lg">
-                                  <img src={item.image} alt={item.name} className="w-8 h-8 object-cover rounded" />
-                                  <span className="text-sm">{item.name} × {item.quantity}</span>
-                                </div>
-                              ))}
-                              {order.items?.length > 3 && (
-                                <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
-                                  +{order.items.length - 3} more
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900">₦{(order.total || 0).toLocaleString()}</p>
-                          <Link
-                            to={`/order-details/${order.orderNumber}`}
-                            className="inline-block mt-2 text-sm text-orange-600 hover:text-orange-800 font-medium"
-                          >
-                            View Details
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div>
+              <OrdersTab orders={orders} />
             </div>
           )}
 
@@ -678,86 +727,20 @@ const UserDashboard = () => {
           )}
 
           {activeTab === "profile" && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">Profile Settings</h2>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                      <input
-                        type="text"
-                        value={profileForm.first_name ?? ''}
-                        onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                      <input
-                        type="text"
-                        value={profileForm.last_name ?? ''}
-                        onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                      <input
-                        type="email"
-                        value={profileForm.email ?? ''}
-                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                      <input
-                        type="tel"
-                        value={profileForm.phone ?? ''}
-                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="pt-6 border-t border-gray-200">
-                  <button onClick={saveProfile} disabled={loading} className="px-6 py-3 bg-orange-600 disabled:opacity-50 text-white rounded-lg hover:bg-orange-700 font-semibold">
-                    {loading ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </div>
+            <div>
+              <ProfileTab user={user} onProfileUpdate={loadUserData} />
+            </div>
+          )}
+
+          {activeTab === "support" && (
+            <div>
+              <SupportTab />
             </div>
           )}
 
           {activeTab === "security" && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">Security Settings</h2>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Authentication Info</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                    <div>
-                      <p className="text-xs text-gray-500">Email</p>
-                      <p className="font-medium mt-1">{user?.email || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Created At</p>
-                      <p className="font-medium mt-1">{user?.created_at ? new Date(user.created_at).toLocaleString() : '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Last Sign In</p>
-                      <p className="font-medium mt-1">{user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">User ID</p>
-                      <p className="font-mono text-sm mt-1 text-gray-800">{user?.id || '—'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div>
+              <SecurityTab user={user} />
             </div>
           )}
         </div>
@@ -774,7 +757,10 @@ const UserDashboard = () => {
                 <p className="text-sm text-gray-600">Contact our customer support</p>
               </div>
             </div>
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+            <button 
+              onClick={() => { setActiveTab('support'); window.scrollTo(0,0); }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
               Contact Support
             </button>
           </div>

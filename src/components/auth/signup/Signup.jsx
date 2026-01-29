@@ -14,8 +14,7 @@ const SignUp = () => {
     phone: "",
     address: "",
     city: "",
-    postalCode: "",
-    country: "",
+    state: "",
     password: "",
     confirmPassword: "",
     newsletter: false,
@@ -66,13 +65,7 @@ const SignUp = () => {
       newErrors.city = "City is required";
     }
 
-    if (!formData.postalCode.trim()) {
-      newErrors.postalCode = "Postal code is required";
-    }
-
-    if (!formData.country) {
-      newErrors.country = "Please select your country";
-    }
+    // state is optional for now
 
     if (!formData.password) {
       newErrors.password = "Password is required";
@@ -105,10 +98,38 @@ const SignUp = () => {
       if (res?.error) throw res.error
 
       const userId = res?.data?.user?.id || (await supabase.auth.getUser()).data?.user?.id
-      let role = null
-      if (userId) {
-        const { data: profile, error: profileErr } = await supabase.from('profiles').select('role').eq('id', userId).single()
-        if (!profileErr) role = profile?.role
+
+      // Persist user profile into `users` table
+      try {
+        const upsertPayload = {
+          id: userId,
+          email,
+          name: `${formData.firstName} ${formData.lastName}`.trim() || null,
+          phone: formData.phone || null,
+          address: formData.address || null,
+          city: formData.city || null,
+          state: formData.state || null,
+          role: 'customer'
+        };
+        const { data: upData, error: upErr } = await supabase.from('users').upsert(upsertPayload).select();
+        if (upErr) {
+          console.error('Failed to upsert user profile after signup', upErr);
+          toast.error('Account created but failed to save profile information. Please contact support.');
+        }
+      } catch (dbErr) {
+        console.error('Error saving profile after signup', dbErr);
+        toast.error('Account created but failed to save profile information. Please contact support.');
+      }
+
+      // fetch role from users table to decide redirect
+      let role = null;
+      try {
+        if (userId) {
+          const { data: profile, error: profileErr } = await supabase.from('users').select('role').eq('id', userId).single();
+          if (!profileErr) role = profile?.role
+        }
+      } catch (fetchRoleErr) {
+        console.warn('Failed to read role after signup', fetchRoleErr);
       }
 
       toast.success('Registration successful — you are signed in')
@@ -122,10 +143,7 @@ const SignUp = () => {
     }
   };
 
-  const countries = [
-    "United States", "Canada", "United Kingdom", "Australia", 
-    "Germany", "France", "Japan", "India", "Brazil", "Mexico"
-  ];
+  // country list removed — not used anymore
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -283,7 +301,7 @@ const SignUp = () => {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Address *
+                Street Address *
               </label>
               <input
                 name="address"
@@ -300,7 +318,7 @@ const SignUp = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   City *
@@ -319,48 +337,21 @@ const SignUp = () => {
                   <p className="mt-1 text-sm text-red-600">{errors.city}</p>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Postal Code *
+                  State
                 </label>
                 <input
-                  name="postalCode"
+                  name="state"
                   className={`w-full px-4 py-3 rounded-lg border ${
-                    errors.postalCode ? "border-red-500" : "border-gray-300"
+                    errors.state ? "border-red-500" : "border-gray-300"
                   } focus:ring-2 focus:ring-orange-500 focus:border-transparent transition`}
-                  placeholder="10001"
-                  value={formData.postalCode}
+                  placeholder="NY"
+                  value={formData.state}
                   onChange={handleChange}
-                  required
                 />
-                {errors.postalCode && (
-                  <p className="mt-1 text-sm text-red-600">{errors.postalCode}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Country *
-                </label>
-                <select
-                  name="country"
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    errors.country ? "border-red-500" : "border-gray-300"
-                  } focus:ring-2 focus:ring-orange-500 focus:border-transparent transition`}
-                  onChange={handleChange}
-                  value={formData.country}
-                  required
-                >
-                  <option value="">Select country</option>
-                  {countries.map((country) => (
-                    <option key={country} value={country}>
-                      {country}
-                    </option>
-                  ))}
-                </select>
-                {errors.country && (
-                  <p className="mt-1 text-sm text-red-600">{errors.country}</p>
+                {errors.state && (
+                  <p className="mt-1 text-sm text-red-600">{errors.state}</p>
                 )}
               </div>
             </div>

@@ -19,6 +19,7 @@ import { useToast } from "../../context/useToastHook";
 import { useEffect, useState } from "react";
 import { api } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
+import supabase from '../../lib/supabaseClient'
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -31,10 +32,39 @@ export default function AdminOrders() {
   const [error, setError] = useState(null);
   const { showToast } = useToast();
   const navigate = useNavigate();
+  // Order fulfillment modal state
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState('processing')
+  const [trackingNumber, setTrackingNumber] = useState('')
+  const [carrier, setCarrier] = useState('GIG Logistics')
+  const [savingOrder, setSavingOrder] = useState(false)
 
   useEffect(() => {
     loadOrders();
   }, []);
+
+  const formatCurrency = (value) => {
+    const n = Number(value || 0);
+    return `₦${n.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+  }
+
+  const normalizeOrder = (order) => ({
+    id: order.id,
+    orderNumber: order.order_number || order.orderNumber || order.id,
+    customer: order.customer || order.customer_info || { name: order.email || 'Customer', email: order.email },
+    createdAt: order.created_at || order.createdAt || null,
+    fulfillmentStatus: (order.status || order.fulfillment_status || 'pending').toString().toLowerCase(),
+    paymentStatus: order.payment_status || order.paymentStatus || 'unpaid',
+    items: order.items || order.line_items || [],
+    subtotal: order.subtotal || order.total || 0,
+    total: order.total || order.subtotal || 0,
+    shippingAddress: order.shipping_address || order.shippingAddress || '',
+    tracking_number: order.tracking_number || order.trackingNumber || null,
+    carrier: order.carrier || null,
+    shipped_at: order.shipped_at || order.shippedAt || null,
+    delivered_at: order.delivered_at || order.deliveredAt || null,
+    __raw: order,
+  })
 
   const loadOrders = async () => {
     setIsLoading(true);
@@ -43,18 +73,7 @@ export default function AdminOrders() {
       const res = await api.get('/admin/orders');
       const data = res?.data?.orders ?? res?.data ?? [];
 
-      const normalized = (Array.isArray(data) ? data : []).map((order) => ({
-        id: order.id,
-        orderNumber: order.order_number || order.orderNumber || order.id,
-        customer: order.customer || order.customer_info || { name: order.email || 'Customer' },
-        createdAt: order.created_at || order.createdAt || null,
-        status: order.payment_status || order.status || 'pending',
-        items: order.items || order.line_items || [],
-        subtotal: order.subtotal || order.total || 0,
-        total: order.total || order.subtotal || 0,
-        shippingAddress: order.shipping_address || order.shippingAddress || '',
-        __raw: order,
-      }));
+      const normalized = (Array.isArray(data) ? data : []).map((o) => normalizeOrder(o));
 
       const sortedOrders = normalized.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       setOrders(sortedOrders);
@@ -90,7 +109,7 @@ export default function AdminOrders() {
     }
     
     if (statusFilter !== "all") {
-      filtered = filtered.filter(order => order.status === statusFilter);
+      filtered = filtered.filter(order => (order.fulfillmentStatus || '').toString().toLowerCase() === statusFilter);
     }
     
     setFilteredOrders(filtered);
@@ -100,15 +119,16 @@ export default function AdminOrders() {
 
 
   const getStatusInfo = (status) => {
-    switch (status) {
+    const key = String(status || '').toLowerCase()
+    switch (key) {
       case "pending":
-        return { icon: Clock, color: "bg-amber-500", textColor: "text-amber-700", bgColor: "bg-amber-50" };
+        return { icon: Clock, color: "bg-gray-500", textColor: "text-gray-800", bgColor: "bg-gray-100" };
       case "processing":
-        return { icon: Package, color: "bg-blue-500", textColor: "text-blue-700", bgColor: "bg-blue-50" };
+        return { icon: Package, color: "bg-yellow-400", textColor: "text-yellow-800", bgColor: "bg-yellow-100" };
       case "shipped":
-        return { icon: Truck, color: "bg-purple-500", textColor: "text-purple-700", bgColor: "bg-purple-50" };
+        return { icon: Truck, color: "bg-blue-500", textColor: "text-blue-800", bgColor: "bg-blue-100" };
       case "delivered":
-        return { icon: CheckCircle, color: "bg-emerald-500", textColor: "text-emerald-700", bgColor: "bg-emerald-50" };
+        return { icon: CheckCircle, color: "bg-emerald-500", textColor: "text-emerald-800", bgColor: "bg-emerald-100" };
       case "cancelled":
         return { icon: XCircle, color: "bg-red-500", textColor: "text-red-700", bgColor: "bg-red-50" };
       default:
@@ -137,10 +157,10 @@ export default function AdminOrders() {
   const getOrderStats = () => {
     const stats = {
       total: orders.length,
-      pending: orders.filter(o => o.status === "pending").length,
-      processing: orders.filter(o => o.status === "processing").length,
-      shipped: orders.filter(o => o.status === "shipped").length,
-      delivered: orders.filter(o => o.status === "delivered").length,
+      pending: orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === "pending").length,
+      processing: orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === "processing").length,
+      shipped: orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === "shipped").length,
+      delivered: orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === "delivered").length,
       revenue: calculateRevenue()
     };
     return stats;
@@ -149,11 +169,11 @@ export default function AdminOrders() {
   const stats = getOrderStats();
 
   const MobileOrderCard = ({ order }) => {
-    const statusInfo = getStatusInfo(order.status);
+    const statusInfo = getStatusInfo(order.fulfillmentStatus || order.status);
     const StatusIcon = statusInfo.icon;
-    const isExpanded = expandedOrderId === order.id;
+  const isExpanded = expandedOrderId === order.id;
 
-    return (
+  return (
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex justify-between items-start mb-3">
           <div>
@@ -178,7 +198,7 @@ export default function AdminOrders() {
           </div>
           <div className={`px-3 py-1 rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium flex items-center gap-1`}>
             <StatusIcon size={12} />
-            {order.status && order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            {(order.fulfillmentStatus || order.status) && (order.fulfillmentStatus || order.status).toString().charAt(0).toUpperCase() + (order.fulfillmentStatus || order.status).toString().slice(1)}
           </div>
         </div>
 
@@ -188,7 +208,7 @@ export default function AdminOrders() {
           </div>
           <div className="flex items-center gap-1 font-bold text-slate-900">
             <DollarSign size={14} />
-            ${order.total?.toFixed(2) || "0.00"}
+            {formatCurrency(order.total)}
           </div>
         </div>
 
@@ -205,7 +225,7 @@ export default function AdminOrders() {
                 {(order.items || []).slice(0, 3).map((item, index) => (
                   <div key={index} className="flex justify-between">
                     <span className="text-slate-600">{item.name} × {item.quantity}</span>
-                    <span className="font-medium">${item.total?.toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(item.total)}</span>
                   </div>
                 ))}
                 {(order.items || []).length > 3 && (
@@ -219,7 +239,7 @@ export default function AdminOrders() {
             <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
               <div className="text-sm">
                 <div className="font-medium text-slate-700 mb-1">Payment Status</div>
-                <div className="text-slate-600">{order.status}</div>
+                <div className="text-slate-600">{order.paymentStatus}</div>
               </div>
 
               <div className="text-sm">
@@ -308,7 +328,7 @@ export default function AdminOrders() {
               <div>
                 <p className="text-slate-600 text-xs sm:text-sm font-medium">Total Revenue</p>
                 <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">
-                  ${stats.revenue.toFixed(2)}
+                  {formatCurrency(stats.revenue)}
                 </p>
               </div>
               <div className="p-2 sm:p-3 bg-green-500/10 rounded-lg sm:rounded-xl">
@@ -397,8 +417,10 @@ export default function AdminOrders() {
                         <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Order #</th>
                         <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Customer Email</th>
                         <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Total</th>
+                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Order Status</th>
                         <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Payment Status</th>
                         <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Date</th>
+                        <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -412,11 +434,11 @@ export default function AdminOrders() {
                         </tr>
                       ) : (
                         filteredOrders.map((order) => {
-                          const statusInfo = getStatusInfo(order.status);
+                          const statusInfo = getStatusInfo(order.fulfillmentStatus || order.status);
                           const StatusIcon = statusInfo.icon;
                           
-                          return (
-                            <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                            return (
+                            <tr key={order.id} onClick={() => setSelectedOrder(order)} className="transition-colors cursor-pointer hover:bg-gray-50">
                               <td className="py-3 px-4">
                                 <div className="font-semibold text-slate-900">{order.orderNumber}</div>
                               </td>
@@ -426,17 +448,29 @@ export default function AdminOrders() {
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-2">
                                   <DollarSign className="w-4 h-4 text-green-600" />
-                                  <span className="font-bold text-slate-900">${order.total?.toFixed(2) || "0.00"}</span>
+                                  <span className="font-bold text-slate-900">{formatCurrency(order.total)}</span>
                                 </div>
                               </td>
                               <td className="py-3 px-4">
-                                <div className="text-sm font-medium text-slate-900">{order.status}</div>
+                                <div className={`px-3 py-1 rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium inline-flex items-center gap-2`}>
+                                  <StatusIcon size={12} />
+                                  {(order.fulfillmentStatus || order.status || '').toString().charAt(0).toUpperCase() + (order.fulfillmentStatus || order.status || '').toString().slice(1)}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="text-sm font-medium text-slate-900">{order.paymentStatus || order.__raw?.payment_status || '—'}</div>
                               </td>
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-2 text-slate-700 text-sm">
                                   <Calendar className="w-4 h-4" />
                                   {formatDate(order.createdAt)}
                                 </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }} className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm">
+                                  <Eye className="w-4 h-4" />
+                                  View
+                                </button>
                               </td>
                             </tr>
                           );
@@ -461,12 +495,26 @@ export default function AdminOrders() {
                   <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900">Order Details</h2>
                   <p className="text-slate-600 text-sm mt-1">{selectedOrder.orderNumber}</p>
                 </div>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      // initialize modal fields from selectedOrder
+                      setUpdateStatus(((selectedOrder.fulfillmentStatus || selectedOrder.status) || 'processing').toLowerCase())
+                      setTrackingNumber(selectedOrder.tracking_number || '')
+                      setCarrier(selectedOrder.carrier || 'GIG Logistics')
+                      setShowUpdateModal(true)
+                    }}
+                    className="px-3 py-2 rounded-md bg-blue-600 text-white text-sm"
+                  >
+                    Update Status
+                  </button>
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+                  </button>
+                </div>
               </div>
 
               {}
@@ -505,8 +553,8 @@ export default function AdminOrders() {
                         <p className="text-xs sm:text-sm text-slate-600">Qty: {item.quantity}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-slate-900 text-sm sm:text-base">${item.total?.toFixed(2)}</p>
-                        <p className="text-xs text-slate-600">${(item.total / item.quantity).toFixed(2)} each</p>
+                        <p className="font-bold text-slate-900 text-sm sm:text-base">{formatCurrency(item.total)}</p>
+                        <p className="text-xs text-slate-600">{formatCurrency((item.total || 0) / (item.quantity || 1))} each</p>
                       </div>
                     </div>
                   ))}
@@ -519,7 +567,7 @@ export default function AdminOrders() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-slate-600">Subtotal</span>
-                    <span className="font-medium">${selectedOrder.subtotal?.toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(selectedOrder.subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-slate-600">Shipping</span>
@@ -527,17 +575,83 @@ export default function AdminOrders() {
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-slate-600">Tax</span>
-                    <span className="font-medium">${selectedOrder.tax?.toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(selectedOrder.tax)}</span>
                   </div>
                   <div className="border-t border-purple-200 pt-2">
                     <div className="flex justify-between pt-2">
                       <span className="text-base sm:text-lg font-semibold">Total</span>
                       <span className="text-xl sm:text-2xl font-bold text-slate-900">
-                        {selectedOrder.total?.toFixed(2)}
+                        {formatCurrency(selectedOrder.total)}
                       </span>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Status Modal */}
+      {showUpdateModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowUpdateModal(false)} />
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg p-6 z-10">
+            <h3 className="text-lg font-semibold mb-4">Update Order Status</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <label className="text-sm font-medium">Status</label>
+              <select value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)} className="border p-2 rounded w-full">
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+              </select>
+
+              {updateStatus === 'shipped' && (
+                <>
+                  <label className="text-sm font-medium">Tracking Number</label>
+                  <input value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} className="border p-2 rounded w-full" />
+                  <label className="text-sm font-medium">Carrier</label>
+                  <input value={carrier} onChange={(e) => setCarrier(e.target.value)} className="border p-2 rounded w-full" />
+                </>
+              )}
+
+              {updateStatus === 'delivered' && (
+                <div className="text-sm text-slate-600">Marking delivered will set delivered_at to now.</div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 mt-3">
+                <button onClick={() => setShowUpdateModal(false)} className="px-4 py-2 rounded border">Cancel</button>
+                <button onClick={async () => {
+                  // Save logic
+                  setSavingOrder(true)
+                  try {
+                    const payload = { status: updateStatus }
+                    if (updateStatus === 'shipped') {
+                      payload.shipped_at = new Date().toISOString()
+                      if (trackingNumber) payload.tracking_number = trackingNumber
+                      if (carrier) payload.carrier = carrier
+                    }
+                    if (updateStatus === 'delivered') {
+                      payload.delivered_at = new Date().toISOString()
+                    }
+
+                    const { error } = await supabase.from('orders').update(payload).eq('id', selectedOrder.id)
+                    if (error) throw error
+                    showToast?.('Order updated', 'success')
+                    setShowUpdateModal(false)
+                    // refresh orders and selectedOrder
+                    await loadOrders()
+                    const { data: refreshed } = await supabase.from('orders').select('*').eq('id', selectedOrder.id).maybeSingle()
+                    if (refreshed) setSelectedOrder(normalizeOrder(refreshed))
+                  } catch (err) {
+                    console.error('Failed to update order', err)
+                    showToast?.(err?.message || 'Failed to update order', 'error')
+                  } finally {
+                    setSavingOrder(false)
+                  }
+                }} disabled={savingOrder} className="px-4 py-2 bg-indigo-600 text-white rounded">
+                  {savingOrder ? 'Saving...' : 'Save'}
+                </button>
               </div>
             </div>
           </div>

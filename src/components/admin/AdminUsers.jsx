@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Eye, User, Phone, Calendar } from 'lucide-react';
+import { Eye, User, Calendar } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useToast } from '../../context/useToastHook';
 
@@ -18,14 +18,19 @@ export default function AdminUsers() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await api.get('/admin/users');
-      const data = res?.data?.users ?? res?.data ?? [];
+      const res = await api.get('/admin/customers');
+      // API shape: { success: true, data: [...] }
+      console.info('Admin Users Data:', res?.data);
+      const data = res?.data?.data ?? res?.data ?? [];
       const normalized = (Array.isArray(data) ? data : []).map((u) => ({
         id: u.id,
-        fullName: `${u.first_name || u.firstName || ''} ${u.last_name || u.lastName || ''}`.trim() || (u.email || 'Unknown'),
+        name: u.name ?? (u.__raw && (u.__raw.name || (u.__raw.users && u.__raw.users[0]?.name))) ?? null,
         email: u.email,
-        phone: u.phone || u.phone_number || '',
-        joinedAt: u.created_at || u.createdAt || u.inserted_at || null,
+        phone: u.phone ?? (u.__raw && (u.__raw.phone || (u.__raw.users && u.__raw.users[0]?.phone))) ?? null,
+        total_orders: Number(u.total_orders ?? 0),
+        total_spent: Number(u.total_spent ?? 0),
+        last_order_date: u.last_order_date ?? null,
+  joinedAt: u.joined_at ?? (u.__raw && (u.__raw.users && u.__raw.users[0]?.created_at)) ?? (u.__raw && u.__raw.created_at) ?? null,
         __raw: u,
       }));
       setUsers(normalized);
@@ -44,6 +49,15 @@ export default function AdminUsers() {
       return new Date(d).toLocaleDateString();
     } catch {
       return String(d);
+    }
+  };
+
+  const formatCurrency = (n) => {
+    try {
+      const num = Number(n) || 0;
+      return num.toLocaleString(undefined, { style: 'currency', currency: 'NGN' });
+    } catch {
+      return String(n);
     }
   };
 
@@ -76,10 +90,10 @@ export default function AdminUsers() {
               <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="bg-gradient-to-r from-purple-50 to-indigo-50">
-                    <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Full Name</th>
                     <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Email</th>
-                    <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Phone</th>
-                    <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Join Date</th>
+                    <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Total Orders</th>
+                    <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Total Spent</th>
+                    <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Last Order</th>
                     <th className="py-3 px-4 text-left font-semibold text-slate-700 text-sm">Actions</th>
                   </tr>
                 </thead>
@@ -88,26 +102,26 @@ export default function AdminUsers() {
                     <tr>
                       <td colSpan="5" className="py-12 text-center text-slate-500">
                         <User className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-                        <p className="text-lg font-semibold">No users found</p>
-                        <p className="text-sm mt-2">There are no users to display</p>
+                        <p className="text-lg font-semibold">No customers found</p>
+                        <p className="text-sm mt-2">There are no customers to display</p>
                       </td>
                     </tr>
                   ) : (
                     users.map((u) => (
                       <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900">{u.fullName}</div>
-                        </td>
-                        <td className="py-3 px-4">
                           <div className="text-sm text-slate-700">{u.email}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="text-sm text-slate-700">{u.phone || '—'}</div>
+                          <div className="font-semibold text-slate-900">{u.total_orders}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-slate-700">{formatCurrency(u.total_spent)}</div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="text-sm text-slate-700 flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            {formatDate(u.joinedAt)}
+                            {formatDate(u.last_order_date)}
                           </div>
                         </td>
                         <td className="py-3 px-4">
@@ -143,7 +157,7 @@ export default function AdminUsers() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-3 bg-slate-50 rounded-lg">
                     <p className="text-sm text-slate-600">Full Name</p>
-                    <p className="font-medium text-slate-900">{selectedUser.fullName}</p>
+                    <p className="font-medium text-slate-900">{selectedUser.name ?? '—'}</p>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-lg">
                     <p className="text-sm text-slate-600">Email</p>

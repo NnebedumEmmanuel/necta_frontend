@@ -26,6 +26,7 @@ import AdminProtectedRoute from './components/auth/admin/AdminProtectedRoute';
 import AdminProducts from './components/admin/AdminProducts';
 import AdminOrders from './components/admin/AdminOrders';
 import AdminUsers from './components/admin/AdminUsers';
+import AdminSupport from './components/admin/AdminSupport';
 
 function AppWrapper() {
   const location = useLocation();
@@ -95,6 +96,7 @@ function AppWrapper() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="support" element={<AdminSupport />} />
           </Route>
           
           {/* Redirect any unknown routes to home */}

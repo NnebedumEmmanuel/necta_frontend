@@ -13,10 +13,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [meLoading, setMeLoading] = useState(false);
   const mountedRef = useRef(true);
+  const sessionRef = useRef(null);
 
   const applySession = (nextSession) => {
     setSession(nextSession ?? null);
     setUser(nextSession?.user ?? null);
+    sessionRef.current = nextSession ?? null;
   };
 
   // Fetch application-level user info from backend (/api/me) whenever a session is available
@@ -72,8 +74,18 @@ export const AuthProvider = ({ children }) => {
 
     const { data } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mountedRef.current) return;
+
+      // Ignore SIGNED_IN / TOKEN_REFRESHED events if we already have a session
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && sessionRef.current) {
+        // Existing session present; this event is likely fired on window focus — ignore to prevent reloads
+        // Still refresh token attachment if needed
+        if (newSession?.access_token) attachAuthToken(newSession.access_token);
+        return;
+      }
+
+      // Only react to SIGNED_OUT (and initial SIGNED_IN when no session exists)
       applySession(newSession ?? null);
-      if (newSession?.access_token) attachAuthToken(newSession.access_token)
+      if (newSession?.access_token) attachAuthToken(newSession.access_token);
       setLoading(false);
     });
 
