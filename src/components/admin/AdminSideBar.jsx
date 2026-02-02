@@ -1,144 +1,80 @@
-import React from "react";
-import { useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
-  ShoppingCart, 
-  Package, 
   LayoutDashboard, 
-  User, 
-  Settings, 
+  Package, 
+  ShoppingCart, 
+  Users, 
+  HelpCircle, 
   X,
-  Home,
-  BarChart,
-  Users,
-  FileText,
-  HelpCircle,
-  LifeBuoy,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react";
+  LogOut,
+  Settings
+} from 'lucide-react';
 
-export default function AdminSidebar({ isCollapsed, onClose, onToggleCollapse, user }) {
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-    { id: "products", label: "Products", icon: <Package size={20} /> },
-    { id: "orders", label: "Orders", icon: <ShoppingCart size={20} /> },
-    { id: "users", label: "Users", icon: <Users size={20} /> },
-    { id: "support", label: "Support", icon: <LifeBuoy size={20} /> },
-  ];
-  const navigate = useNavigate();
+const AdminSidebar = ({ isCollapsed, onClose, user }) => {
   const location = useLocation();
 
-  const LinkItem = ({ id, label, icon, path }) => {
-    const isActive = location.pathname === path || location.pathname === '/admin' && path === '/admin';
-    return (
-      <button
-        onClick={() => {
-          navigate(path);
-          if (onClose) onClose();
-        }}
-        className={`flex items-center gap-3 p-3 w-full rounded-xl transition text-left font-medium
-          ${isActive 
-            ? "bg-gradient-to-r from-slate-600 to-orange-800 text-white shadow-lg" 
-            : "text-gray-200 hover:bg-white/10 hover:text-white"}`}
-        title={isCollapsed ? label : ""}
-      >
-        <span className="flex-shrink-0">{icon}</span>
-        {!isCollapsed && <span className="truncate">{label}</span>}
-      </button>
-    );
-  };
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
+    { icon: Package, label: 'Products', path: '/admin/products' },
+    { icon: ShoppingCart, label: 'Orders', path: '/admin/orders' },
+    { icon: Users, label: 'Users', path: '/admin/users' },
+    { icon: HelpCircle, label: 'Support', path: '/admin/support' },
+  ];
 
   return (
-    <aside className={`bg-gradient-to-b from-slate-900 via-slate-800 to-orange-950 text-gray-200 h-screen sticky top-0 overflow-y-auto flex flex-col shadow-2xl transition-all duration-300 ${
-      isCollapsed ? 'w-20' : 'w-64'
-    }`}>
-      {}
-      <div className="p-6 border-b border-purple-700">
-        <div className="flex items-center justify-between">
-          {!isCollapsed ? (
-            <>
-              <div className="flex-1">
-                <h1 className="text-xl font-bold text-white truncate">Admin Panel</h1>
-                <p className="text-purple-200 text-xs mt-1 truncate">Manage your store</p>
-              </div>
-              <button 
-                onClick={onToggleCollapse}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                title="Collapse sidebar"
-              >
-                <ChevronLeft size={20} />
-              </button>
-            </>
-          ) : (
-            <div className="flex flex-col items-center w-full">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mb-2">
-                <Home size={18} />
-              </div>
-              <button 
-                onClick={onToggleCollapse}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                title="Expand sidebar"
-              >
-                <ChevronRight size={20} />
-              </button>
+    <aside className={`h-full bg-slate-900 text-white shadow-2xl flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      {/* Brand Header */}
+      <div className="p-6 flex items-center justify-between border-b border-slate-800">
+        {!isCollapsed && (
+          <span className="text-lg font-bold tracking-wide">Necta Admin</span>
+        )}
+        <div className="flex items-center gap-2">
+          <button onClick={onClose} className="lg:hidden p-2 text-slate-300 hover:bg-slate-800 rounded-lg">
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto mt-2">
+        {menuItems.map((item) => {
+          const isActive = location.pathname.includes(item.path);
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={() => onClose && onClose()}
+              className={`
+                flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
+                ${isActive 
+                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/20 font-medium' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+              `}
+            >
+              <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+              {!isCollapsed && <span>{item.label}</span>}
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      {/* Footer User Info */}
+      <div className="p-4 border-t border-slate-800">
+        <div className={`flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 ${isCollapsed ? 'justify-center' : ''}`}>
+          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-md">
+            {user?.firstName?.[0] || 'A'}
+          </div>
+          {!isCollapsed && (
+            <div className="overflow-hidden">
+              <p className="text-sm font-semibold text-white truncate">{user?.firstName || 'Admin'}</p>
+              <p className="text-xs text-slate-400 truncate">Store Manager</p>
             </div>
           )}
         </div>
       </div>
-
-      {}
-      {onClose && (
-        <div className="p-4 border-b border-purple-700 lg:hidden">
-          <button 
-            onClick={onClose}
-            className="w-full flex items-center justify-center gap-2 p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
-          >
-            <X size={18} />
-            {!isCollapsed && <span>Close Menu</span>}
-          </button>
-        </div>
-      )}
-
-      {}
-      <nav className="flex-1 p-4 space-y-1">
-        {menuItems.map((item) => (
-          <LinkItem 
-            key={item.id} 
-            id={item.id} 
-            label={item.label} 
-            icon={item.icon} 
-            path={item.id === 'dashboard' ? '/admin' : `/admin/${item.id}`}
-          />
-        ))}
-      </nav>
-
-      {}
-      <div className="p-4 border-t border-purple-700 space-y-2">
-        <button 
-          className="flex items-center gap-3 p-3 w-full rounded-xl text-gray-200 hover:bg-white/10 hover:text-white transition font-medium"
-          title={isCollapsed ? "Settings" : ""}
-        >
-          <Settings size={20} />
-          {!isCollapsed && <span>Settings</span>}
-        </button>
-        
-        <button 
-          className="flex items-center gap-3 p-3 w-full rounded-xl text-gray-200 hover:bg-white/10 hover:text-white transition font-medium"
-          title={isCollapsed ? "Help" : ""}
-        >
-          <HelpCircle size={20} />
-          {!isCollapsed && <span>Help & Support</span>}
-        </button>
-      </div>
-
-      {}
-      {isCollapsed && (
-        <div className="fixed left-20 top-0 h-screen pointer-events-none z-50">
-          <div className="relative h-full">
-            {}
-          </div>
-        </div>
-      )}
     </aside>
   );
-}
+};
+
+export default AdminSidebar;

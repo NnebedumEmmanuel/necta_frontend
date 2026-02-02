@@ -71,6 +71,9 @@ class ProductService {
         params.set('q', String(search).trim());
       }
 
+      // Append a timestamp to force fresh responses and avoid stale caching
+      params.set('t', String(new Date().getTime()));
+
       const url = `/products?${params.toString()}`;
 
       const response = await api.get(url, { params: undefined });

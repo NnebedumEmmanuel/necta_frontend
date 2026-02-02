@@ -62,6 +62,10 @@ function ShopContent() {
     collections: [],
   });
 
+  // Local min/max state to drive UI and client-side filtering
+  const [minPrice, setMinPrice] = useState(filters.minPrice || 0);
+  const [maxPrice, setMaxPrice] = useState(filters.maxPrice || 200000);
+
   React.useEffect(() => {
     if (collectionParam) {
       setFilters(prev => ({ ...prev, collections: [collectionParam] }));
@@ -162,7 +166,15 @@ function ShopContent() {
     }
   };
 
-  const filteredProducts = useMemo(() => products || [], [products]);
+  const filteredProducts = useMemo(() => {
+    const list = Array.isArray(products) ? products : [];
+    const min = Number(minPrice) || 0;
+    const max = Number(maxPrice) || Infinity;
+    return list.filter(product => {
+      const price = Number(product.priceValue ?? parsePrice(String(product.price || '0'))) || 0;
+      return price >= min && price <= max;
+    });
+  }, [products, minPrice, maxPrice]);
 
   const sortedAndFilteredProducts = useMemo(() => {
     const items = [...(filteredProducts || [])];
@@ -189,6 +201,9 @@ function ShopContent() {
       categories: [],
       collections: [],
     });
+    // reset local price state too
+    setMinPrice(0);
+    setMaxPrice(200000);
   };
 
   const clearSearch = () => {
@@ -366,7 +381,11 @@ function ShopContent() {
               
               <PriceFilter 
                 range={[filters.minPrice, filters.maxPrice]}
-                onRangeChange={(range) => setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }))}
+                onRangeChange={(range) => {
+                  setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }));
+                  setMinPrice(range[0]);
+                  setMaxPrice(range[1]);
+                }}
               />
                
               <RatingFilter 
@@ -588,7 +607,11 @@ function ShopContent() {
                 <h3 className="font-semibold text-lg text-gray-900">Price Range</h3>
                 <PriceFilter 
                   range={[filters.minPrice, filters.maxPrice]}
-                  onRangeChange={(range) => setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }))}
+                  onRangeChange={(range) => {
+                    setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }));
+                    setMinPrice(range[0]);
+                    setMaxPrice(range[1]);
+                  }}
                 />
               </div>
               <div className="space-y-4">

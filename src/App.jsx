@@ -24,6 +24,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminProtectedRoute from './components/auth/admin/AdminProtectedRoute';
 import AdminProducts from './components/admin/AdminProducts';
+import AdminOverview from './components/admin/AdminOverview';
 import AdminOrders from './components/admin/AdminOrders';
 import AdminUsers from './components/admin/AdminUsers';
 import AdminSupport from './components/admin/AdminSupport';
@@ -92,8 +93,9 @@ function AppWrapper() {
               </AdminProtectedRoute>
             }
           >
-            <Route index element={<AdminProducts />} />
-            <Route path="products" element={<AdminProducts />} />
+              <Route index element={<AdminOverview />} />
+              <Route path="dashboard" element={<AdminOverview />} />
+              <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="support" element={<AdminSupport />} />

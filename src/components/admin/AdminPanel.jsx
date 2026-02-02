@@ -1,16 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdminNavbar from "./AdminNavbar";
 import AdminProducts from "./AdminProducts";
 import AdminOrders from "./AdminOrders";
 import AdminSidebar from "./AdminSideBar";
 import AdminUsers from "./AdminUsers";
+import AdminOverview from "./AdminOverview";
 import { useAuth } from '@/context/AuthContext';
-import { Routes, Route } from 'react-router-dom';
+import { api } from '../..//lib/api';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminPanel() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const { user: authUser, session, loading: authLoading, signOut } = useAuth();
+  const [orders, setOrders] = useState([])
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const navigate = useNavigate();0
 
   // Authentication & authorization are handled by AdminProtectedRoute.
 
@@ -22,25 +27,39 @@ export default function AdminPanel() {
     navigate('/login');
   };
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get('/admin/orders')
+        const data = res?.data?.orders ?? res?.data ?? []
+        setOrders(Array.isArray(data) ? data : [])
+      } catch (err) {
+        // ignore here; AdminOrders will also fetch
+        console.warn('AdminPanel: failed to load orders for overview', err)
+      }
+    }
+    load()
+  }, [])
+0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50">
       {}
       {showMobileSidebar && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden">0
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" 
             onClick={() => setShowMobileSidebar(false)}
           />
           <div className="relative z-50 h-full">
             <AdminSidebar 
-              activePage={activePage} 
-              setActivePage={setActivePage} 
               isCollapsed={false}
-              onClose={() => setShowMobileSidebar(false)}
-              onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              user={user}
-            />
+                onClose={() => setShowMobileSidebar(false)}
+                onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                user={authUser}
+                activePage={activeTab}
+                setActivePage={setActiveTab}
+            />0
           </div>
         </div>
       )}
@@ -53,6 +72,8 @@ export default function AdminPanel() {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           user={authUser}
+          activePage={activeTab}
+          setActivePage={setActiveTab}
         />
       </div>
       
@@ -69,13 +90,21 @@ export default function AdminPanel() {
         />
         
         <main className="flex-1">
-          <Routes>
-            <Route index element={<AdminProducts />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="*" element={<AdminProducts />} />
-          </Routes>
+          {/** Render content based on activeTab (defaults to 'dashboard') */}
+          {(() => {
+            switch (activeTab) {
+              case 'dashboard':
+                return <AdminOverview orders={orders} />
+              case 'products':
+                return <AdminProducts />
+              case 'orders':
+                return <AdminOrders />
+              case 'users':
+                return <AdminUsers />
+              default:
+                return <AdminOverview orders={orders} />
+            }
+          })()}
         </main>
       </div>
     </div>

@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { api } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import supabase from '../../lib/supabaseClient'
+import SalesChart from './SalesChart'
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -167,6 +168,8 @@ export default function AdminOrders() {
   };
 
   const stats = getOrderStats();
+  // Count shipped orders for the new summary card (match existing normalization)
+  const shippedCount = orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === 'shipped').length;
 
   const MobileOrderCard = ({ order }) => {
     const statusInfo = getStatusInfo(order.fulfillmentStatus || order.status);
@@ -267,7 +270,6 @@ export default function AdminOrders() {
             </p>
           </div>
         </div>
-
         {}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {}
@@ -313,6 +315,19 @@ export default function AdminOrders() {
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-slate-600 text-xs sm:text-sm font-medium">Shipped</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">{shippedCount}</p>
+              </div>
+              <div className="p-2 sm:p-3 bg-blue-50 rounded-lg sm:rounded-xl">
+                <Truck className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+          
+          {}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-slate-600 text-xs sm:text-sm font-medium">Delivered</p>
                 <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">{stats.delivered}</p>
               </div>
@@ -336,6 +351,11 @@ export default function AdminOrders() {
               </div>
             </div>
           </div>
+        </div>
+
+        {}
+        <div className="mt-8">
+          <SalesChart orders={orders} />
         </div>
 
         {}
@@ -635,14 +655,14 @@ export default function AdminOrders() {
                       payload.delivered_at = new Date().toISOString()
                     }
 
-                    const { error } = await supabase.from('orders').update(payload).eq('id', selectedOrder.id)
-                    if (error) throw error
+                    // Call backend admin endpoint to update order status so server can trigger emails
+                    const res = await api.patch(`/admin/orders/${selectedOrder.id}/status`, payload)
+                    const updated = res?.data?.order ?? res?.data
                     showToast?.('Order updated', 'success')
                     setShowUpdateModal(false)
-                    // refresh orders and selectedOrder
+                    // refresh orders and selectedOrder from backend
                     await loadOrders()
-                    const { data: refreshed } = await supabase.from('orders').select('*').eq('id', selectedOrder.id).maybeSingle()
-                    if (refreshed) setSelectedOrder(normalizeOrder(refreshed))
+                    if (updated) setSelectedOrder(normalizeOrder(updated))
                   } catch (err) {
                     console.error('Failed to update order', err)
                     showToast?.(err?.message || 'Failed to update order', 'error')

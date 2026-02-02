@@ -1,31 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Bell, Menu, ChevronLeft, ChevronRight } from "lucide-react";
+import { api } from '../../lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollapsed, onToggleCollapse }) {
   const { user: authUser, signOut } = useAuth();
   const name = authUser?.firstName || "Admin";
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: "New order received", time: "5 min ago", read: false },
-    { id: 2, message: "System update completed", time: "1 hour ago", read: false },
-    { id: 3, message: "Payment processed", time: "2 hours ago", read: true },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const unreadCount = notifications.filter(notification => !notification.read).length;
+  // Simple relative time formatter
+  const formatTimeAgo = (iso) => {
+    try {
+      const t = new Date(iso).getTime();
+      const diff = Date.now() - t;
+      const sec = Math.floor(diff / 1000);
+      if (sec < 60) return `${sec} sec${sec !== 1 ? 's' : ''} ago`;
+      const min = Math.floor(sec / 60);
+      if (min < 60) return `${min} min${min !== 1 ? 's' : ''} ago`;
+      const hr = Math.floor(min / 60);
+      if (hr < 24) return `${hr} hr${hr !== 1 ? 's' : ''} ago`;
+      const days = Math.floor(hr / 24);
+      return `${days} day${days !== 1 ? 's' : ''} ago`;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const res = await api.get('/admin/notifications');
+        const data = res?.data?.notifications ?? res?.data ?? [];
+        if (!mounted) return;
+        const arr = Array.isArray(data) ? data : [];
+        setNotifications(arr);
+        setUnreadCount(arr.filter(n => !n.read).length);
+      } catch (err) {
+        console.warn('Failed to load admin notifications', err);
+      }
+    }
+    load();
+    return () => { mounted = false }
+  }, []);
 
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
   };
 
   const markAsRead = (id) => {
-    setNotifications(notifications.map(notification => 
-      notification.id === id ? { ...notification, read: true } : notification
-    ));
+    setNotifications(prev => {
+      const next = prev.map(notification => notification.id === id ? { ...notification, read: true } : notification);
+      setUnreadCount(next.filter(n => !n.read).length);
+      return next;
+    });
   };
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(notification => ({ ...notification, read: true })));
+    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+    setUnreadCount(0);
   };
 
   const handleLogout = async () => {
@@ -114,12 +149,12 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
                           <span className="ml-2 inline-block w-2 h-2 bg-purple-500 rounded-full"></span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                      <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(notification.created_at)}</p>
                     </div>
                   ))
                 ) : (
                   <div className="p-4 text-center text-gray-500">
-                    No notifications
+                    No new notifications
                   </div>
                 )}
               </div>

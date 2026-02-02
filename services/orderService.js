@@ -18,12 +18,13 @@ class OrderService {
       throw handleApiError(error);
     }
   }
-
+china
   async addOrder(orderData) {
     try {
       const payload = {
         items: (orderData.items || []).map(i => ({
           id: i.id,
+          name: i.name || i.title || i.product_name || '',
           qty: Number(i.quantity || i.qty || 1),
           price: Number(i.price || 0),
         })),
