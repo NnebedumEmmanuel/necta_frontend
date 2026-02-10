@@ -10,13 +10,38 @@ import {
 import { Link } from "react-router-dom";
 
 export default function BrowseByCategory() {
-  // Hard-coded 4 categories (keeps layout predictable)
   const categories = [
-    { name: 'Speakers', image: '/px4.png' },
-    { name: 'Watches', image: '/px5.png' },
-    { name: 'Laptops', image: '/px6.png' },
-    { name: 'Controllers', image: '/px7.png' },
-  ]
+    { 
+      name: "Phones", 
+      icon: <Smartphone size={40} className="text-gray-600" />,
+      available: false 
+    },
+    { 
+      name: "Speakers", 
+      icon: <Speaker size={40} className="text-gray-600" />,
+      available: true 
+    },
+    { 
+      name: "Solar", 
+      icon: <Sun size={40} className="text-gray-600" />,
+      available: false 
+    },
+    { 
+      name: "Inverter", 
+      icon: <Zap size={40} className="text-gray-600" />,
+      available: false 
+    },
+    { 
+      name: "TV", 
+      icon: <Tv size={40} className="text-gray-600" />,
+      available: false 
+    },
+    { 
+      name: "Headphones", 
+      icon: <Headphones size={40} className="text-gray-600" />,
+      available: false 
+    },
+  ];
 
   return (
     <section className="py-12 px-4 sm:px-6 lg:px-8">
@@ -68,15 +93,36 @@ export default function BrowseByCategory() {
         </div>
 
         {}
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {categories.map((category, index) => (
             <Link
               to={`/shop?category=${encodeURIComponent(category.name.toLowerCase())}`}
               key={index}
-              className="block"
+              className={`flex flex-col items-center justify-center p-6 border ${
+                category.available 
+                  ? "bg-[#EDEDED] hover:bg-gray-100 cursor-pointer" 
+                  : "bg-gray-50 opacity-60 cursor-not-allowed"
+              } border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-md transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-black`}
+              aria-label={`Browse ${category.name}`}
+              onClick={(e) => {
+                if (!category.available) {
+                  e.preventDefault();
+                }
+              }}
             >
-              <div className="relative aspect-square w-full bg-gray-100 rounded-lg overflow-hidden">
-                <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
+              <div className="relative w-16 h-16 mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                {category.icon}
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-lg font-medium mb-1">{category.name}</h3>
+                <span className={`text-xs px-2 py-1 rounded ${
+                  category.available 
+                    ? "text-gray-500 bg-gray-100" 
+                    : "bg-yellow-100 text-yellow-800"
+                }`}>
+                  {category.available ? "Available" : "Coming Soon"}
+                </span>
               </div>
             </Link>
           ))}
