@@ -8,15 +8,24 @@ import { useToast } from '../../../context/ToastProvider';
 
 const CheckoutPage = () => {
   // Use the cart context with the required destructured names for UI contract
-  const { cartItems, state, deliveryState, setDeliveryState, clearCart } = useCart() || {};
+  const { cartItems: ctxCartItems, state, deliveryState, setDeliveryState, clearCart } = useCart() || {};
 
-  // Safe cart extraction (keep this logic to prevent "Cart is empty" errors)
-  const realItems = (Array.isArray(cartItems) && cartItems.length > 0) ? cartItems : (Array.isArray(state?.items) ? state.items : []);
+  // Define cartItems first (explicit, safe fallback to stored state)
+  const cartItems = (Array.isArray(ctxCartItems) && ctxCartItems.length > 0)
+    ? ctxCartItems
+    : (Array.isArray(state?.items) ? state.items : []);
+
+  // Expose items used by the UI as realItems for compatibility with existing code
+  const realItems = Array.isArray(cartItems) ? cartItems : [];
+
   // Debug: inspect what the cart context provides
   console.log('Checkout Cart:', { cartItems, state, realItems, deliveryState });
 
-  // Force-local calculations to avoid stale context values and ensure UI + Paystack stay in sync
-  const subtotal = (Array.isArray(realItems) ? realItems : []).reduce((acc, item) => {
+  // Helper: currency formatter
+  const currency = (value) => Number(value).toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
+
+  // Calculate subtotal from cartItems (defined above)
+  const subtotal = cartItems.reduce((acc, item) => {
     const price = typeof item.price === 'number' ? item.price : parseFloat(String(item.price || '').replace(/[^0-9.-]+/g, '')) || 0;
     const qty = Number(item.quantity || item.qty || 1) || 0;
     return acc + (price * qty);
@@ -27,21 +36,20 @@ const CheckoutPage = () => {
     Lagos: 2500,
     Default: 4500,
     FreeThreshold: 5000000,
-  }
+  };
 
-  // Compute shipping cost based on selected state and subtotal. We watch formData.state
-  // Free threshold comparison: subtotal (NGN) > FreeThreshold/100 (because FreeThreshold is in kobo)
+  // Define shippingCost using deliveryState (available from context) and subtotal
   const shippingCost = React.useMemo(() => {
-    const stateSelected = formData?.state || ''
-    if (!stateSelected) return 0
+    const stateSelected = deliveryState || '';
+    if (!stateSelected) return 0;
     // Free if subtotal exceeds the threshold
-    if (subtotal > (SHIPPING_RATES.FreeThreshold / 100)) return 0
-    if (String(stateSelected).toLowerCase() === 'lagos') return SHIPPING_RATES.Lagos
-    return SHIPPING_RATES.Default
-  }, [formData?.state, subtotal])
+    if (subtotal > (SHIPPING_RATES.FreeThreshold / 100)) return 0;
+    if (String(stateSelected).toLowerCase() === 'lagos') return SHIPPING_RATES.Lagos;
+    return SHIPPING_RATES.Default;
+  }, [deliveryState, subtotal]);
 
+  // Tax and total (calculate total last)
   const tax = subtotal * 0.075;
-
   const grandTotal = subtotal + tax + shippingCost;
 
   // Paystack config uses the freshly computed grandTotal (amount must be in kobo)
@@ -49,6 +57,7 @@ const CheckoutPage = () => {
     amount: Math.round(grandTotal * 100), // Kobo
     currency: 'NGN'
   };
+
   const { showToast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -164,9 +173,7 @@ const CheckoutPage = () => {
     }
   };
 
-  const currency = (value) => {
-    return Number(value).toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
-  };
+  
 
   console.log("Checkout Math:", { subtotal, tax, shippingCost, grandTotal });
 
