@@ -21,16 +21,23 @@ class OrderService {
 china
   async addOrder(orderData) {
     try {
+      // Forward full order data to backend so the server has the calculated totals
+      // and can create the Paystack payment with the correct amount (amountKobo)
       const payload = {
+        customer: orderData.customer || {},
         items: (orderData.items || []).map(i => ({
-          id: i.id,
+          product_id: i.product_id || i.id,
           name: i.name || i.title || i.product_name || '',
-          qty: Number(i.quantity || i.qty || 1),
+          quantity: Number(i.quantity || i.qty || 1),
           price: Number(i.price || 0),
         })),
-        email: orderData.customer?.email || orderData.email || '',
-        shipping_address: orderData.shippingAddress || orderData.shipping_address || '',
-      }
+        subtotal: orderData.subtotal ?? null,
+        tax: orderData.tax ?? null,
+        total: orderData.total ?? null,
+        amountKobo: orderData.amountKobo ?? (orderData.total ? Math.round(Number(orderData.total) * 100) : null),
+        shippingAddress: orderData.shippingAddress || orderData.shipping_address || '',
+        status: orderData.status || 'pending',
+      };
       const response = await api.post('/checkout', payload);
       return response.data;
     } catch (error) {
