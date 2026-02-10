@@ -93,7 +93,7 @@ export default function BrowseByCategory() {
         </div>
 
         {}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {categories.map((category, index) => (
             <Link
               to={`/shop?category=${encodeURIComponent(category.name.toLowerCase())}`}
@@ -110,13 +110,13 @@ export default function BrowseByCategory() {
                 }
               }}
             >
-              <div className="relative w-16 h-16 mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+              <div className="relative w-full aspect-square mb-2 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
                 {category.icon}
               </div>
 
               <div className="text-center">
-                <h3 className="text-lg font-medium mb-1">{category.name}</h3>
-                <span className={`text-xs px-2 py-1 rounded ${
+                <h3 className="text-xs font-medium mb-1">{category.name}</h3>
+                <span className={`text-[10px] px-2 py-1 rounded ${
                   category.available 
                     ? "text-gray-500 bg-gray-100" 
                     : "bg-yellow-100 text-yellow-800"
