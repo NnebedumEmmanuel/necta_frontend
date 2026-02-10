@@ -172,18 +172,15 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
         try {
           const fd = new FormData()
           fd.append('file', file, file.name)
-          const res = await fetch('/api/upload', { method: 'POST', body: fd })
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}))
-            console.error('Upload failed', err)
-            alert('Image upload failed: ' + (err?.error || res.statusText))
-            continue
-          }
-          const json = await res.json()
+          // Use configured api instance so baseURL (VITE_API_BASE_URL) is prepended
+          const res = await api.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+          const json = res?.data
           if (json && json.url) uploaded.push(json.url)
         } catch (e) {
+          // Axios throws for non-2xx; surface a helpful message when possible
           console.error('uploadFiles: network/error', e)
-          alert('Image upload failed: ' + (e?.message || String(e)))
+          const msg = e?.response?.data?.error || e?.message || String(e)
+          alert('Image upload failed: ' + msg)
         }
       }
     } catch (err) {
