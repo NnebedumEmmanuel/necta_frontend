@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import supabase from '../../../lib/supabaseClient'
-import { useToast } from '../../../context/useToastHook'
+import { useToast } from '@/context/ToastProvider'
 
 export default function ProfileTab({ user = null, onProfileUpdate = () => {} }) {
   const { showToast } = useToast()

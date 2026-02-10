@@ -5,7 +5,7 @@ import AdminOrders from "./AdminOrders";
 import AdminSidebar from "./AdminSideBar";
 import AdminUsers from "./AdminUsers";
 import AdminOverview from "./AdminOverview";
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { api } from '../..//lib/api';
 import { useNavigate } from 'react-router-dom';
 

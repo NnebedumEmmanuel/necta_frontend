@@ -15,7 +15,7 @@ import {
   MoreVertical,
   Eye
 } from "lucide-react";
-import { useToast } from "../../context/useToastHook";
+import { useToast } from '@/context/ToastProvider';
 import { useEffect, useState } from "react";
 import { api } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';

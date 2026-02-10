@@ -19,28 +19,31 @@ import {
   TrendingUp,
   DollarSign
 } from "lucide-react";
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 // orderService not used here; use api directly for per-tab requests
-import { useWishlist } from '../../../context/WishlistContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { api, attachAuthToken, handleApiError } from '../../../src/lib/api';
 import supabase from '../../lib/supabaseClient'
-import { useToast } from "../../context/useToastHook";
+import { useToast } from '../../../context/ToastProvider';
 import SupportTab from '../../components/dashboard/tabs/SupportTab'
 import OrdersTab from '../../components/dashboard/tabs/OrdersTab'
 import ProfileTab from '../../components/dashboard/tabs/ProfileTab'
 import SecurityTab from '../../components/dashboard/tabs/SecurityTab'
+import ProductGrid from '../../components/home/home-products/ProductsGrid'
 
 const UserDashboard = () => {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  // wishlist is provided by context (local-storage first). Do not fetch here.
+  const { wishlist } = useWishlist();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileForm, setProfileForm] = useState({});
   const [activeTab, setActiveTab] = useState("overview");
   const { showToast } = useToast();
   const { user: authUser, session, loading: authLoading, signOut } = useAuth();
-  const { state: wishlistState } = useWishlist();
+  // no local wishlistState needed; context provides `wishlist` directly
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -162,33 +165,7 @@ const UserDashboard = () => {
       }
     }
 
-    async function fetchWishlistForTab() {
-      setLoading(true);
-      try {
-        const token = session?.access_token || session?.accessToken || null;
-        attachAuthToken(token);
-        const res = await api.get('/me/wishlist');
-        const rows = res?.data?.data ?? res?.data ?? [];
-        const normalized = (rows || []).map((r) => {
-          const product = r.product || null;
-          return {
-            id: product?.id ?? r.product_id,
-            name: product?.name || product?.title || product?.product_name || '',
-            price: product?.price || product?.variants?.[0]?.price || product?.amount || 0,
-            image: product?.image || product?.images?.[0] || product?.thumbnail || '',
-            _wishlistId: r.id,
-            __raw: r,
-          };
-        });
-        if (!mounted) return;
-        setWishlist(normalized);
-      } catch (err) {
-        console.error('Failed to fetch wishlist:', err);
-        showToast?.('Failed to load wishlist', 'error');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
+    // Wishlist is handled by context (local-first). Do not fetch here.
 
     async function fetchProfileForTab() {
       setLoading(true);
@@ -277,16 +254,18 @@ const UserDashboard = () => {
       }
     }
 
-    if (!authLoading && !authUser) {
+    // Only re-run when the active tab or the authenticated user's id changes.
+    // If there's no authenticated user id, clear data and stop.
+    if (!authUser?.id) {
       setUser(null);
       setOrders([]);
-      setWishlist([]);
+      // wishlist is local-first and provided by context; don't mutate it here
       setLoading(false);
       return () => { mounted = false };
     }
 
     // Decide which tab to fetch
-    if (!authLoading && authUser) {
+    if (authUser?.id) {
       // Fetch DB profile to ensure header name is always correct
       supabase
         .from('users')
@@ -304,19 +283,16 @@ const UserDashboard = () => {
         })
         .catch(() => setUser(authUser));
       if (activeTab === 'orders') fetchOrdersForTab(1, 100);
-      else if (activeTab === 'wishlist') fetchWishlistForTab();
       else if (activeTab === 'profile') fetchProfileForTab();
       else if (activeTab === 'security') fetchSecurityForTab();
       else if (activeTab === 'overview') {
         // load a small recent orders set for overview
         fetchOrdersForTab(1, 5);
-        // wishlist count: prefer wishlist context if available
-        if (wishlistState?.items && wishlistState.items.length > 0) setWishlist(wishlistState.items);
       }
     }
 
     return () => { mounted = false };
-  }, [activeTab, authLoading, authUser, session, showToast, wishlistState]);
+  }, [activeTab, authUser?.id]);
 
   async function saveProfile() {
     setLoading(true);
@@ -399,6 +375,50 @@ const UserDashboard = () => {
   // derive a safe first name for the welcome header
   const displayName = user?.name || user?.full_name || user?.firstName || user?.first_name || user?.username || 'Member';
   const firstName = displayName ? String(displayName).trim().split(/\s+/)[0] : 'Member';
+
+  // Normalize wishlist items for UI components (images, rating, reviews)
+  const normalizedWishlist = (Array.isArray(wishlist) ? wishlist : []).map(item => {
+    // images may come as an array, a JSON string, a comma-separated string, or a single path
+    const raw = item.images ?? item.image ?? '';
+    let validImages = [];
+    try {
+      if (Array.isArray(raw)) {
+        validImages = raw.filter(Boolean);
+      } else if (typeof raw === 'string') {
+        const s = raw.trim();
+        if (!s) {
+          validImages = [];
+        } else if (s.startsWith('[') || s.startsWith('{')) {
+          // try parse JSON
+          const parsed = JSON.parse(s);
+          if (Array.isArray(parsed)) validImages = parsed.filter(Boolean);
+          else if (typeof parsed === 'string') validImages = [parsed];
+        } else if (s.includes(',')) {
+          validImages = s.split(',').map(x => x.trim()).filter(Boolean);
+        } else {
+          validImages = [s];
+        }
+      }
+    } catch (e) {
+      // fallback to best-effort single value
+      validImages = typeof raw === 'string' && raw ? [raw] : [];
+    }
+
+    // 2. Determine Main Image (Allow local paths like /images/...)
+    const mainImage = item.image || (validImages.length > 0 ? validImages[0] : null) || 'https://placehold.co/400?text=No+Image';
+
+    return {
+      ...item,
+      // Pass the parsed array so ProductGrid can use it
+      images: validImages,
+      // Pass the resolved main image
+      image: mainImage,
+      // Ensure numbers
+      priceValue: Number(item.price) || Number(item.priceValue) || 0,
+      rating: Number(item.rating) || Number(item.average_rating) || 0,
+      reviews: Array.isArray(item.reviews) ? item.reviews : []
+    };
+  });
 
   if (loading) {
     return (
@@ -538,7 +558,7 @@ const UserDashboard = () => {
               {}
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
                   <Link
                     to="/shop"
                     className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md transition group"
@@ -574,20 +594,6 @@ const UserDashboard = () => {
                       <span className="font-medium text-gray-800">View Cart</span>
                     </div>
                   </Link>
-
-                  {( (authUser?.role === 'admin') || (authUser?.user_metadata?.role === 'admin') || (localStorage.getItem('is_admin') === 'true') ) && (
-                    <Link
-                      to="/admin"
-                      className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl hover:shadow-md transition group"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition">
-                          <Shield className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <span className="font-medium text-gray-800">Admin Panel</span>
-                      </div>
-                    </Link>
-                  )}
                 </div>
               </div>
 
@@ -638,12 +644,15 @@ const UserDashboard = () => {
                             </div>
                           </div>
                           <div className="text-right">
-                            <Link
-                              to={`/order-details/${order.orderNumber}`}
-                              className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+                            <button
+                              onClick={() => {
+                                setSelectedOrderId(order.id)
+                                setActiveTab('orders')
+                              }}
+                              className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded-md text-sm font-medium transition-colors"
                             >
-                              View Details →
-                            </Link>
+                              View Details
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -667,7 +676,7 @@ const UserDashboard = () => {
 
           {activeTab === "orders" && (
             <div>
-              <OrdersTab orders={orders} />
+              <OrdersTab orders={orders} initialOrderId={selectedOrderId} />
             </div>
           )}
 
@@ -694,33 +703,8 @@ const UserDashboard = () => {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-                  {wishlist.map((item) => (
-                    <div key={item.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-                      <div className="p-4">
-                        <div className="flex items-start space-x-4">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-20 h-20 object-contain rounded-lg bg-gray-50"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-medium text-gray-900 line-clamp-2">{item.name}</h3>
-                            <p className="text-sm text-gray-600 mt-1">{item.brand || "Brand"}</p>
-                            <p className="font-bold text-gray-900 mt-2">{item.price}</p>
-                            <div className="flex gap-2 mt-3">
-                              <button className="text-sm text-orange-600 hover:text-orange-700 font-medium">
-                                Add to Cart
-                              </button>
-                              <button className="text-sm text-red-600 hover:text-red-700 font-medium">
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="p-6">
+                  <ProductGrid products={normalizedWishlist} />
                 </div>
               )}
             </div>

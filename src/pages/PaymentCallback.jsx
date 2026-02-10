@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '@/lib/api'
-import { useCart } from '../../context/useCartHook'
-import { useToast } from '@/context/useToastHook'
+import { useCart } from '@/context/CartContext'
+import { useToast } from '@/context/ToastProvider'
 import supabase from '@/lib/supabaseClient'
 
 const PaymentCallback = () => {

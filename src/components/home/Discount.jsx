@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../../context/useToastHook';
+import { useToast } from '@/context/ToastProvider';
 import { useCart } from '../../../context/useCartHook';
 
 const DiscountPage = () => {

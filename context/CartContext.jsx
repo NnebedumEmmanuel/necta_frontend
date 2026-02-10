@@ -1,5 +1,6 @@
-import React, { useReducer, useEffect } from "react";
+import React, { useReducer, useEffect, useState, useMemo } from "react";
 import { CartContext } from "./CartContextFile";
+import { TAX_RATE, getShippingFee } from '@/lib/pricing';
 
 const cartReducer = (state, action) => {
   switch (action.type) {
@@ -56,6 +57,8 @@ export const CartProvider = ({ children }) => {
     items: JSON.parse(localStorage.getItem('cart')) || []
   });
 
+  const [deliveryState, setDeliveryState] = useState("");
+
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(state.items));
   }, [state.items]);
@@ -97,6 +100,20 @@ export const CartProvider = ({ children }) => {
     return state.items.reduce((total, item) => total + item.quantity, 0);
   };
 
+  // Derived pricing values
+  const { subtotal, tax, shipping, total } = useMemo(() => {
+    const subtotalVal = Number(getTotalPrice() || 0);
+    const taxVal = Number(subtotalVal * Number(TAX_RATE || 0));
+    const shippingVal = Number(getShippingFee(deliveryState, subtotalVal) || 0);
+    const totalVal = subtotalVal + taxVal + shippingVal;
+    return {
+      subtotal: subtotalVal,
+      tax: taxVal,
+      shipping: shippingVal,
+      total: totalVal,
+    };
+  }, [state.items, deliveryState]);
+
   return (
     <CartContext.Provider
       value={{
@@ -106,10 +123,19 @@ export const CartProvider = ({ children }) => {
         updateQuantity,
         clearCart,
         getTotalPrice,
-        getTotalItems
+        getTotalItems,
+        // pricing
+        subtotal,
+        tax,
+        shipping,
+        total,
+        deliveryState,
+        setDeliveryState,
       }}
     >
       {children}
     </CartContext.Provider>
   );
 };
+
+export default CartProvider;

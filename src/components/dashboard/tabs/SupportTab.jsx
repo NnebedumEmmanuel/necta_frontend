@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import supabase from '../../../lib/supabaseClient'
-import { useAuth } from '../../../context/AuthContext'
-import { useToast } from '../../../context/useToastHook'
+import { useAuth } from '../../../../context/AuthContext'
+import { useToast } from '../../../../context/ToastProvider'
 
 export default function SupportTab() {
   const { user } = useAuth()

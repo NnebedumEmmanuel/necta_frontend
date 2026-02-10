@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { orderService } from '../../services/orderService'
-import { useToast } from '../context/useToastHook'
+import { useToast } from '@/context/ToastProvider'
 
 const OrderConfirmation = () => {
   const { id } = useParams()

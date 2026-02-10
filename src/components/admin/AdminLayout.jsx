@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AdminSidebar from './AdminSideBar';
 import AdminNavbar from './AdminNavbar';
 import { Outlet } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function AdminLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);

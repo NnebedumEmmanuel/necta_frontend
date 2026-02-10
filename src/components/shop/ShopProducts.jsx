@@ -1,7 +1,7 @@
 import React from "react";
 import { Heart, ShoppingBag, Tag } from "lucide-react";
 import StarRating from "./StarRating";
-import { useToast } from "../../context/useToastHook";
+import { useToast } from '@/context/ToastProvider';
 
 const ProductCard = ({ 
   product, 
@@ -10,24 +10,52 @@ const ProductCard = ({
   onAddToCart
  }) => {
   const { showToast } = useToast();
+
+  // Simplified data reading: trust the normalized props passed from parent (do not re-calculate)
+  // product.rating and product.reviewCount should already be normalized by upstream code
+  let rating = Number(product?.rating);
+  if (!Number.isFinite(rating)) rating = 0;
+
+  let reviewCount = Number(product?.reviewCount);
+  if (!Number.isFinite(reviewCount)) reviewCount = 0;
+
   const {
-    image,
     brand,
     name,
     price,
     oldPrice,
-  rating = null,
-  reviewCount = null,
     discount,
     isNew
   } = product;
+
+  // Robust Image Getter
+  const getValidImage = (prod) => {
+    if (!prod) return 'https://placehold.co/400?text=No+Image'
+    if (Array.isArray(prod.images) && prod.images.length > 0) {
+      const first = prod.images[0]
+      if (typeof first === 'string') return first
+      if (first && typeof first === 'object' && first.url) return first.url
+    }
+    if (typeof prod.images === 'string') {
+      try {
+        const parsed = JSON.parse(prod.images)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0]
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+    if (prod.image && typeof prod.image === 'string') return prod.image
+    return 'https://placehold.co/400?text=No+Image'
+  }
+
+  const displayImage = getValidImage(product)
 
   return (
     <div className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
       {}
       <div className="relative h-64 bg-gray-50 overflow-hidden">
         <img
-          src={image}
+          src={displayImage}
           alt={name}
           className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
         />

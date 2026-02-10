@@ -1,10 +1,19 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
 import { Package, Truck, Calendar, MapPin, Info, Copy, ExternalLink } from 'lucide-react'
 
-export default function OrdersTab({ orders = [] }) {
+export default function OrdersTab({ orders = [], initialOrderId = null }) {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    // When an initialOrderId is provided by a parent (dashboard), open that order
+    if (initialOrderId == null) {
+      setSelectedOrder(null)
+      return
+    }
+    const found = (orders || []).find(o => String(o.id) === String(initialOrderId))
+    if (found) setSelectedOrder(found)
+  }, [initialOrderId, orders])
 
   const formatCurrency = (value) => {
     const n = Number(value || 0)
@@ -189,7 +198,12 @@ export default function OrdersTab({ orders = [] }) {
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <button onClick={() => openOrder(order)} className="inline-flex items-center px-3 py-1 bg-orange-600 text-white rounded text-sm">View Details</button>
+                  <button
+                    onClick={() => openOrder(order)}
+                    className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                  >
+                    View Details
+                  </button>
                 </div>
               </div>
             )

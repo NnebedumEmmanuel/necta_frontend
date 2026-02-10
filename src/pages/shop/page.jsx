@@ -1,6 +1,6 @@
 import React, { useState, Suspense, useMemo, useCallback } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { useWishlist } from "../../../context/WishlistContext";
+import { useWishlist } from '@/context/SafeWishlistContext';
 import { Filter } from "lucide-react";
 import RatingFilter from "../../components/shop/RatingsFilter";
 import PriceFilter from "../../components/shop/PriceFilter";
@@ -11,6 +11,7 @@ import CategoryFilter from "../../components/shop/CategoryFilter";
 import { productService } from "../../../services/productService";
 import Pagination from "../../components/shop/Pagination";
 import ProductGrid from "../../components/home/home-products/ProductsGrid";
+import { getProductRating } from '@/lib/productRating';
 import { Link } from "react-router-dom";
 import ComingSoon from "../../components/shop/ComingSoon";
 
@@ -65,6 +66,7 @@ function ShopContent() {
   // Local min/max state to drive UI and client-side filtering
   const [minPrice, setMinPrice] = useState(filters.minPrice || 0);
   const [maxPrice, setMaxPrice] = useState(filters.maxPrice || 200000);
+  const [priceRange, setPriceRange] = useState([filters.minPrice || 0, filters.maxPrice || 200000]);
 
   React.useEffect(() => {
     if (collectionParam) {
@@ -166,15 +168,12 @@ function ShopContent() {
     }
   };
 
+  // IMPORTANT: Do not perform client-side filtering here - server response is expected to be already
+  // filtered/paginated according to query params. Returning the raw product list prevents double-filtering
+  // which breaks pagination and search results.
   const filteredProducts = useMemo(() => {
-    const list = Array.isArray(products) ? products : [];
-    const min = Number(minPrice) || 0;
-    const max = Number(maxPrice) || Infinity;
-    return list.filter(product => {
-      const price = Number(product.priceValue ?? parsePrice(String(product.price || '0'))) || 0;
-      return price >= min && price <= max;
-    });
-  }, [products, minPrice, maxPrice]);
+    return Array.isArray(products) ? products : [];
+  }, [products]);
 
   const sortedAndFilteredProducts = useMemo(() => {
     const items = [...(filteredProducts || [])];
@@ -188,7 +187,7 @@ function ShopContent() {
         return items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       case "rating":
       default:
-        return items.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        return items.sort((a, b) => (getProductRating(b) || 0) - (getProductRating(a) || 0));
     }
   }, [filteredProducts, sortOption]);
 
@@ -251,21 +250,54 @@ function ShopContent() {
 
         if (!mounted) return;
 
-        // Prefer the normalized shape from productService
+        // Prefer the normalized shape from productService and normalize rating/review fields
         const items = res?.products ?? [];
         const enhanced = items.map(product => ({
           ...product,
+          // Category & Brand normalization
           category: product.category || (product.categories?.name ?? 'speakers'),
           brand: product.brand || getBrandFromName(product.name || ''),
-          memory: product.memory || getMemoryFromProduct(),
+
+          // Price normalization
           priceValue: parsePrice(String(product.price || '0')),
-          // Do not synthesize rating or review counts on the client.
-          // Use values provided by the backend API (product.rating, product.reviewCount).
-          rating: product.rating,
-          reviewCount: product.reviewCount,
+
+          // Hunt for rating in multiple possible fields (server may use different names)
+          rating: Number(product.rating) || Number(product.average_rating) || Number(product.averageRating) || 0,
+
+          // Review count: prefer explicit counts, fall back to reviews array length
+          reviewCount: Number(product.reviewCount) || Number(product.review_count) || (Array.isArray(product.reviews) ? product.reviews.length : 0),
+
+          // Pass through reviews array only when it's a real array (avoids JSON-string mock data)
+          reviews: Array.isArray(product.reviews) ? product.reviews : [],
         }));
 
-        setProducts(enhanced);
+        // FORCE FIX: Manually check every product again before saving to state
+        const robustProducts = enhanced.map(p => {
+          // 1. Find the rating (check all possible spellings)
+          const realRating = Number(p.rating) || Number(p.average_rating) || Number(p.averageRating) || 0;
+
+          // Use the real rating coming from the service (do not force a 5.0 fallback)
+          const finalRating = realRating;
+
+          // 2. Get Count: Use API value only (do not fabricate a random count)
+          const apiCount = Number(p.reviewCount) || Number(p.review_count) || 0;
+          const finalCount = apiCount;
+
+          return {
+            ...p,
+            rating: finalRating,
+            // Ensure reviews is an array
+            reviews: Array.isArray(p.reviews) ? p.reviews : [],
+            // Use the API-provided count (or 0 if absent)
+            reviewCount: finalCount
+          };
+        });
+
+        // visible verification (development-only)
+        // eslint-disable-next-line no-console
+        if (process.env.NODE_ENV !== 'production') console.log('SHOPPAGE normalized sample:', robustProducts[0]?.id, robustProducts[0]?.rating, robustProducts[0]?.reviewCount);
+
+        setProducts(robustProducts);
         // Do not overwrite total unless API explicitly provides it. Keep total accurate.
         setTotal(res?.total ?? total);
       } catch (err) {
@@ -385,6 +417,7 @@ function ShopContent() {
                   setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }));
                   setMinPrice(range[0]);
                   setMaxPrice(range[1]);
+                  setPriceRange([range[0], range[1]]);
                 }}
               />
                
@@ -611,6 +644,7 @@ function ShopContent() {
                     setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }));
                     setMinPrice(range[0]);
                     setMaxPrice(range[1]);
+                    setPriceRange([range[0], range[1]]);
                   }}
                 />
               </div>

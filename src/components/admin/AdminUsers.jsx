@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Eye, User, Calendar } from 'lucide-react';
 import { api } from '../../lib/api';
-import { useToast } from '../../context/useToastHook';
+import { useToast } from '@/context/ToastProvider';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);

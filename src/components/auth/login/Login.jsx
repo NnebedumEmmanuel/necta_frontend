@@ -10,7 +10,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { signIn, session } = useAuth();
+  const { signIn, session, login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
