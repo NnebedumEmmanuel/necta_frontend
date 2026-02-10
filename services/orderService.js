@@ -18,7 +18,7 @@ class OrderService {
       throw handleApiError(error);
     }
   }
-china
+ 
   async addOrder(orderData) {
     try {
       // Forward full order data to backend so the server has the calculated totals
@@ -39,6 +39,8 @@ china
         total: orderData.total ?? null,
         // amountKobo if provided, otherwise derived from total (NGN -> kobo)
         amountKobo: orderData.amountKobo ?? (orderData.total ? Math.round(Number(orderData.total) * 100) : null),
+        // callback_url: prefer explicit callback_url or derive from current origin
+        callback_url: orderData.callback_url ?? (typeof window !== 'undefined' ? `${window.location.origin}/api/paystack/return` : null),
         status: orderData.status || 'pending',
         metadata: orderData.metadata || {},
       };
