@@ -37,12 +37,12 @@ export default function AdminProducts() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this product?')) return;
+    if (!window.confirm('Are you sure?')) return;
     try {
       setSubmitting(true);
       const res = await api.delete(`/admin/products/${id}`);
-      // assume successful delete when no error thrown
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      // Refresh list from server after successful delete
+      await fetchProducts();
       toast?.showToast?.('Product deleted', { type: 'success' });
       return res;
     } catch (err) {
@@ -205,10 +205,10 @@ export default function AdminProducts() {
 
                         {/* Overlay actions */}
                         <div className="absolute top-3 right-3 flex flex-col gap-2">
-                          <button onClick={() => { setEditingProduct(product); setIsModalOpen(true); }} className="p-2 bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white rounded-lg">
+                          <button onClick={(e) => { e.stopPropagation(); setEditingProduct(product); setIsModalOpen(true); }} className="p-2 bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white rounded-lg">
                             <Edit size={14} />
                           </button>
-                          <button onClick={() => handleDelete(product.id)} className="p-2 bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white rounded-lg">
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }} className="p-2 bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white rounded-lg">
                             <Trash2 size={14} />
                           </button>
                         </div>
