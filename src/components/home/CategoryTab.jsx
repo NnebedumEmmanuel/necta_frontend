@@ -28,11 +28,11 @@ const images = [
 export default function CategoryTab() {
   return (
     <div className="bg-zinc-950 p-4 sm:p-6 lg:p-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {images.map((image, index) => (
           <motion.div
             key={index}
-            className="relative group overflow-hidden rounded-md aspect-[3/4]"
+            className="relative group overflow-hidden rounded-md aspect-square"
             whileHover="hover"
             initial="initial"
           >
@@ -40,7 +40,7 @@ export default function CategoryTab() {
             <img
               src={image.src}
               alt={image.title || `Gallery image ${index + 1}`}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
             />
 
