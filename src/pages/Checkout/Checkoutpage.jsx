@@ -311,8 +311,8 @@ const CheckoutPage = () => {
               >
                 Please select a delivery state
               </button>
-            ) : (
-              <div key={finalTotal} className="w-full">
+              ) : (
+              <div key={grandTotal} className="w-full">
                 <button
                   onClick={handlePlaceOrder}
                   className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600"
