@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/context/ToastProvider';
+import api from '@/lib/api';
 
 export default function ReviewSection({ productId, onReviewSubmitted }) {
   if (!productId) return null;
@@ -69,13 +70,12 @@ export default function ReviewSection({ productId, onReviewSubmitted }) {
   async function loadReviews() {
     if (!productId) return;
     try {
-      const res = await fetch(`/api/products/${productId}/reviews`);
-      const body = await res.json();
+      const res = await api.get(`/products/${productId}/reviews`);
+      const body = res?.data ?? {};
       const fetched = Array.isArray(body?.reviews) ? body.reviews : [];
       setLocalReviews(fetched);
       setBackendTotal(typeof body?.totalReviews === 'number' ? body.totalReviews : fetched.length);
     } catch (e) {
-      // Keep UI resilient; show empty list on failure
       console.error('Failed to load reviews', e);
       setLocalReviews([]);
       setBackendTotal(null);
@@ -188,12 +188,16 @@ export default function ReviewSection({ productId, onReviewSubmitted }) {
                       (async () => {
                         try {
                           const payload = { rating: Number(formRating), comment: String(formComment).trim() };
-                          const res = await fetch(`/api/products/${productId}/reviews`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-                          });
-                          const body = await res.json();
-                          if (!res.ok) {
-                            setFormErrors({ submit: body?.error || 'Failed to submit review' });
+                          try {
+                            const res = await api.post(`/products/${productId}/reviews`, payload);
+                            const body = res?.data ?? {};
+                            if (!res || (res.status && res.status >= 400)) {
+                              setFormErrors({ submit: body?.error || 'Failed to submit review' });
+                              return;
+                            }
+                          } catch (err) {
+                            const msg = err?.response?.data?.error || err?.message || 'Failed to submit review';
+                            setFormErrors({ submit: msg });
                             return;
                           }
 
