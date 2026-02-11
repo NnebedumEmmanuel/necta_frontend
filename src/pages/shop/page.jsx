@@ -1,8 +1,7 @@
 import React, { useState, Suspense, useMemo, useCallback } from "react";
-import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useWishlist } from '@/context/SafeWishlistContext';
 import { Filter } from "lucide-react";
-import { Link } from "react-router-dom";
 
 // Components
 import RatingFilter from "../../components/shop/RatingsFilter";
@@ -16,8 +15,7 @@ import ComingSoon from "../../components/shop/ComingSoon";
 
 // Services & Utils
 import { productService } from "../../../services/productService";
-import { publicApi } from "@/lib/api"; // Ensure this import exists
-import { getProductRating } from '@/lib/productRating';
+import { publicApi } from "@/lib/api";
 
 function parsePrice(price) {
   const numericPrice = parseInt(String(price).replace(/[^\d]/g, '')) || 0;
@@ -43,9 +41,9 @@ function ShopContent() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productsError, setProductsError] = useState(null);
 
-  // Filter Options State (Loaded from DB)
+  // Filter Options State
   const [allBrands, setAllBrands] = useState([]);
-  const [allCategories, setAllCategories] = useState([]);
+  const [allCollections, setAllCollections] = useState([]); // Store collections to map Slug -> ID
 
   // Active Filters State
   const [filters, setFilters] = useState({
@@ -62,39 +60,42 @@ function ShopContent() {
   const [sortOption, setSortOption] = useState("rating");
   const [mobileSearchQuery, setMobileSearchQuery] = useState(searchQuery);
 
-  // 1. FETCH FILTER OPTIONS (Brands & Categories) ON MOUNT
+  // 1. FETCH FILTER OPTIONS (Collections & Brands)
   React.useEffect(() => {
-    const loadFilterOptions = async () => {
+    const loadOptions = async () => {
+      // A. Load Collections (To map Slug -> ID)
       try {
-        // Attempt fetch of brands endpoint
+        const { data } = await publicApi.get('/collections');
+        const cols = data?.collections || data || [];
+        setAllCollections(cols);
+      } catch (e) {
+        console.error("Failed to load collections", e);
+      }
+
+      // B. Load Brands (With robust fallback for 404)
+      try {
         const { data } = await publicApi.get('/brands');
         const apiBrands = data?.brands || data || [];
-
         if (apiBrands.length > 0) {
-          // Store as names array
           setAllBrands(apiBrands.map(b => b.name).filter(Boolean).sort());
         } else {
-          // Fallback: Fetch products to extract brands
+          throw new Error("No brands from API");
+        }
+      } catch (e) {
+        // Fallback: Fetch products to find distinct brands
+        try {
           const { products } = await productService.getProducts({ limit: 50 });
           const distinctBrands = [...new Set(products.map(p => p.brand || p.brands?.name).filter(Boolean))].sort();
           setAllBrands(distinctBrands);
+        } catch (err) {
+          console.error("Failed to load fallback brands", err);
         }
-
-        // Fetch Categories (Optional, if you want dynamic categories in filter)
-        // const { data: catsData } = await publicApi.get('/categories');
-        // setAllCategories((catsData?.categories || []).map(c => c.name));
-      } catch (e) {
-        console.error("Failed to load filter options", e);
       }
     };
-    loadFilterOptions();
+    loadOptions();
   }, []);
 
-  // Fallback loader: if there's no dedicated brands endpoint or it fails,
-  // we could fetch a sample of products to extract brands. Keeping commented
-  // as optional. The primary loader above fills `allBrands` from /brands.
-
-  // 2. SYNC URL COLLECTION PARAM TO STATE
+  // 2. SYNC URL COLLECTION PARAM
   React.useEffect(() => {
     if (collectionParam) {
       setFilters(prev => ({ ...prev, collections: [collectionParam] }));
@@ -103,7 +104,7 @@ function ShopContent() {
     }
   }, [collectionParam]);
 
-  // 3. FETCH PRODUCTS (Flattened & Normalized)
+  // 3. FETCH PRODUCTS
   React.useEffect(() => {
     let mounted = true;
     setLoadingProducts(true);
@@ -111,37 +112,50 @@ function ShopContent() {
 
     const fetchProducts = async () => {
       try {
-        // Prepare Filters
+        // Resolve Collection Slug -> ID
+        // (Backend likely needs ID, but URL has Slug)
+        let targetCollectionId = null;
+        if (filters.collections.length > 0 && allCollections.length > 0) {
+          const slug = filters.collections[0];
+          const matched = allCollections.find(c => c.slug === slug);
+          if (matched) targetCollectionId = matched.id;
+        }
+
         const rawFilterPayload = {
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           rating: filters.rating,
           brands: filters.brands,
           categories: (filters.categories && filters.categories.length > 0) ? filters.categories : (category !== 'all' ? [category] : []),
-          collections: filters.collections,
           q: searchQuery,
         };
 
-        // 1. Prepare clean filters (Remove null, empty strings, and 0 to prevent bugs)
-        const cleanFilters = {};
+        // Build Clean Query
+        const queryParams = { limit: itemsPerPage, page };
+
+        // Flatten & Clean Filters
         Object.entries(rawFilterPayload).forEach(([key, value]) => {
           if (Array.isArray(value) && value.length > 0) {
-            cleanFilters[key] = value;
+            queryParams[key] = value.join(',');
           } else if (value !== null && value !== '' && value !== 0 && value !== '0') {
-            cleanFilters[key] = value;
+            queryParams[key] = value;
           }
         });
 
-        // 2. Send nested 'filters' object (Required by Backend)
-        const res = await productService.getProducts({ 
-          limit: itemsPerPage, 
-          page, 
-          filters: cleanFilters 
-        });
+        // Add Collection ID if found, otherwise pass slug (fallback)
+        if (targetCollectionId) {
+          queryParams['collection_id'] = targetCollectionId;
+        } else if (filters.collections.length > 0) {
+          queryParams['collections'] = filters.collections[0]; 
+        }
+
+        console.log("FETCHING PRODUCTS WITH:", queryParams);
+
+        const res = await productService.getProducts(queryParams);
 
         if (!mounted) return;
 
-        // Normalize Data (do not overwrite real brand data)
+        // Normalize Data (Preserve real brand names)
         const items = res?.products ?? [];
         const normalizedProducts = items.map(p => ({
           ...p,
@@ -163,19 +177,23 @@ function ShopContent() {
       }
     };
 
-    fetchProducts();
+    // Only run fetch if we have collections loaded (to map IDs) OR if no collection is selected
+    if (!collectionParam || allCollections.length > 0) {
+      fetchProducts();
+    }
+    
     return () => { mounted = false };
   }, [
-    filters.minPrice,
-    filters.maxPrice,
-    filters.rating,
-    filters.brands,
-    filters.categories,
-    filters.collections,
-    page,
-    searchQuery,
+    filters.minPrice, 
+    filters.maxPrice, 
+    filters.rating, 
+    filters.brands, 
+    filters.categories, 
+    filters.collections, 
+    page, 
+    searchQuery, 
     category,
-    allBrands,
+    allCollections // Re-run once collections are loaded to map IDs
   ]);
 
   // Handlers
@@ -194,7 +212,7 @@ function ShopContent() {
       categories: [],
       collections: [],
     });
-    navigate(location.pathname); // Clear URL params too
+    navigate(location.pathname);
   };
 
   const handleSearch = (e) => {
@@ -208,7 +226,7 @@ function ShopContent() {
     }
   };
 
-  // Sorting Logic
+  // Sorting
   const sortedProducts = useMemo(() => {
     const items = [...products];
     switch (sortOption) {
@@ -219,7 +237,6 @@ function ShopContent() {
     }
   }, [products, sortOption]);
 
-  // Derived UI State
   const hasActiveFilters = 
     filters.minPrice > 0 || 
     filters.maxPrice < 200000 || 
@@ -235,11 +252,10 @@ function ShopContent() {
     return category === 'all' ? "All Products" : category;
   };
 
-  if (loadingProducts) return <ShopLoading />;
+  if (loadingProducts && products.length === 0) return <ShopLoading />;
   
   return (
     <section className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header & Breadcrumbs */}
       <div className="mb-6">
         <nav className="flex text-sm text-gray-500 mb-4">
           <Link to="/" className="hover:text-black">Home</Link>
@@ -263,9 +279,8 @@ function ShopContent() {
             onSelectionChange={(ratings) => updateFilter('rating', ratings.length ? Math.min(...ratings) : 0)}
           />
 
-          {/* DYNAMIC BRAND FILTER */}
           <BrandFilter
-            options={allBrands} // allBrands is an array of names
+            options={allBrands}
             selected={filters.brands}
             onSelectionChange={(brands) => updateFilter('brands', brands)}
           />
@@ -287,7 +302,6 @@ function ShopContent() {
             <p className="text-gray-500 text-sm">{total} products found</p>
           </div>
 
-          {/* Mobile Filter Toggle */}
           <div className="lg:hidden mb-4">
              <button onClick={() => setIsFilterOpen(true)} className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded">
                <Filter size={16} /> Filters
@@ -313,7 +327,7 @@ function ShopContent() {
         </div>
       </div>
       
-      {/* Mobile Filter Modal (Simplified) */}
+      {/* Mobile Filter Modal */}
       {isFilterOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black/50" onClick={() => setIsFilterOpen(false)} />
@@ -322,7 +336,6 @@ function ShopContent() {
               <h2 className="font-bold text-xl">Filters</h2>
               <button onClick={() => setIsFilterOpen(false)}>✕</button>
             </div>
-            {/* Re-use filters here if needed for mobile */}
             <PriceFilter 
                 range={[filters.minPrice, filters.maxPrice]}
                 onRangeChange={(range) => setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }))}
