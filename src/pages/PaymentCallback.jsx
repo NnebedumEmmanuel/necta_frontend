@@ -8,10 +8,12 @@ import supabase from '@/lib/supabaseClient'
 const PaymentCallback = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { clearCart } = useCart()
+  const { clearCart, state } = useCart()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [verifiedSuccess, setVerifiedSuccess] = useState(false)
+  const navigatedRef = useRef(false)
   const ranRef = useRef(false)
 
   useEffect(() => {
@@ -47,10 +49,9 @@ const PaymentCallback = () => {
         console.info('Paystack verify response (frontend):', body)
 
         if (body?.success) {
-          try { clearCart() } catch (e) { }
-          showToast?.('Payment verified. Redirecting to orders...', { type: 'success' })
-          // Navigate to the user's orders page inside the dashboard
-          navigate('/dashboard/orders')
+          // mark success and let redirect effect handle navigation after a short delay
+          try { showToast?.('Payment verified. Redirecting to orders...', { type: 'success' }) } catch (e) {}
+          setVerifiedSuccess(true)
           return
         }
 
@@ -64,9 +65,8 @@ const PaymentCallback = () => {
               const orders = ordersRes?.data?.data || []
               const matched = orders.find(o => o.paystack_reference === reference || o.payment_status === 'paid' || (o.status && o.status === 'paid'))
                 if (matched) {
-                try { clearCart() } catch (e) { }
-                showToast?.('Payment confirmed. Redirecting to orders...', { type: 'success' })
-                navigate('/dashboard/orders')
+                try { showToast?.('Payment confirmed. Redirecting to orders...', { type: 'success' }) } catch (e) {}
+                setVerifiedSuccess(true)
                 return true
               }
             } catch (pollErr) {
@@ -92,6 +92,32 @@ const PaymentCallback = () => {
     }
     verify()
   }, [location.search])
+
+  // Redirect effect: when verification is successful, wait 2s then clear cart (hard) and navigate
+  useEffect(() => {
+    if (!verifiedSuccess) return
+    if (navigatedRef.current) return
+    navigatedRef.current = true
+
+    const t = setTimeout(() => {
+      try {
+        // Hard cleanup: clear cart if still has items
+        try {
+          if (state && Array.isArray(state.items) && state.items.length > 0) {
+            // clearCart may be sync
+            clearCart()
+          }
+        } catch (e) {
+          console.warn('Failed to clear cart before navigation', e)
+        }
+        navigate('/dashboard/orders')
+      } finally {
+        // nothing
+      }
+    }, 2000)
+
+    return () => clearTimeout(t)
+  }, [verifiedSuccess, state, clearCart, navigate])
 
   return (
     <div className="flex items-center justify-center min-h-screen">
