@@ -24,7 +24,7 @@ const Login = () => {
     // Reset UI error state
     setLoginError('');
     if (!email || !password) {
-      setLoginError('Invalid email or password. Please try again.');
+      setLoginError('Invalid email or password');
       setShake(true);
       setTimeout(() => setShake(false), 600);
       return;
@@ -35,7 +35,7 @@ const Login = () => {
       if (res?.error) {
         // For security, show a generic message for all auth failures
         console.error('Auth failure:', res.error);
-        setLoginError('Invalid email or password. Please try again.');
+        setLoginError('Invalid email or password');
         setShake(true);
         setTimeout(() => setShake(false), 600);
         return;
@@ -44,7 +44,7 @@ const Login = () => {
     } catch (err) {
       console.error("Login error:", err);
       // Show generic error to user while logging details to console for debugging
-      setLoginError('Invalid email or password. Please try again.');
+      setLoginError('Invalid email or password');
       setShake(true);
       setTimeout(() => setShake(false), 600);
     } finally {
@@ -153,7 +153,8 @@ const Login = () => {
                   autoComplete="email"
                   required
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); if (loginError) setLoginError(''); }}
+                  onChange={(e) => { setEmail(e.target.value); }}
+                  onFocus={() => { if (loginError) setLoginError(''); }}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                   placeholder="you@example.com"
                 />
@@ -172,7 +173,8 @@ const Login = () => {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => { setPassword(e.target.value); if (loginError) setLoginError(''); }}
+                  onChange={(e) => { setPassword(e.target.value); }}
+                  onFocus={() => { if (loginError) setLoginError(''); }}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                   placeholder="Enter your password"
                 />
