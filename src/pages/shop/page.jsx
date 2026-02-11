@@ -72,6 +72,8 @@ function ShopContent() {
     if (collectionParam) {
       setFilters(prev => ({ ...prev, collections: [collectionParam] }));
     }
+    // no async work here, but provide a cleanup for consistency
+    return () => { /* cleanup: nothing to cancel here */ };
   }, [collectionParam]);
 
   const availableBrands = useMemo(() => {
@@ -346,6 +348,8 @@ function ShopContent() {
       }
     }
     // only run when filter primitives change
+    // provide a cleanup to avoid any accidental side-effects when unmounting
+    return () => { /* no-op cleanup for prevFiltersRef effect */ };
   }, [filters.minPrice, filters.maxPrice, filters.rating, filters.brands, filters.categories, filters.collections, searchQuery, category, navigate, location.pathname, searchParams, page]);
 
   const hasActiveFilters =

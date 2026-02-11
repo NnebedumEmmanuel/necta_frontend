@@ -99,7 +99,7 @@ const CheckoutPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.state]);
 
-  const handlePlaceOrder = async () => {
+  const handlePayment = async () => {
     if (!formData.fullName || !formData.email || !formData.phone || !formData.address) {
       showToast("Please fill in all required fields", "error");
       return;
@@ -145,7 +145,7 @@ const CheckoutPage = () => {
     };
 
     try {
-      const res = await orderService.addOrder(orderData);
+  const res = await orderService.addOrder(orderData);
 
       if (res?.success) {
         const order = res.data?.order;
@@ -176,6 +176,8 @@ const CheckoutPage = () => {
   
 
   console.log("Checkout Math:", { subtotal, tax, shippingCost, grandTotal });
+
+  // (no local processing wrapper) Payment is handled directly by handlePayment
 
   const needsState = Number(shippingCost) === 0 && !formData.state;
 
@@ -316,18 +318,17 @@ const CheckoutPage = () => {
               >
                 Please select a delivery state
               </button>
-                ) : (
-                  // Force reflow when user data changes by using key based on user id
-                  <div key={user?.id || 'guest'} className="w-full">
-                    <button
-                      onClick={handlePlaceOrder}
-                      disabled={!isFormValid}
-                      aria-disabled={!isFormValid}
-                      className={`w-full py-3 rounded-xl font-semibold ${isFormValid ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-300 text-gray-700 cursor-not-allowed'}`}
-                    >
-                      Pay with Paystack
-                    </button>
-                  </div>
+            ) : (
+              <div key={`${(cartItems || []).length}-${user?.id || 'guest'}`} className="w-full">
+                <button
+                  type="button"
+                  onClick={handlePayment}
+                  disabled={!isFormValid}
+                  className={`w-full py-3 rounded-xl font-semibold ${isFormValid ? 'bg-orange-500 text-white' : 'bg-gray-300'}`}
+                >
+                  Pay with Paystack
+                </button>
+              </div>
             )}
           </div>
         </aside>

@@ -261,12 +261,12 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Product Name</label>
-            <input name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Wireless Headphones" className={`w-full rounded-xl bg-gray-50 p-4 outline-none transition focus:bg-white focus:ring-2 focus:ring-[${ORANGE}] focus:border-[${ORANGE}]`} />
+            <input name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Wireless Headphones" className={`w-full rounded-xl bg-gray-50 p-4 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`} />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Brand</label>
             <div className="flex items-center gap-2">
-              <select name="brand_id" value={formData.brand_id} onChange={handleChange} className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[${ORANGE}] focus:border-[${ORANGE}]`}>
+              <select name="brand_id" value={formData.brand_id} onChange={handleChange} className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`}>
                 <option value="">Select a Brand (optional)</option>
                 {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
@@ -282,7 +282,7 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Category <span className="text-red-500">*</span></label>
             <div className="flex items-center gap-2">
-              <select name="category_id" value={formData.category_id} onChange={handleChange} required className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[${ORANGE}] focus:border-[${ORANGE}]`}>
+              <select name="category_id" value={formData.category_id} onChange={handleChange} required className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`}>
                 <option value="">Select a Category</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -295,7 +295,7 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Collection</label>
             <div className="flex items-center gap-2">
-              <select name="collection_id" value={formData.collection_id} onChange={handleChange} className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[${ORANGE}] focus:border-[${ORANGE}]`}>
+              <select name="collection_id" value={formData.collection_id} onChange={handleChange} className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`}>
                 <option value="">Select a Collection</option>
                 {collections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -310,15 +310,15 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Price (₦)</label>
-            <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" className={`w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[${ORANGE}] focus:border-[${ORANGE}]`} />
+            <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" className={`w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`} />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Discount (%)</label>
-            <input type="number" name="discount" value={formData.discount} onChange={handleChange} placeholder="0" className={`w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[${ORANGE}] focus:border-[${ORANGE}]`} />
+            <input type="number" name="discount" value={formData.discount} onChange={handleChange} placeholder="0" className={`w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`} />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Stock</label>
-            <input type="number" name="stock" value={formData.stock} onChange={handleChange} placeholder="0" className={`w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[${ORANGE}] focus:border-[${ORANGE}]`} />
+            <input type="number" name="stock" value={formData.stock} onChange={handleChange} placeholder="0" className={`w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`} />
           </div>
         </div>
 
@@ -328,7 +328,7 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           <div
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className={`w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 h-40 flex items-center justify-center p-4 transition hover:border-[${ORANGE}] hover:bg-white`}>
+            className={`w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 h-40 flex items-center justify-center p-4 transition hover:border-[var(--necta-orange)] hover:bg-white`}>
             <div className="text-center">
               {uploading ? (
                 <div className="flex items-center justify-center gap-2 text-[#FF6B00]"><Loader className="animate-spin" /> Uploading...</div>
@@ -353,7 +353,7 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
 
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Description</label>
-          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className={`w-full rounded-xl bg-gray-50 p-4 outline-none transition focus:bg-white focus:ring-2 focus:ring-[${ORANGE}] focus:border-[${ORANGE}]`} />
+          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className={`w-full rounded-xl bg-gray-50 p-4 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`} />
         </div>
 
         {/* Specs */}
