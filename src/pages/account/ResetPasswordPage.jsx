@@ -14,33 +14,42 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     let mounted = true;
     let subscription;
+    // If the URL has the magic-link access_token, show the form immediately
+    const hash = (typeof window !== 'undefined' && window.location.hash) ? window.location.hash : '';
+    const hasAccessToken = hash.includes('access_token');
 
-    // Show that we're checking while the immediate session probe runs
-    setLoading(true);
+    if (hasAccessToken) {
+      // Force visible immediately; don't wait for getSession()
+      setValidSession(true);
+      setMessage('');
+      setLoading(false);
+    } else {
+      // Show that we're checking while the immediate session probe runs
+      setLoading(true);
 
-    // Immediate check: don't wait for events — if a session already exists, accept it
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (!mounted) return;
-        const session = data?.session ?? null;
-        if (session) {
-          setValidSession(true);
-          setMessage('');
-        } else {
-          // keep unknown until events are processed; we'll set false after event/window checks
-          setValidSession(false);
+      // Immediate check: don't wait for events — if a session already exists, accept it
+      (async () => {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (!mounted) return;
+          const session = data?.session ?? null;
+          if (session) {
+            setValidSession(true);
+            setMessage('');
+          } else {
+            setValidSession(false);
+          }
+        } catch (err) {
+          console.error('Error checking reset session:', err);
+          if (mounted) {
+            setValidSession(false);
+            setMessage('Unable to validate reset link.');
+          }
+        } finally {
+          if (mounted) setLoading(false);
         }
-      } catch (err) {
-        console.error('Error checking reset session:', err);
-        if (mounted) {
-          setValidSession(false);
-          setMessage('Unable to validate reset link.');
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
+      })();
+    }
 
     // Event listener: accept PASSWORD_RECOVERY or SIGNED_IN as signals the magic-link was used
     const eventHandler = (event, session) => {

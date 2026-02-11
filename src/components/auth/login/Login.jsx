@@ -136,7 +136,7 @@ const Login = () => {
             </button>
           </div>
          
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)} className="space-y-6">
             <style>{`
               @keyframes shakeX { 0% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } 100% { transform: translateX(0); } }
               .animate-shake { animation: shakeX 0.6s ease-in-out; }
@@ -217,7 +217,8 @@ const Login = () => {
             )}
             <div>
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={isLoading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60"
               >
@@ -231,7 +232,7 @@ const Login = () => {
                 Create account
               </Link>
             </div>
-          </form>
+          </div>
 
           {showForgot && (
             <div className="p-4 bg-gray-50 rounded border mt-2">
