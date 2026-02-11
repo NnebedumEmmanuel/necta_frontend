@@ -110,7 +110,7 @@ const PaymentCallback = () => {
         } catch (e) {
           console.warn('Failed to clear cart before navigation', e)
         }
-        navigate('/dashboard/orders')
+  navigate('/dashboard', { replace: true, state: { activeTab: 'orders' } })
       } finally {
         // nothing
       }
@@ -146,7 +146,7 @@ const PaymentCallback = () => {
               </button>
               <button
                 className="px-3 py-1 border rounded"
-                onClick={() => navigate('/dashboard/orders')}
+                onClick={() => navigate('/dashboard', { replace: true, state: { activeTab: 'orders' } })}
               >
                 Go to Orders
               </button>

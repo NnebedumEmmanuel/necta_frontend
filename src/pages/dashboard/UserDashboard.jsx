@@ -40,12 +40,12 @@ const UserDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileForm, setProfileForm] = useState({});
-  const [activeTab, setActiveTab] = useState("overview");
   const { showToast } = useToast();
-  const { user: authUser, session, loading: authLoading, signOut } = useAuth();
-  // no local wishlistState needed; context provides `wishlist` directly
   const navigate = useNavigate();
   const location = useLocation();
+  const { user: authUser, session, loading: authLoading, signOut } = useAuth();
+  // no local wishlistState needed; context provides `wishlist` directly
+  const [activeTab, setActiveTab] = useState(() => (location?.state && location.state.activeTab) ? location.state.activeTab : "overview");
 
   // Make a reusable loader for profile/user data so child tabs can refresh it
   async function loadUserData() {
