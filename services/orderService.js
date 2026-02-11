@@ -39,8 +39,8 @@ class OrderService {
         total: orderData.total ?? null,
         // amountKobo if provided, otherwise derived from total (NGN -> kobo)
         amountKobo: orderData.amountKobo ?? (orderData.total ? Math.round(Number(orderData.total) * 100) : null),
-        // callback_url: prefer explicit callback_url or derive from current origin
-        callback_url: orderData.callback_url ?? (typeof window !== 'undefined' ? `${window.location.origin}/api/paystack/return` : null),
+  // callback_url: prefer explicit callback_url or derive from current origin (frontend payment callback page)
+  callback_url: orderData.callback_url ?? (typeof window !== 'undefined' ? `${window.location.origin}/payment/callback` : null),
         status: orderData.status || 'pending',
         metadata: orderData.metadata || {},
       };

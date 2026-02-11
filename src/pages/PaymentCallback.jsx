@@ -49,7 +49,8 @@ const PaymentCallback = () => {
         if (body?.success) {
           try { clearCart() } catch (e) { }
           showToast?.('Payment verified. Redirecting to orders...', { type: 'success' })
-          navigate('/dashboard?tab=orders&paystatus=success')
+          // Navigate to the user's orders page inside the dashboard
+          navigate('/dashboard/orders')
           return
         }
 
@@ -62,10 +63,10 @@ const PaymentCallback = () => {
               const ordersRes = await api.get('/me/orders')
               const orders = ordersRes?.data?.data || []
               const matched = orders.find(o => o.paystack_reference === reference || o.payment_status === 'paid' || (o.status && o.status === 'paid'))
-              if (matched) {
+                if (matched) {
                 try { clearCart() } catch (e) { }
                 showToast?.('Payment confirmed. Redirecting to orders...', { type: 'success' })
-                navigate('/dashboard?tab=orders&paystatus=success')
+                navigate('/dashboard/orders')
                 return true
               }
             } catch (pollErr) {
@@ -119,7 +120,7 @@ const PaymentCallback = () => {
               </button>
               <button
                 className="px-3 py-1 border rounded"
-                onClick={() => navigate('/dashboard?tab=orders')}
+                onClick={() => navigate('/dashboard/orders')}
               >
                 Go to Orders
               </button>
