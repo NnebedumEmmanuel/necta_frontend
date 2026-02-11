@@ -9,7 +9,7 @@ import CollectionsDropdown from "../../components/shop/Collections";
 import BrandFilter from "../../components/shop/BrandFilter";
 import CategoryFilter from "../../components/shop/CategoryFilter";
 import { productService } from "../../../services/productService";
-import { publicApi } from '@/lib/api';
+import supabase from '@/lib/supabaseClient';
 import Pagination from "../../components/shop/Pagination";
 import ProductGrid from "../../components/home/home-products/ProductsGrid";
 import { getProductRating } from '@/lib/productRating';
@@ -84,58 +84,30 @@ function ShopContent() {
   // Fetch all unique brands and categories once on mount so filters show the full universe
   React.useEffect(() => {
     let mounted = true;
-    const loadFilterOptions = async () => {
+    (async () => {
       try {
-        // Fetch Brands via public API
-        const brandsRes = await publicApi.get('/brands');
-        const brandsData = brandsRes?.data;
-        let brandNames = [];
-        if (brandsData?.brands) {
-          brandNames = brandsData.brands.map(b => b.name).filter(Boolean).sort();
-        } else if (Array.isArray(brandsData)) {
-          brandNames = brandsData.map(b => b.name).filter(Boolean).sort();
-        }
+        // Fetch Brands (map to names)
+        const { data: brandsData, error: brandsError } = await supabase.from('brands').select('name');
+        if (brandsError) throw brandsError;
 
-        // If API returned nothing, fall back to extracting from current products
-        if (!brandNames || brandNames.length === 0) {
-          const fallbackBrands = Array.from(new Set((products || []).map(p => p.brand).filter(Boolean))).sort();
-          brandNames = fallbackBrands;
-        }
+        // Fetch Categories (map to names)
+        const { data: catsData, error: catsError } = await supabase.from('categories').select('name');
+        if (catsError) throw catsError;
 
-        // Fetch Categories via public API
-        const catsRes = await publicApi.get('/categories');
-        const catsData = catsRes?.data;
-        let categoryNames = [];
-        if (catsData?.categories) {
-          categoryNames = catsData.categories.map(c => c.name).filter(Boolean).sort();
-        } else if (Array.isArray(catsData)) {
-          categoryNames = catsData.map(c => c.name).filter(Boolean).sort();
-        }
-
-        if (!categoryNames || categoryNames.length === 0) {
-          const fallbackCats = Array.from(new Set((products || []).map(p => p.category).filter(Boolean))).sort();
-          categoryNames = fallbackCats;
-        }
+        if (!mounted) return;
+        const brandNames = Array.isArray(brandsData) ? brandsData.map(b => b.name).filter(Boolean).sort() : [];
+        const categoryNames = Array.isArray(catsData) ? catsData.map(c => c.name).filter(Boolean).sort() : [];
 
         if (mounted) {
           setAllBrands(brandNames);
           setAllCategories(categoryNames);
         }
       } catch (err) {
-        // non-fatal: fall back to products-derived values so dropdowns are never empty
+        // non-fatal: if this fails, filters will fall back to available values derived from visible products
         // eslint-disable-next-line no-console
-        console.error('Failed to load global filter options from API:', err);
-        if (mounted) {
-          const fallbackBrands = Array.from(new Set((products || []).map(p => p.brand).filter(Boolean))).sort();
-          const fallbackCats = Array.from(new Set((products || []).map(p => p.category).filter(Boolean))).sort();
-          setAllBrands(fallbackBrands);
-          setAllCategories(fallbackCats);
-        }
+        console.warn('Failed to load global filter options from Supabase:', err);
       }
-    };
-
-    loadFilterOptions();
-
+    })();
     return () => { mounted = false };
   }, []);
 
