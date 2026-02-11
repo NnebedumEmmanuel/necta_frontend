@@ -13,78 +13,50 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     let mounted = true;
-    // If the URL contains an access_token (magic link), wait for auth state change event
-    const hash = (typeof window !== 'undefined' && window.location.hash) ? window.location.hash : '';
-    const hasAccessToken = hash.includes('access_token=');
-
     let subscription;
 
+    // Show that we're checking while the immediate session probe runs
+    setLoading(true);
+
+    // Immediate check: don't wait for events — if a session already exists, accept it
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!mounted) return;
+        const session = data?.session ?? null;
+        if (session) {
+          setValidSession(true);
+          setMessage('');
+        } else {
+          // keep unknown until events are processed; we'll set false after event/window checks
+          setValidSession(false);
+        }
+      } catch (err) {
+        console.error('Error checking reset session:', err);
+        if (mounted) {
+          setValidSession(false);
+          setMessage('Unable to validate reset link.');
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    // Event listener: accept PASSWORD_RECOVERY or SIGNED_IN as signals the magic-link was used
     const eventHandler = (event, session) => {
       if (!mounted) return;
-      // Supabase emits PASSWORD_RECOVERY when the magic-link for password reset is used
-      if (event === 'PASSWORD_RECOVERY') {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         setValidSession(true);
         setMessage('');
+        setLoading(false);
       }
     };
 
-    // Register auth state listener if available
     if (supabase.auth.onAuthStateChange) {
       const { data } = supabase.auth.onAuthStateChange((event, session) => eventHandler(event, session));
       subscription = data?.subscription;
     } else if (supabase.auth.onAuthStateChanged) {
-      // fallback if API differs
       subscription = supabase.auth.onAuthStateChanged((event, session) => eventHandler(event, session));
-    }
-
-    if (hasAccessToken) {
-      // We expect the onAuthStateChange to fire; show interim message while waiting
-      setValidSession(null);
-      setMessage('Processing magic link...');
-
-      // As a safety fallback, try to read session after a short delay in case the client auto-sets it
-      (async () => {
-        try {
-          const { data } = await supabase.auth.getSession();
-          if (!mounted) return;
-          const session = data?.session ?? null;
-          if (session) {
-            setValidSession(true);
-            setMessage('');
-          }
-        } catch (err) {
-          console.error('Error validating session after magic link:', err);
-          if (mounted) {
-            // don't overwrite a PASSWORD_RECOVERY-driven validSession if set
-            if (validSession === null) {
-              setValidSession(false);
-              setMessage('Unable to validate reset link.');
-            }
-          }
-        }
-      })();
-    } else {
-      // Normal flow (no token in URL): check session immediately
-      (async () => {
-        try {
-          const { data } = await supabase.auth.getSession();
-          if (!mounted) return;
-          const session = data?.session ?? null;
-          if (!session) {
-            setValidSession(false);
-            setMessage('Reset link appears invalid or expired.');
-          } else {
-            setValidSession(true);
-            setMessage('');
-          }
-        } catch (err) {
-          console.error('Error checking reset session:', err);
-          if (mounted) {
-            setValidSession(false);
-            setMessage('Unable to validate reset link.');
-          }
-        }
-      })();
     }
 
     return () => {
@@ -144,11 +116,11 @@ export default function ResetPasswordPage() {
             <p className="mt-2 text-gray-600">Use the form below to set a new password.</p>
           </div>
 
-          {validSession === false && (
-            <div className="p-4 bg-red-50 text-red-700 rounded">{message || 'Reset link appears invalid or expired.'}</div>
+          {!loading && !validSession && (
+            <div className="p-4 bg-red-50 text-red-700 rounded">{message || 'Invalid or expired link.'}</div>
           )}
 
-          {validSession === null ? (
+          {loading ? (
             <div className="text-center text-gray-500">Checking session…</div>
           ) : (
             validSession && (
