@@ -10,6 +10,22 @@ const CheckoutPage = () => {
   // Use the cart context with the required destructured names for UI contract
   const { cartItems: ctxCartItems, state, deliveryState, setDeliveryState, clearCart } = useCart() || {};
 
+  // Minimal STATE -> LGA map used to filter LGAs in the address form.
+  // Expand this map as needed. Provided entries: Imo and Lagos.
+  const STATE_LGA_MAP = {
+    Imo: [
+      'Aboh Mbaise', 'Ahiazu Mbaise', 'Ehime Mbano', 'Ezinihitte', 'Ideato North', 'Ideato South',
+      'Ihitte/Uboma', 'Ikeduru', 'Isiala Mbano', 'Isu', 'Mbaitoli', 'Ngor Okpala', 'Njaba',
+      'Nkwerre', 'Nwangele', 'Obowo', 'Oguta', 'Ohaji/Egbema', 'Okigwe', 'Onuimo', 'Orlu', 'Orsu',
+      'Oru East', 'Oru West', 'Owerri Municipal', 'Owerri North', 'Owerri West'
+    ],
+    Lagos: [
+      'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa', 'Badagry', 'Coker-Aguda',
+      'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye', 'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island',
+      'Lagos Mainland', 'Mushin', 'Ojo', 'Ojodu', 'Oshodi-Isolo', 'Shomolu', 'Surulere'
+    ]
+  };
+
   // Define cartItems first (explicit, safe fallback to stored state)
   const cartItems = (Array.isArray(ctxCartItems) && ctxCartItems.length > 0)
     ? ctxCartItems
@@ -69,6 +85,10 @@ const CheckoutPage = () => {
     address: "",
     city: "",
     state: deliveryState || "",
+    lga: "",
+    houseDescription: "",
+    landmark: "",
+    coordinates: null,
   });
   // Auto-fill form fields from authenticated user when available
   React.useEffect(() => {
@@ -80,6 +100,10 @@ const CheckoutPage = () => {
       address: prev.address || user?.address || "",
       city: prev.city || user?.city || "",
       state: prev.state || deliveryState || user?.state || "",
+      lga: prev.lga || user?.lga || "",
+      houseDescription: prev.houseDescription || "",
+      landmark: prev.landmark || "",
+      coordinates: prev.coordinates || null,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -99,8 +123,29 @@ const CheckoutPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.state]);
 
+  // Geolocation helper to capture { lat, lng } and store on formData.coordinates
+  const handleGetLocation = () => {
+    if (!navigator?.geolocation) {
+      showToast?.("Geolocation is not supported by your browser", "error");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setFormData(prev => ({ ...prev, coordinates: coords }));
+        showToast?.('Location captured', 'success');
+      },
+      (err) => {
+        console.error('Geolocation error', err);
+        showToast?.(`Failed to get location: ${err?.message || 'unknown'}`, 'error');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const handlePayment = async () => {
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.address) {
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.lga) {
       showToast("Please fill in all required fields", "error");
       return;
     }
@@ -131,16 +176,20 @@ const CheckoutPage = () => {
         name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
-        address: formData.address,
+        address: `${formData.address}${formData.houseDescription ? ', ' + formData.houseDescription : ''}${formData.landmark ? ', ' + formData.landmark : ''}`,
         city: formData.city,
-        state: formData.state
+        state: formData.state,
+        lga: formData.lga,
+        houseDescription: formData.houseDescription,
+        landmark: formData.landmark,
+        coordinates: formData.coordinates
       },
         items: orderItems,
         subtotal: Number(subtotal).toFixed(2),
         tax: Number(tax).toFixed(2),
         total: Number(grandTotal).toFixed(2),
         amountKobo: Math.round(Number(grandTotal) * 100),
-      shippingAddress: `${formData.address}, ${formData.city}, ${formData.state}`,
+      shippingAddress: `${formData.address}, ${formData.houseDescription || ''}, ${formData.landmark || ''}, ${formData.lga || ''}, ${formData.state || ''}`,
       status: 'pending'
     };
 
@@ -183,7 +232,7 @@ const CheckoutPage = () => {
 
   // Form validity should be computed directly in the render body (not in an effect)
   const isFormValid = Boolean(
-    formData.fullName && formData.email && formData.phone && formData.address && !needsState
+    formData.fullName && formData.email && formData.phone && formData.address && formData.lga && !needsState
   );
 
   return (
@@ -227,17 +276,17 @@ const CheckoutPage = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">City</label>
-                  <input
-                    className="w-full border p-2 rounded"
-                    value={formData.city}
-                    onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                    placeholder="City"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">City</label>
+                <input
+                  className="w-full border p-2 rounded"
+                  value={formData.city}
+                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="City"
+                />
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">State</label>
                   <select
@@ -245,13 +294,27 @@ const CheckoutPage = () => {
                     value={formData.state}
                     onChange={(e) => {
                       const s = e.target.value;
-                      setFormData(prev => ({ ...prev, state: s }));
+                      setFormData(prev => ({ ...prev, state: s, lga: '' }));
                       setDeliveryState(s);
                     }}
                   >
                     <option value="">Select state</option>
                     {NIGERIAN_STATES.map(s => (
                       <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">LGA</label>
+                  <select
+                    className="w-full border p-2 rounded"
+                    value={formData.lga}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lga: e.target.value }))}
+                  >
+                    <option value="">Select LGA</option>
+                    {(STATE_LGA_MAP[formData.state] || []).map(l => (
+                      <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
                 </div>
@@ -265,6 +328,37 @@ const CheckoutPage = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="Email address"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">House Description (optional)</label>
+                <input
+                  className="w-full border p-2 rounded"
+                  value={formData.houseDescription}
+                  onChange={(e) => setFormData(prev => ({ ...prev, houseDescription: e.target.value }))}
+                  placeholder="e.g., Yellow gate, Flat 2B"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Landmark (optional)</label>
+                <input
+                  className="w-full border p-2 rounded"
+                  value={formData.landmark}
+                  onChange={(e) => setFormData(prev => ({ ...prev, landmark: e.target.value }))}
+                  placeholder="e.g., Near the transformer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Pin exact location</label>
+                <button
+                  type="button"
+                  onClick={() => handleGetLocation && handleGetLocation()}
+                  className={`w-full py-2 rounded ${formData.coordinates ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-800'}`}
+                >
+                  {formData.coordinates ? 'Location pinned' : 'Pin My Exact Location'}
+                </button>
               </div>
             </div>
           </div>

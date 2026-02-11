@@ -27,6 +27,11 @@ class OrderService {
         // Ensure top-level email and shipping_address exist as backend expects
         email: orderData.email || (orderData.customer && orderData.customer.email) || null,
         shipping_address: orderData.shipping_address || orderData.shippingAddress || null,
+        // Support structured address fields for logistics providers
+        lga: orderData.lga ?? (orderData.customer && orderData.customer.lga) ?? null,
+        houseDescription: orderData.houseDescription ?? (orderData.customer && orderData.customer.houseDescription) ?? null,
+        landmark: orderData.landmark ?? (orderData.customer && orderData.customer.landmark) ?? null,
+        coordinates: orderData.coordinates ?? (orderData.customer && orderData.customer.coordinates) ?? null,
         // Items must include qty and price (server computes subtotal from these)
         items: (orderData.items || []).map(i => ({
           product_id: i.product_id || i.id || null,
