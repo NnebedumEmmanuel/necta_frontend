@@ -179,8 +179,13 @@ const CheckoutPage = () => {
 
   const needsState = Number(shippingCost) === 0 && !formData.state;
 
+  // Form validity should be computed directly in the render body (not in an effect)
+  const isFormValid = Boolean(
+    formData.fullName && formData.email && formData.phone && formData.address && !needsState
+  );
+
   return (
-    <main className="container mx-auto p-4">
+    <main key={user?.id || 'guest'} className="container mx-auto p-4">
       <h1 className="text-2xl font-semibold mb-6">Checkout</h1>
 
       <div className="grid md:grid-cols-3 gap-8">
@@ -311,15 +316,18 @@ const CheckoutPage = () => {
               >
                 Please select a delivery state
               </button>
-              ) : (
-              <div key={grandTotal} className="w-full">
-                <button
-                  onClick={handlePlaceOrder}
-                  className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600"
-                >
-                  Pay with Paystack
-                </button>
-              </div>
+                ) : (
+                  // Force reflow when user data changes by using key based on user id
+                  <div key={user?.id || 'guest'} className="w-full">
+                    <button
+                      onClick={handlePlaceOrder}
+                      disabled={!isFormValid}
+                      aria-disabled={!isFormValid}
+                      className={`w-full py-3 rounded-xl font-semibold ${isFormValid ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-300 text-gray-700 cursor-not-allowed'}`}
+                    >
+                      Pay with Paystack
+                    </button>
+                  </div>
             )}
           </div>
         </aside>
