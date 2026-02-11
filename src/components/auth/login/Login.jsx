@@ -64,7 +64,8 @@ const Login = () => {
     try {
       // Supabase v2 method to send reset email with redirect
       const { data, error } = await supabase.auth.resetPasswordForEmail(emailToSend, {
-        redirectTo: 'https://necta-frontend.vercel.app/reset-password'
+        // Use the current origin so dev and prod both work automatically.
+        redirectTo: `${window.location.origin}/reset-password`
       });
 
       // Regardless of whether an account exists, show neutral message for security
