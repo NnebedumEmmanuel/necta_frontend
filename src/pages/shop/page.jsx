@@ -66,11 +66,19 @@ function ShopContent() {
   React.useEffect(() => {
     const loadFilterOptions = async () => {
       try {
-        // Fetch Brands
-        const { data: brandsData } = await publicApi.get('/brands');
-        const brands = brandsData?.brands || brandsData || [];
-        // Store {id, name} objects so we can map brand_id -> name later
-        setAllBrands(brands.map(b => ({ id: b.id, name: b.name })).filter(x => x.name));
+        // Attempt fetch of brands endpoint
+        const { data } = await publicApi.get('/brands');
+        const apiBrands = data?.brands || data || [];
+
+        if (apiBrands.length > 0) {
+          // Store as names array
+          setAllBrands(apiBrands.map(b => b.name).filter(Boolean).sort());
+        } else {
+          // Fallback: Fetch products to extract brands
+          const { products } = await productService.getProducts({ limit: 50 });
+          const distinctBrands = [...new Set(products.map(p => p.brand || p.brands?.name).filter(Boolean))].sort();
+          setAllBrands(distinctBrands);
+        }
 
         // Fetch Categories (Optional, if you want dynamic categories in filter)
         // const { data: catsData } = await publicApi.get('/categories');
@@ -114,42 +122,36 @@ function ShopContent() {
           q: searchQuery,
         };
 
-        // Flatten Filters for API (e.g. brands=['a','b'] -> &brands=a,b)
-        const flatFilters = {};
+        // 1. Prepare clean filters (Remove null, empty strings, and 0 to prevent bugs)
+        const cleanFilters = {};
         Object.entries(rawFilterPayload).forEach(([key, value]) => {
           if (Array.isArray(value) && value.length > 0) {
-            flatFilters[key] = value.join(',');
+            cleanFilters[key] = value;
           } else if (value !== null && value !== '' && value !== 0 && value !== '0') {
-            // Exclude explicit zero values (e.g. minPrice=0) so they don't appear in the querystring
-            flatFilters[key] = value;
+            cleanFilters[key] = value;
           }
         });
 
-        console.log("FETCHING WITH:", flatFilters);
-
-        // Call API
+        // 2. Send nested 'filters' object (Required by Backend)
         const res = await productService.getProducts({ 
           limit: itemsPerPage, 
           page, 
-          ...flatFilters // <--- Spread flattened filters here
+          filters: cleanFilters 
         });
 
         if (!mounted) return;
 
-        // Normalize Data (map brand_id -> brand name via loaded allBrands)
+        // Normalize Data (do not overwrite real brand data)
         const items = res?.products ?? [];
-        const normalizedProducts = items.map(p => {
-          const foundBrand = allBrands.find(b => b.id === p.brand_id)?.name;
-          return {
-            ...p,
-            brand: p.brand || p.brands?.name || foundBrand || 'Generic',
-            category: p.category || p.categories?.name || 'General',
-            priceValue: parsePrice(p.price || 0),
-            rating: Number(p.rating) || Number(p.average_rating) || 0,
-            reviewCount: Number(p.reviewCount) || Number(p.review_count) || (Array.isArray(p.reviews) ? p.reviews.length : 0),
-            reviews: Array.isArray(p.reviews) ? p.reviews : [],
-          };
-        });
+        const normalizedProducts = items.map(p => ({
+          ...p,
+          brand: p.brand || p.brands?.name || 'Generic',
+          category: p.category || p.categories?.name || 'General',
+          priceValue: parsePrice(p.price || 0),
+          rating: Number(p.rating) || Number(p.average_rating) || 0,
+          reviewCount: Number(p.reviewCount) || Number(p.review_count) || (Array.isArray(p.reviews) ? p.reviews.length : 0),
+          reviews: Array.isArray(p.reviews) ? p.reviews : [],
+        }));
 
         setProducts(normalizedProducts);
         setTotal(res?.total ?? 0);
@@ -263,7 +265,7 @@ function ShopContent() {
 
           {/* DYNAMIC BRAND FILTER */}
           <BrandFilter
-            options={allBrands.map(b => b.name)} // Pass only names to the filter UI
+            options={allBrands} // allBrands is an array of names
             selected={filters.brands}
             onSelectionChange={(brands) => updateFilter('brands', brands)}
           />
@@ -327,7 +329,7 @@ function ShopContent() {
             />
             <div className="mt-6">
               <BrandFilter
-                options={allBrands.map(b => b.name)}
+                options={allBrands}
                 selected={filters.brands}
                 onSelectionChange={(brands) => updateFilter('brands', brands)}
               />
