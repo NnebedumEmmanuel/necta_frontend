@@ -130,6 +130,12 @@ const CheckoutPage = () => {
       return;
     }
 
+    const options = {
+      enableHighAccuracy: true, // Force the browser to try harder
+      timeout: 10000,           // Give it 10 seconds before failing
+      maximumAge: 0             // Do not use a cached location
+    };
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const coords = { lat: position.coords.latitude, lng: position.coords.longitude };
@@ -138,9 +144,11 @@ const CheckoutPage = () => {
       },
       (err) => {
         console.error('Geolocation error', err);
-        showToast?.(`Failed to get location: ${err?.message || 'unknown'}`, 'error');
+        // Provide code + message to aid debugging (Code 1=PermissionDenied, 2=PositionUnavailable, 3=Timeout)
+        const msg = `Failed to get location (code=${err?.code}): ${err?.message || 'unknown'}`;
+        showToast?.(msg, 'error');
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      options
     );
   };
 
