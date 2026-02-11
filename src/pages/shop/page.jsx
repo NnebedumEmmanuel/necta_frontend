@@ -275,7 +275,14 @@ function ShopContent() {
 
   console.log("FETCH PARAMS", filterPayload);
 
-  const res = await productService.getProducts({ limit: itemsPerPage, page, filters: filterPayload });
+        // Flatten array values (e.g., ['a','b'] becomes 'a,b') so productService.buildProductsQuery
+        // receives top-level params instead of a nested `filters` object.
+        const flatFilters = {};
+        Object.entries(filterPayload).forEach(([key, val]) => {
+          flatFilters[key] = Array.isArray(val) ? val.join(',') : val;
+        });
+
+  const res = await productService.getProducts({ limit: itemsPerPage, page, ...flatFilters });
 
         // Debug: surface API response and normalized summary for migration verification
         try {
@@ -293,9 +300,9 @@ function ShopContent() {
           ...product,
           // Category & Brand normalization
           category: product.category || (product.categories?.name ?? 'speakers'),
-          // Brand normalization: prefer explicit API brand, fall back to product.brands.name if present
-          // Do NOT default to a hardcoded brand string.
-          brand: product.brand || product.brands?.name || null,
+          // Brand normalization: prefer explicit API brand; if missing, mark as 'Generic'
+          // (avoid guessing from product name which caused incorrect overwrites)
+          brand: product.brand || 'Generic',
 
           // Price normalization
           priceValue: parsePrice(String(product.price || '0')),
@@ -473,11 +480,8 @@ function ShopContent() {
                 onSelectionChange={(brands) => updateFilter('brands', brands)}
               />
 
-              <CategoryFilter
-                options={allCategories}
-                selected={filters.categories}
-                onSelectionChange={(cats) => updateFilter('categories', cats)}
-              />
+              {/* CategoryFilter removed from desktop sidebar to avoid duplicate category controls.
+                  Use ShopByCategoryDropdown for category navigation. */}
             </div>
           <div className="sticky top-6 mt-4 space-y-6">
             {}
