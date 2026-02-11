@@ -265,22 +265,18 @@ function ShopContent() {
           q: searchQuery,
         };
 
-        // Strip empty arrays / empty values before sending request
-        const filterPayload = Object.fromEntries(Object.entries(rawFilterPayload).filter(([k, v]) => {
-          if (v == null) return false
-          if (Array.isArray(v)) return v.length > 0
-          if (typeof v === 'string') return String(v).trim() !== ''
-          return true
-        }))
-
-  console.log("FETCH PARAMS", filterPayload);
-
-        // Flatten array values (e.g., ['a','b'] becomes 'a,b') so productService.buildProductsQuery
-        // receives top-level params instead of a nested `filters` object.
+        // Build flatFilters from rawFilterPayload so query params are top-level (brand=Sony, not filters[brand]=...)
+        // 1. Flatten arrays (e.g. ['Sony','JBL'] -> 'Sony,JBL')
         const flatFilters = {};
-        Object.entries(filterPayload).forEach(([key, val]) => {
-          flatFilters[key] = Array.isArray(val) ? val.join(',') : val;
+        Object.entries(rawFilterPayload).forEach(([key, value]) => {
+          if (Array.isArray(value) && value.length > 0) {
+            flatFilters[key] = value.join(',');
+          } else if (value !== null && value !== '' && value !== 0) {
+            flatFilters[key] = value;
+          }
         });
+
+  console.log("FETCH PARAMS", flatFilters);
 
   const res = await productService.getProducts({ limit: itemsPerPage, page, ...flatFilters });
 
@@ -300,9 +296,9 @@ function ShopContent() {
           ...product,
           // Category & Brand normalization
           category: product.category || (product.categories?.name ?? 'speakers'),
-          // Brand normalization: prefer explicit API brand; if missing, mark as 'Generic'
-          // (avoid guessing from product name which caused incorrect overwrites)
-          brand: product.brand || 'Generic',
+          // Brand normalization: prefer explicit API brand; fall back to nested product.brands.name if available,
+          // otherwise mark as 'Generic' to avoid guessing from the product name.
+          brand: product.brand || product.brands?.name || 'Generic',
 
           // Price normalization
           priceValue: parsePrice(String(product.price || '0')),
