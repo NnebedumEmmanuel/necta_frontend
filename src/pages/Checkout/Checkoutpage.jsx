@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from '@/context/CartContext';
-import { NIGERIAN_STATES } from '@/lib/pricing';
+import { STATE_LGA_MAP } from '@/lib/pricing';
 import { orderService } from "../../../services/orderService";
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastProvider';
@@ -10,21 +10,7 @@ const CheckoutPage = () => {
   // Use the cart context with the required destructured names for UI contract
   const { cartItems: ctxCartItems, state, deliveryState, setDeliveryState, clearCart } = useCart() || {};
 
-  // Minimal STATE -> LGA map used to filter LGAs in the address form.
-  // Expand this map as needed. Provided entries: Imo and Lagos.
-  const STATE_LGA_MAP = {
-    Imo: [
-      'Aboh Mbaise', 'Ahiazu Mbaise', 'Ehime Mbano', 'Ezinihitte', 'Ideato North', 'Ideato South',
-      'Ihitte/Uboma', 'Ikeduru', 'Isiala Mbano', 'Isu', 'Mbaitoli', 'Ngor Okpala', 'Njaba',
-      'Nkwerre', 'Nwangele', 'Obowo', 'Oguta', 'Ohaji/Egbema', 'Okigwe', 'Onuimo', 'Orlu', 'Orsu',
-      'Oru East', 'Oru West', 'Owerri Municipal', 'Owerri North', 'Owerri West'
-    ],
-    Lagos: [
-      'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa', 'Badagry', 'Coker-Aguda',
-      'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye', 'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island',
-      'Lagos Mainland', 'Mushin', 'Ojo', 'Ojodu', 'Oshodi-Isolo', 'Shomolu', 'Surulere'
-    ]
-  };
+  
 
   // Define cartItems first (explicit, safe fallback to stored state)
   const cartItems = (Array.isArray(ctxCartItems) && ctxCartItems.length > 0)
@@ -77,6 +63,19 @@ const CheckoutPage = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const [isLocating, setIsLocating] = useState(false);
+
+  // Memoized list of LGAs for the currently selected state
+  const currentLgas = React.useMemo(() => {
+    return (STATE_LGA_MAP[formData.state] || []);
+  }, [formData.state]);
+
+  // Whenever the state changes, reset the selected LGA to force the user to re-pick
+  React.useEffect(() => {
+    setFormData(prev => ({ ...prev, lga: '' }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.state]);
 
   const [formData, setFormData] = useState({
     fullName: user?.firstName ? `${user.firstName} ${user.lastName}` : "",
@@ -131,19 +130,22 @@ const CheckoutPage = () => {
     }
 
     const options = {
-      enableHighAccuracy: true, // Force the browser to try harder
-      timeout: 10000,           // Give it 10 seconds before failing
-      maximumAge: 0             // Do not use a cached location
+      enableHighAccuracy: false, // prefer quicker, less error-prone fixes on unstable networks
+      timeout: 10000,            // Give it 10 seconds before failing
+      maximumAge: Infinity       // Allow cached location if available
     };
 
+    setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const coords = { lat: position.coords.latitude, lng: position.coords.longitude };
         setFormData(prev => ({ ...prev, coordinates: coords }));
+        setIsLocating(false);
         showToast?.('Location captured', 'success');
       },
       (err) => {
         console.error('Geolocation error', err);
+        setIsLocating(false);
         // Provide code + message to aid debugging (Code 1=PermissionDenied, 2=PositionUnavailable, 3=Timeout)
         const msg = `Failed to get location (code=${err?.code}): ${err?.message || 'unknown'}`;
         showToast?.(msg, 'error');
@@ -197,7 +199,7 @@ const CheckoutPage = () => {
         tax: Number(tax).toFixed(2),
         total: Number(grandTotal).toFixed(2),
         amountKobo: Math.round(Number(grandTotal) * 100),
-      shippingAddress: `${formData.address}, ${formData.houseDescription || ''}, ${formData.landmark || ''}, ${formData.lga || ''}, ${formData.state || ''}`,
+  shippingAddress: `${formData.address}${formData.houseDescription ? ', ' + formData.houseDescription : ''}${formData.landmark ? ', near ' + formData.landmark : ''}, ${formData.lga || ''}, ${formData.state || ''}`,
       status: 'pending'
     };
 
@@ -240,7 +242,7 @@ const CheckoutPage = () => {
 
   // Form validity should be computed directly in the render body (not in an effect)
   const isFormValid = Boolean(
-    formData.fullName && formData.email && formData.phone && formData.address && formData.lga && !needsState
+    formData.fullName && formData.email && formData.phone && formData.address && formData.state && formData.lga && !needsState
   );
 
   return (
@@ -307,9 +309,9 @@ const CheckoutPage = () => {
                     }}
                   >
                     <option value="">Select state</option>
-                    {NIGERIAN_STATES.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
+                      {Object.keys(STATE_LGA_MAP).map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
                   </select>
                 </div>
 
@@ -318,10 +320,11 @@ const CheckoutPage = () => {
                   <select
                     className="w-full border p-2 rounded"
                     value={formData.lga}
+                    disabled={!formData.state}
                     onChange={(e) => setFormData(prev => ({ ...prev, lga: e.target.value }))}
                   >
                     <option value="">Select LGA</option>
-                    {(STATE_LGA_MAP[formData.state] || []).map(l => (
+                    {currentLgas.map(l => (
                       <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
@@ -363,9 +366,10 @@ const CheckoutPage = () => {
                 <button
                   type="button"
                   onClick={() => handleGetLocation && handleGetLocation()}
-                  className={`w-full py-2 rounded ${formData.coordinates ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-800'}`}
+                  disabled={isLocating}
+                  className={`w-full py-2 rounded ${isLocating ? 'bg-yellow-400 text-white' : (formData.coordinates ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-800')}`}
                 >
-                  {formData.coordinates ? 'Location pinned' : 'Pin My Exact Location'}
+                  {isLocating ? 'Pinning...' : (formData.coordinates ? 'Location pinned' : 'Pin My Exact Location')}
                 </button>
               </div>
             </div>

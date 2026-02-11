@@ -16,6 +16,29 @@ export const NIGERIAN_STATES = [
   'Taraba','Yobe','Zamfara','FCT'
 ];
 
+// A minimal STATE -> LGA map. Populate LGAs as needed. This exports a map with keys for all
+// Nigerian states while providing full LGA lists for Lagos and Imo as examples.
+export const STATE_LGA_MAP = (() => {
+  const map = {};
+  NIGERIAN_STATES.forEach(s => { map[s] = []; });
+
+  // Example populated LGAs for Imo and Lagos
+  map['Imo'] = [
+    'Aboh Mbaise', 'Ahiazu Mbaise', 'Ehime Mbano', 'Ezinihitte', 'Ideato North', 'Ideato South',
+    'Ihitte/Uboma', 'Ikeduru', 'Isiala Mbano', 'Isu', 'Mbaitoli', 'Ngor Okpala', 'Njaba',
+    'Nkwerre', 'Nwangele', 'Obowo', 'Oguta', 'Ohaji/Egbema', 'Okigwe', 'Onuimo', 'Orlu', 'Orsu',
+    'Oru East', 'Oru West', 'Owerri Municipal', 'Owerri North', 'Owerri West'
+  ];
+
+  map['Lagos'] = [
+    'Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa', 'Badagry', 'Coker-Aguda',
+    'Epe', 'Eti-Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye', 'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island',
+    'Lagos Mainland', 'Mushin', 'Ojo', 'Ojodu', 'Oshodi-Isolo', 'Shomolu', 'Surulere'
+  ];
+
+  return map;
+})();
+
 /**
  * Get shipping fee for a given state and subtotal.
  * Returns 0 when subtotal meets or exceeds the free shipping threshold.
