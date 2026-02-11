@@ -118,7 +118,7 @@ const Login = () => {
               Sign in to your account to continue shopping
             </p>
           </div>
-          {}
+          
           <div className="mt-4">
             <button
               type="button"
@@ -135,7 +135,7 @@ const Login = () => {
               Continue with Google
             </button>
           </div>
-          {}
+         
           <form onSubmit={handleSubmit} className="space-y-6">
             <style>{`
               @keyframes shakeX { 0% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } 100% { transform: translateX(0); } }
@@ -242,7 +242,7 @@ const Login = () => {
                     type="email"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleResetPassword(e)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleResetPassword(e); } }}
                     placeholder="you@example.com"
                     className="mt-1 block w-full px-3 py-2 border rounded-md"
                     required
