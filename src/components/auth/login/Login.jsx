@@ -14,7 +14,7 @@ const Login = () => {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [isSendingReset, setIsSendingReset] = useState(false);
-  const [loginError, setLoginError] = useState('Test Error Message');
+  const [loginError, setLoginError] = useState('');
   const [shake, setShake] = useState(false);
   const { signIn, session, login } = useAuth();
   const navigate = useNavigate();
