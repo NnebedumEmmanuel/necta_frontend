@@ -210,13 +210,14 @@ const Login = () => {
 
             {showForgot && (
               <div className="p-4 bg-gray-50 rounded border mt-2">
-                <form onSubmit={handleResetPassword} className="space-y-3">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Enter email to reset</label>
                     <input
                       type="email"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleResetPassword(e)}
                       placeholder="you@example.com"
                       className="mt-1 block w-full px-3 py-2 border rounded-md"
                       required
@@ -224,7 +225,8 @@ const Login = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleResetPassword}
                       disabled={isSendingReset}
                       className="py-2 px-4 bg-orange-600 text-white rounded-md disabled:opacity-60"
                     >
@@ -232,7 +234,7 @@ const Login = () => {
                     </button>
                     <button type="button" onClick={() => setShowForgot(false)} className="text-sm text-gray-600 underline">Cancel</button>
                   </div>
-                </form>
+                </div>
               </div>
             )}
 
