@@ -60,23 +60,12 @@ const CheckoutPage = () => {
     currency: 'NGN'
   };
 
+  // Bring hooks that are needed for initial form state above the formData declaration
   const { showToast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [isLocating, setIsLocating] = useState(false);
-
-  // Memoized list of LGAs for the currently selected state
-  const currentLgas = React.useMemo(() => {
-    return (STATE_LGA_MAP[formData.state] || []);
-  }, [formData.state]);
-
-  // Whenever the state changes, reset the selected LGA to force the user to re-pick
-  React.useEffect(() => {
-    setFormData(prev => ({ ...prev, lga: '' }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.state]);
-
+  // Define formData state early so subsequent hooks (useMemo/useEffect) can reference it safely
   const [formData, setFormData] = useState({
     fullName: user?.firstName ? `${user.firstName} ${user.lastName}` : "",
     email: user?.email || "",
@@ -89,6 +78,17 @@ const CheckoutPage = () => {
     landmark: "",
     coordinates: null,
   });
+
+  // Memoized list of LGAs for the currently selected state
+  const currentLgas = React.useMemo(() => {
+    return (STATE_LGA_MAP[formData.state] || []);
+  }, [formData.state]);
+
+  // Whenever the state changes, reset the selected LGA to force the user to re-pick
+  React.useEffect(() => {
+    setFormData(prev => ({ ...prev, lga: '' }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.state]);
   // Auto-fill form fields from authenticated user when available
   React.useEffect(() => {
     if (!user) return;
@@ -122,37 +122,7 @@ const CheckoutPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.state]);
 
-  // Geolocation helper to capture { lat, lng } and store on formData.coordinates
-  const handleGetLocation = () => {
-    if (!navigator?.geolocation) {
-      showToast?.("Geolocation is not supported by your browser", "error");
-      return;
-    }
-
-    const options = {
-      enableHighAccuracy: false, // prefer quicker, less error-prone fixes on unstable networks
-      timeout: 10000,            // Give it 10 seconds before failing
-      maximumAge: Infinity       // Allow cached location if available
-    };
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coords = { lat: position.coords.latitude, lng: position.coords.longitude };
-        setFormData(prev => ({ ...prev, coordinates: coords }));
-        setIsLocating(false);
-        showToast?.('Location captured', 'success');
-      },
-      (err) => {
-        console.error('Geolocation error', err);
-        setIsLocating(false);
-        // Provide code + message to aid debugging (Code 1=PermissionDenied, 2=PositionUnavailable, 3=Timeout)
-        const msg = `Failed to get location (code=${err?.code}): ${err?.message || 'unknown'}`;
-        showToast?.(msg, 'error');
-      },
-      options
-    );
-  };
+  // Geolocation removed: no geolocation helper is present to avoid leftover references.
 
   const handlePayment = async () => {
     if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.lga) {
@@ -324,7 +294,7 @@ const CheckoutPage = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, lga: e.target.value }))}
                   >
                     <option value="">Select LGA</option>
-                    {currentLgas.map(l => (
+                    {(currentLgas || []).map(l => (
                       <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
@@ -361,17 +331,7 @@ const CheckoutPage = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Pin exact location</label>
-                <button
-                  type="button"
-                  onClick={() => handleGetLocation && handleGetLocation()}
-                  disabled={isLocating}
-                  className={`w-full py-2 rounded ${isLocating ? 'bg-yellow-400 text-white' : (formData.coordinates ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-800')}`}
-                >
-                  {isLocating ? 'Pinning...' : (formData.coordinates ? 'Location pinned' : 'Pin My Exact Location')}
-                </button>
-              </div>
+              
             </div>
           </div>
         </section>
