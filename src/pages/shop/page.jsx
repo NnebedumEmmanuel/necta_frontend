@@ -18,7 +18,8 @@ import ComingSoon from "../../components/shop/ComingSoon";
 function getBrandFromName(name) {
   const brands = ["T&G", "JBL", "Sony", "Bose", "Amazon", "Yamaha", "Klipsch", "Anker", "Samsung"];
   const foundBrand = brands.find(brand => name.toLowerCase().includes(brand.toLowerCase()));
-  return foundBrand || "T&G";
+  // Do not default to a specific brand when no match is found; return null so callers can decide
+  return foundBrand || null;
 }
 
 function getMemoryFromProduct() {
@@ -46,6 +47,10 @@ function ShopContent() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productsError, setProductsError] = useState(null);
 
+  // All available filter options fetched independently from the DB
+  const [allBrands, setAllBrands] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
+
   const collectionParam = searchParams.get('collection') || null;
 
   const { state: wishlistState, toggleWishlist } = useWishlist();
@@ -69,12 +74,39 @@ function ShopContent() {
   const [priceRange, setPriceRange] = useState([filters.minPrice || 0, filters.maxPrice || 200000]);
 
   React.useEffect(() => {
-    if (collectionParam) {
-      setFilters(prev => ({ ...prev, collections: [collectionParam] }));
-    }
+    // Keep filters.collections in sync with the collectionParam (set to [] when absent)
+    setFilters(prev => ({ ...prev, collections: collectionParam ? [collectionParam] : [] }));
     // no async work here, but provide a cleanup for consistency
     return () => { /* cleanup: nothing to cancel here */ };
   }, [collectionParam]);
+
+  // Fetch all unique brands and categories once on mount so filters show the full universe
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // Request a large page to capture available brands/categories. Adjust limit if your dataset is bigger.
+        const res = await productService.getProducts({ limit: 1000, page: 1 });
+        if (!mounted) return;
+        const items = res?.products ?? [];
+        const brandSet = new Set();
+        const categorySet = new Set();
+        items.forEach(p => {
+          if (p?.brand) brandSet.add(p.brand);
+          if (p?.category) categorySet.add(p.category);
+        });
+        if (mounted) {
+          setAllBrands(Array.from(brandSet).sort());
+          setAllCategories(Array.from(categorySet).sort());
+        }
+      } catch (err) {
+        // non-fatal: if this fails, filters will fall back to available values derived from visible products
+        // eslint-disable-next-line no-console
+        console.warn('Failed to load global filter options:', err);
+      }
+    })();
+    return () => { mounted = false };
+  }, []);
 
   const availableBrands = useMemo(() => {
     const set = new Set();
@@ -258,7 +290,11 @@ function ShopContent() {
           ...product,
           // Category & Brand normalization
           category: product.category || (product.categories?.name ?? 'speakers'),
-          brand: product.brand || getBrandFromName(product.name || ''),
+          // Only use brand-name fallback when the API explicitly returned `brand: null`.
+          // If brand is undefined or omitted, prefer leaving it undefined so UI/filters don't get polluted.
+          brand: (Object.prototype.hasOwnProperty.call(product, 'brand') && product.brand === null)
+            ? (getBrandFromName(product.name || '') || null)
+            : product.brand,
 
           // Price normalization
           priceValue: parsePrice(String(product.price || '0')),
@@ -431,13 +467,13 @@ function ShopContent() {
               />
 
               <BrandFilter
-                options={availableBrands}
+                options={allBrands.length ? allBrands : availableBrands}
                 selected={filters.brands}
                 onSelectionChange={(brands) => updateFilter('brands', brands)}
               />
 
               <CategoryFilter
-                options={availableCategories}
+                options={allCategories.length ? allCategories : availableCategories}
                 selected={filters.categories}
                 onSelectionChange={(cats) => updateFilter('categories', cats)}
               />
@@ -655,7 +691,7 @@ function ShopContent() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-gray-900">Brand</h3>
                 <BrandFilter
-                  options={availableBrands}
+                    options={allBrands.length ? allBrands : availableBrands}
                   selected={filters.brands}
                   onSelectionChange={(brands) => updateFilter('brands', brands)}
                 />
@@ -664,7 +700,7 @@ function ShopContent() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-gray-900">Category</h3>
                 <CategoryFilter
-                  options={availableCategories}
+                    options={allCategories.length ? allCategories : availableCategories}
                   selected={filters.categories}
                   onSelectionChange={(cats) => updateFilter('categories', cats)}
                 />

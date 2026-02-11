@@ -21,8 +21,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Reset UI error state
-    setLoginError('');
+    // Do not reset UI error state here; keep visible until user starts typing
     if (!email || !password) {
       setLoginError('Invalid email or password. Please try again.');
       setShake(true);
@@ -35,6 +34,7 @@ const Login = () => {
       if (res?.error) {
         // For security, show a generic message for all auth failures
         console.error('Auth failure:', res.error);
+        console.log('SETTING UI ERROR STATE NOW');
         setLoginError('Invalid email or password. Please try again.');
         setShake(true);
         setTimeout(() => setShake(false), 600);
@@ -44,6 +44,7 @@ const Login = () => {
     } catch (err) {
       console.error("Login error:", err);
       // Show generic error to user while logging details to console for debugging
+      console.log('SETTING UI ERROR STATE NOW');
       setLoginError('Invalid email or password. Please try again.');
       setShake(true);
       setTimeout(() => setShake(false), 600);
@@ -153,7 +154,7 @@ const Login = () => {
                   autoComplete="email"
                   required
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); }}
+                  onChange={(e) => { setEmail(e.target.value); setLoginError(''); }}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                   placeholder="you@example.com"
                 />
@@ -172,7 +173,7 @@ const Login = () => {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => { setPassword(e.target.value); }}
+                  onChange={(e) => { setPassword(e.target.value); setLoginError(''); }}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                   placeholder="Enter your password"
                 />
