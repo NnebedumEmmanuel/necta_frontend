@@ -13,27 +13,88 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (!mounted) return;
-        const session = data?.session ?? null;
-        if (!session) {
-          setValidSession(false);
-          setMessage('Reset link appears invalid or expired.');
-        } else {
-          setValidSession(true);
-          setMessage('');
-        }
-      } catch (err) {
-        console.error('Error checking reset session:', err);
-        if (mounted) {
-          setValidSession(false);
-          setMessage('Unable to validate reset link.');
-        }
+    // If the URL contains an access_token (magic link), wait for auth state change event
+    const hash = (typeof window !== 'undefined' && window.location.hash) ? window.location.hash : '';
+    const hasAccessToken = hash.includes('access_token=');
+
+    let subscription;
+
+    const eventHandler = (event, session) => {
+      if (!mounted) return;
+      // Supabase emits PASSWORD_RECOVERY when the magic-link for password reset is used
+      if (event === 'PASSWORD_RECOVERY') {
+        setValidSession(true);
+        setMessage('');
       }
-    })();
-    return () => { mounted = false; };
+    };
+
+    // Register auth state listener if available
+    if (supabase.auth.onAuthStateChange) {
+      const { data } = supabase.auth.onAuthStateChange((event, session) => eventHandler(event, session));
+      subscription = data?.subscription;
+    } else if (supabase.auth.onAuthStateChanged) {
+      // fallback if API differs
+      subscription = supabase.auth.onAuthStateChanged((event, session) => eventHandler(event, session));
+    }
+
+    if (hasAccessToken) {
+      // We expect the onAuthStateChange to fire; show interim message while waiting
+      setValidSession(null);
+      setMessage('Processing magic link...');
+
+      // As a safety fallback, try to read session after a short delay in case the client auto-sets it
+      (async () => {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (!mounted) return;
+          const session = data?.session ?? null;
+          if (session) {
+            setValidSession(true);
+            setMessage('');
+          }
+        } catch (err) {
+          console.error('Error validating session after magic link:', err);
+          if (mounted) {
+            // don't overwrite a PASSWORD_RECOVERY-driven validSession if set
+            if (validSession === null) {
+              setValidSession(false);
+              setMessage('Unable to validate reset link.');
+            }
+          }
+        }
+      })();
+    } else {
+      // Normal flow (no token in URL): check session immediately
+      (async () => {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (!mounted) return;
+          const session = data?.session ?? null;
+          if (!session) {
+            setValidSession(false);
+            setMessage('Reset link appears invalid or expired.');
+          } else {
+            setValidSession(true);
+            setMessage('');
+          }
+        } catch (err) {
+          console.error('Error checking reset session:', err);
+          if (mounted) {
+            setValidSession(false);
+            setMessage('Unable to validate reset link.');
+          }
+        }
+      })();
+    }
+
+    return () => {
+      mounted = false;
+      try {
+        if (subscription && typeof subscription.unsubscribe === 'function') subscription.unsubscribe();
+      } catch (e) {
+        // ignore
+      }
+    };
   }, []);
 
   const handleUpdate = async (e) => {
