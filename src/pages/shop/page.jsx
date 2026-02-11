@@ -9,6 +9,7 @@ import CollectionsDropdown from "../../components/shop/Collections";
 import BrandFilter from "../../components/shop/BrandFilter";
 import CategoryFilter from "../../components/shop/CategoryFilter";
 import { productService } from "../../../services/productService";
+import supabase from '@/lib/supabaseClient';
 import Pagination from "../../components/shop/Pagination";
 import ProductGrid from "../../components/home/home-products/ProductsGrid";
 import { getProductRating } from '@/lib/productRating';
@@ -85,24 +86,26 @@ function ShopContent() {
     let mounted = true;
     (async () => {
       try {
-        // Request a large page to capture available brands/categories. Adjust limit if your dataset is bigger.
-        const res = await productService.getProducts({ limit: 1000, page: 1 });
+        // Fetch Brands (map to names)
+        const { data: brandsData, error: brandsError } = await supabase.from('brands').select('name');
+        if (brandsError) throw brandsError;
+
+        // Fetch Categories (map to names)
+        const { data: catsData, error: catsError } = await supabase.from('categories').select('name');
+        if (catsError) throw catsError;
+
         if (!mounted) return;
-        const items = res?.products ?? [];
-        const brandSet = new Set();
-        const categorySet = new Set();
-        items.forEach(p => {
-          if (p?.brand) brandSet.add(p.brand);
-          if (p?.category) categorySet.add(p.category);
-        });
+        const brandNames = Array.isArray(brandsData) ? brandsData.map(b => b.name).filter(Boolean).sort() : [];
+        const categoryNames = Array.isArray(catsData) ? catsData.map(c => c.name).filter(Boolean).sort() : [];
+
         if (mounted) {
-          setAllBrands(Array.from(brandSet).sort());
-          setAllCategories(Array.from(categorySet).sort());
+          setAllBrands(brandNames);
+          setAllCategories(categoryNames);
         }
       } catch (err) {
         // non-fatal: if this fails, filters will fall back to available values derived from visible products
         // eslint-disable-next-line no-console
-        console.warn('Failed to load global filter options:', err);
+        console.warn('Failed to load global filter options from Supabase:', err);
       }
     })();
     return () => { mounted = false };
@@ -290,11 +293,9 @@ function ShopContent() {
           ...product,
           // Category & Brand normalization
           category: product.category || (product.categories?.name ?? 'speakers'),
-          // Only use brand-name fallback when the API explicitly returned `brand: null`.
-          // If brand is undefined or omitted, prefer leaving it undefined so UI/filters don't get polluted.
-          brand: (Object.prototype.hasOwnProperty.call(product, 'brand') && product.brand === null)
-            ? (getBrandFromName(product.name || '') || null)
-            : product.brand,
+          // Brand normalization: prefer explicit API brand, fall back to product.brands.name if present
+          // Do NOT default to a hardcoded brand string.
+          brand: product.brand || product.brands?.name || null,
 
           // Price normalization
           priceValue: parsePrice(String(product.price || '0')),
@@ -467,13 +468,13 @@ function ShopContent() {
               />
 
               <BrandFilter
-                options={allBrands.length ? allBrands : availableBrands}
+                options={allBrands}
                 selected={filters.brands}
                 onSelectionChange={(brands) => updateFilter('brands', brands)}
               />
 
               <CategoryFilter
-                options={allCategories.length ? allCategories : availableCategories}
+                options={allCategories}
                 selected={filters.categories}
                 onSelectionChange={(cats) => updateFilter('categories', cats)}
               />
@@ -691,7 +692,7 @@ function ShopContent() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-gray-900">Brand</h3>
                 <BrandFilter
-                    options={allBrands.length ? allBrands : availableBrands}
+                    options={allBrands}
                   selected={filters.brands}
                   onSelectionChange={(brands) => updateFilter('brands', brands)}
                 />
@@ -700,7 +701,7 @@ function ShopContent() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-gray-900">Category</h3>
                 <CategoryFilter
-                    options={allCategories.length ? allCategories : availableCategories}
+                    options={allCategories}
                   selected={filters.categories}
                   onSelectionChange={(cats) => updateFilter('categories', cats)}
                 />
