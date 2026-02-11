@@ -17,6 +17,9 @@ import AboutPage from './pages/about/AboutPage';
 import ContactPage from './pages/Contact/ContactPage';
 import WishlistPage from './pages/wishlist/page';
 import OrderDetailsPage from './pages/order/OrderDetailsPage';
+import PrivacyPolicy from './pages/support/PrivacyPolicy';
+import TermsOfService from './pages/support/TermsOfService';
+import ShippingReturns from './pages/support/ShippingReturns';
 
 // ✅ AUTH & CHECKOUT
 import LoginPage from './pages/account/LoginPage';
@@ -62,6 +65,9 @@ function AppContent() {
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/shipping-returns" element={<ShippingReturns />} />
           
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
