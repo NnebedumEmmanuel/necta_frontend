@@ -6,59 +6,68 @@ import supabase from '@/lib/supabaseClient';
 export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userAvailable, setUserAvailable] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [validSession, setValidSession] = useState(null); // null=checking, false=invalid, true=valid
   const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const { data, error } = await supabase.auth.getUser();
+        const { data, error } = await supabase.auth.getSession();
         if (!mounted) return;
-        if (error) {
-          setUserAvailable(false);
+        const session = data?.session ?? null;
+        if (!session) {
+          setValidSession(false);
+          setMessage('Reset link appears invalid or expired.');
         } else {
-          setUserAvailable(Boolean(data?.user));
+          setValidSession(true);
+          setMessage('');
         }
       } catch (err) {
-        console.error('Error checking user session for reset:', err);
-        if (mounted) setUserAvailable(false);
+        console.error('Error checking reset session:', err);
+        if (mounted) {
+          setValidSession(false);
+          setMessage('Unable to validate reset link.');
+        }
       }
     })();
     return () => { mounted = false; };
   }, []);
 
   const handleUpdate = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    setMessage('');
     if (!newPassword || !confirmPassword) {
-      toast.error('Please fill in both password fields');
+      setMessage('Please fill in both password fields');
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
+      setMessage('Passwords do not match');
       return;
     }
     if (newPassword.length < 6) {
-      toast.error('Password should be at least 6 characters');
+      setMessage('Password should be at least 6 characters');
       return;
     }
 
-    setIsSubmitting(true);
+    setLoading(true);
     try {
-      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
         console.error('Update password error:', error);
-        toast.error(error.message || 'Unable to update password');
+        setMessage(error.message || 'Unable to update password');
         return;
       }
-      toast.success('Password updated. You can now sign in with your new password.');
+      toast.success('Password updated!');
+      // After a short delay navigate to login
       navigate('/account/login');
     } catch (err) {
       console.error('Unexpected error updating password:', err);
-      toast.error('Unable to update password. Please try again.');
+      setMessage('Unable to update password. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -74,17 +83,18 @@ export default function ResetPasswordPage() {
             <p className="mt-2 text-gray-600">Use the form below to set a new password.</p>
           </div>
 
-          {userAvailable === false && (
-            <div className="p-4 bg-yellow-50 border-l-4 border-yellow-300 text-yellow-800">
-              The reset link appears invalid or you are not signed in. Please use the link provided in your email to open this page.
-            </div>
+          {validSession === false && (
+            <div className="p-4 bg-red-50 text-red-700 rounded">{message || 'Reset link appears invalid or expired.'}</div>
           )}
 
-          {userAvailable === null ? (
+          {validSession === null ? (
             <div className="text-center text-gray-500">Checking session…</div>
           ) : (
-            userAvailable && (
+            validSession && (
               <form onSubmit={handleUpdate} className="space-y-4">
+                {message && (
+                  <div className="text-red-600 bg-red-50 p-3 rounded">{message}</div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">New Password</label>
                   <input
@@ -112,10 +122,10 @@ export default function ResetPasswordPage() {
                 <div>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={loading}
                     className="w-full py-2 px-4 bg-orange-600 text-white rounded-md disabled:opacity-60"
                   >
-                    {isSubmitting ? 'Saving…' : 'Save new password'}
+                    {loading ? 'Saving…' : 'Save new password'}
                   </button>
                 </div>
               </form>
