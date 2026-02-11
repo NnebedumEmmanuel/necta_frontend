@@ -14,7 +14,7 @@ const Login = () => {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [isSendingReset, setIsSendingReset] = useState(false);
-  const [loginError, setLoginError] = useState('');
+  const [loginError, setLoginError] = useState('Test Error Message');
   const [shake, setShake] = useState(false);
   const { signIn, session, login } = useAuth();
   const navigate = useNavigate();
@@ -154,7 +154,6 @@ const Login = () => {
                   required
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); }}
-                  onFocus={() => { if (loginError) setLoginError(''); }}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                   placeholder="you@example.com"
                 />
@@ -174,7 +173,6 @@ const Login = () => {
                   required
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); }}
-                  onFocus={() => { if (loginError) setLoginError(''); }}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                   placeholder="Enter your password"
                 />
