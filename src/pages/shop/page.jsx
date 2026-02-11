@@ -74,6 +74,7 @@ function ShopContent() {
 
       // B. Load Brands (With robust fallback for 404)
       try {
+        // Try API first
         const { data } = await publicApi.get('/brands');
         const apiBrands = data?.brands || data || [];
         if (apiBrands.length > 0) {
@@ -82,13 +83,15 @@ function ShopContent() {
           throw new Error("No brands from API");
         }
       } catch (e) {
-        // Fallback: Fetch products to find distinct brands
+        // HARD FALLBACK: Fetch products and extract brands manually
+        console.warn("Brand API failed, using product fallback", e);
         try {
-          const { products } = await productService.getProducts({ limit: 50 });
-          const distinctBrands = [...new Set(products.map(p => p.brand || p.brands?.name).filter(Boolean))].sort();
+          const { products } = await productService.getProducts({ limit: 100 });
+          // Extract brand names from the products themselves (ignore 'Generic')
+          const distinctBrands = [...new Set(products.map(p => p.brand || p.brands?.name || 'Generic').filter(b => b !== 'Generic'))].sort();
           setAllBrands(distinctBrands);
         } catch (err) {
-          console.error("Failed to load fallback brands", err);
+          console.error(err);
         }
       }
     };
@@ -142,11 +145,13 @@ function ShopContent() {
           }
         });
 
-        // Add Collection ID if found, otherwise pass slug (fallback)
+        // Add Collection ID if found, and also send slug as a safety net
         if (targetCollectionId) {
           queryParams['collection_id'] = targetCollectionId;
+          // Send slug too as backup so backend can accept either
+          if (filters.collections.length > 0) queryParams['collections'] = filters.collections[0];
         } else if (filters.collections.length > 0) {
-          queryParams['collections'] = filters.collections[0]; 
+          queryParams['collections'] = filters.collections[0];
         }
 
         console.log("FETCHING PRODUCTS WITH:", queryParams);
