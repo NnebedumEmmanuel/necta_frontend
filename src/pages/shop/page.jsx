@@ -69,9 +69,8 @@ function ShopContent() {
         // Fetch Brands
         const { data: brandsData } = await publicApi.get('/brands');
         const brands = brandsData?.brands || brandsData || [];
-        // Map to names and filter out nulls
-        const brandNames = brands.map(b => b.name).filter(Boolean).sort();
-        setAllBrands(brandNames);
+        // Store {id, name} objects so we can map brand_id -> name later
+        setAllBrands(brands.map(b => ({ id: b.id, name: b.name })).filter(x => x.name));
 
         // Fetch Categories (Optional, if you want dynamic categories in filter)
         // const { data: catsData } = await publicApi.get('/categories');
@@ -82,6 +81,10 @@ function ShopContent() {
     };
     loadFilterOptions();
   }, []);
+
+  // Fallback loader: if there's no dedicated brands endpoint or it fails,
+  // we could fetch a sample of products to extract brands. Keeping commented
+  // as optional. The primary loader above fills `allBrands` from /brands.
 
   // 2. SYNC URL COLLECTION PARAM TO STATE
   React.useEffect(() => {
@@ -116,7 +119,8 @@ function ShopContent() {
         Object.entries(rawFilterPayload).forEach(([key, value]) => {
           if (Array.isArray(value) && value.length > 0) {
             flatFilters[key] = value.join(',');
-          } else if (value !== null && value !== '' && value !== 0) {
+          } else if (value !== null && value !== '' && value !== 0 && value !== '0') {
+            // Exclude explicit zero values (e.g. minPrice=0) so they don't appear in the querystring
             flatFilters[key] = value;
           }
         });
@@ -132,18 +136,20 @@ function ShopContent() {
 
         if (!mounted) return;
 
-        // Normalize Data (NO MORE T&G OVERWRITE)
+        // Normalize Data (map brand_id -> brand name via loaded allBrands)
         const items = res?.products ?? [];
-        const normalizedProducts = items.map(p => ({
-          ...p,
-          // Use DB brand, or nested brand object, or fallback to null (don't force T&G)
-          brand: p.brand || p.brands?.name || null, 
-          category: p.category || p.categories?.name || 'General',
-          priceValue: parsePrice(p.price || 0),
-          rating: Number(p.rating) || Number(p.average_rating) || 0,
-          reviewCount: Number(p.reviewCount) || Number(p.review_count) || (Array.isArray(p.reviews) ? p.reviews.length : 0),
-          reviews: Array.isArray(p.reviews) ? p.reviews : [],
-        }));
+        const normalizedProducts = items.map(p => {
+          const foundBrand = allBrands.find(b => b.id === p.brand_id)?.name;
+          return {
+            ...p,
+            brand: p.brand || p.brands?.name || foundBrand || 'Generic',
+            category: p.category || p.categories?.name || 'General',
+            priceValue: parsePrice(p.price || 0),
+            rating: Number(p.rating) || Number(p.average_rating) || 0,
+            reviewCount: Number(p.reviewCount) || Number(p.review_count) || (Array.isArray(p.reviews) ? p.reviews.length : 0),
+            reviews: Array.isArray(p.reviews) ? p.reviews : [],
+          };
+        });
 
         setProducts(normalizedProducts);
         setTotal(res?.total ?? 0);
@@ -158,15 +164,16 @@ function ShopContent() {
     fetchProducts();
     return () => { mounted = false };
   }, [
-    filters.minPrice, 
-    filters.maxPrice, 
-    filters.rating, 
-    filters.brands, 
-    filters.categories, 
-    filters.collections, 
-    page, 
-    searchQuery, 
-    category
+    filters.minPrice,
+    filters.maxPrice,
+    filters.rating,
+    filters.brands,
+    filters.categories,
+    filters.collections,
+    page,
+    searchQuery,
+    category,
+    allBrands,
   ]);
 
   // Handlers
@@ -256,7 +263,7 @@ function ShopContent() {
 
           {/* DYNAMIC BRAND FILTER */}
           <BrandFilter
-            options={allBrands} // Uses fetched brands
+            options={allBrands.map(b => b.name)} // Pass only names to the filter UI
             selected={filters.brands}
             onSelectionChange={(brands) => updateFilter('brands', brands)}
           />
@@ -320,7 +327,7 @@ function ShopContent() {
             />
             <div className="mt-6">
               <BrandFilter
-                options={allBrands}
+                options={allBrands.map(b => b.name)}
                 selected={filters.brands}
                 onSelectionChange={(brands) => updateFilter('brands', brands)}
               />
