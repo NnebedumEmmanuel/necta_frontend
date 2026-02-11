@@ -111,6 +111,22 @@ function ShopContent() {
     return () => { mounted = false };
   }, []);
 
+  // Fallback: load brands from productService if the dedicated brands table/endpoint isn't available
+  React.useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        const { products } = await productService.getProducts({ limit: 100 });
+        const uniqueBrands = [...new Set((products || []).map(p => p.brand).filter(Boolean))].sort();
+        if (uniqueBrands.length) setAllBrands(uniqueBrands);
+      } catch (e) {
+        // non-fatal
+        // eslint-disable-next-line no-console
+        console.error('Failed to load brands from productService fallback:', e);
+      }
+    };
+    loadBrands();
+  }, []);
+
   const availableBrands = useMemo(() => {
     const set = new Set();
     (products || []).forEach(p => { if (p.brand) set.add(p.brand); });
@@ -255,30 +271,29 @@ function ShopContent() {
 
     const fetchProducts = async () => {
       try {
-        const rawFilterPayload = {
-          minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice,
-          rating: filters.rating,
-          brands: filters.brands,
-          categories: (filters.categories && filters.categories.length > 0) ? filters.categories : (category !== 'all' ? [category] : []),
-          collections: filters.collections,
-          q: searchQuery,
-        };
+            const filterPayload = {
+              minPrice: filters.minPrice,
+              maxPrice: filters.maxPrice,
+              rating: filters.rating,
+              brands: filters.brands,
+              categories: (filters.categories && filters.categories.length > 0) ? filters.categories : (category !== 'all' ? [category] : []),
+              collections: filters.collections,
+              q: searchQuery,
+            };
 
-        // Build flatFilters from rawFilterPayload so query params are top-level (brand=Sony, not filters[brand]=...)
-        // 1. Flatten arrays (e.g. ['Sony','JBL'] -> 'Sony,JBL')
-        const flatFilters = {};
-        Object.entries(rawFilterPayload).forEach(([key, value]) => {
-          if (Array.isArray(value) && value.length > 0) {
-            flatFilters[key] = value.join(',');
-          } else if (value !== null && value !== '' && value !== 0) {
-            flatFilters[key] = value;
-          }
-        });
+            // Flatten the payload so the URL becomes &brands=... instead of &filters[brands]=...
+            const flatParams = { ...filterPayload };
+            if (flatParams.brands && flatParams.brands.length) flatParams.brands = flatParams.brands.join(',');
+            if (flatParams.categories && flatParams.categories.length) flatParams.categories = flatParams.categories.join(',');
+            if (flatParams.collections && flatParams.collections.length) flatParams.collections = flatParams.collections.join(',');
 
-  console.log("FETCH PARAMS", flatFilters);
+            // Keep minPrice/maxPrice exactly as they are (including 0)
+            // Pass flatParams spread out at the top level
+            // Debugging: surface final params
+            // eslint-disable-next-line no-console
+            console.log("FETCH PARAMS", flatParams);
 
-  const res = await productService.getProducts({ limit: itemsPerPage, page, ...flatFilters });
+            const res = await productService.getProducts({ limit: itemsPerPage, page, ...flatParams });
 
         // Debug: surface API response and normalized summary for migration verification
         try {
@@ -296,9 +311,8 @@ function ShopContent() {
           ...product,
           // Category & Brand normalization
           category: product.category || (product.categories?.name ?? 'speakers'),
-          // Brand normalization: prefer explicit API brand; fall back to nested product.brands.name if available,
-          // otherwise mark as 'Generic' to avoid guessing from the product name.
-          brand: product.brand || product.brands?.name || 'Generic',
+          // Brand normalization: prefer explicit API brand; otherwise fall back to a safe 'Generic'.
+          brand: product.brand || 'Generic',
 
           // Price normalization
           priceValue: parsePrice(String(product.price || '0')),
