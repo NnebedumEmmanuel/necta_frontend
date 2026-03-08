@@ -108,7 +108,7 @@ function AppContent() {
 
 
           {/* --- ADMIN ROUTES --- */}
-          {/* We use 'ProtectedRoute' with adminOnly={true} instead of the old AdminProtectedRoute */}
+          {/* We use 'ProtectedRoute' with adminOnly={true} instead of the old AdminProtectedRoute alpha and etc */}
           <Route 
             path="/admin" 
             element={
@@ -140,7 +140,7 @@ export default function App() {
   return (
     <BrowserRouter>
       {/* NOTE: Providers (AuthProvider, CartProvider, etc.) are now in main.jsx 
-         Do NOT add them here again, or the app will break!
+         Do NOT add them here again, or the app will break! cose break here 
       */}
       <AppContent />
     </BrowserRouter>
