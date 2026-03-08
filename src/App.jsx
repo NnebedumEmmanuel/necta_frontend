@@ -23,6 +23,7 @@ import ShippingReturns from './pages/support/ShippingReturns';
 
 // ✅ AUTH & CHECKOUT
 import LoginPage from './pages/account/LoginPage';
+import SignupPage from './pages/account/SignupPage';
 import ResetPasswordPage from './pages/account/ResetPasswordPage';
 import CheckoutPage from './pages/Checkout/Checkoutpage';
 import PaymentCallback from './pages/PaymentCallback';
@@ -71,7 +72,7 @@ function AppContent() {
           
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          {/* <Route path="/signup" element={<SignUp />} /> */}
+          <Route path="/signup" element={<SignupPage />} />
 
           {/* --- PROTECTED USER ROUTES --- */}
           <Route 

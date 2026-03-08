@@ -191,7 +191,7 @@ const SignUp = () => {
                 </svg>
               </div>
               <div>
-                <p className="font-semibold">Exclusive Community</p>
+                <p className="fonSign upt-semibold">Exclusive Community</p>
                 <p className="text-sm text-slate-300">Join millions of happy customers</p>
               </div>
             </div>
@@ -223,7 +223,7 @@ const SignUp = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  First Name *
+                  First Name *Sign up
                 </label>
                 <input
                   name="firstName"
