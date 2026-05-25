@@ -71,24 +71,23 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* User avatar/icon only (no email). Clicking goes to /dashboard when logged in, otherwise to /login */}
-              {session ? (
-                <Link to="/dashboard" className="ml-2">
-                  <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-                    {user?.user_metadata?.avatar_url ? (
-                      <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <User size={18} className="text-gray-700" />
-                    )}
-                  </div>
-                </Link>
-              ) : (
-                <Link to="/login" className="ml-2">
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                    <User size={18} className="text-gray-700" />
-                  </div>
-                </Link>
-              )}
+            {user ? (
+              <Link 
+                to="/dashboard" 
+                className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold text-sm md:text-base hover:bg-orange-700 transition shadow-sm"
+                title="Go to Dashboard"
+              >
+                {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+              </Link>
+            ) : (
+              <Link 
+                to="/login" 
+                className="text-gray-600 hover:text-orange-600 transition p-2"
+              >
+                {/* This is your original generic user icon. It might be an SVG or Lucide icon like <User /> */}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </Link>
+            )}
             </div>
 
             {/* Mobile menu button */}

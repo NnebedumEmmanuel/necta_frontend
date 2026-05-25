@@ -43,7 +43,7 @@ const UserDashboard = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user: authUser, session, loading: authLoading, signOut } = useAuth();
+ const { user: authUser, session, loading: authLoading, logout } = useAuth();
   // no local wishlistState needed; context provides `wishlist` directly
   const [activeTab, setActiveTab] = useState(() => (location?.state && location.state.activeTab) ? location.state.activeTab : "overview");
 
@@ -341,7 +341,7 @@ const UserDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      await signOut();
+     await logout();
     } catch (err) {
       console.error('Logout failed', err);
     }

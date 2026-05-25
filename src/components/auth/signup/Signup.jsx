@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuth } from '../../../../context/AuthContext'
-import supabase from '../../../lib/supabaseClient'
+import { useAuth } from "../../../context/AuthContext";
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { signUp } = useAuth()
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -88,58 +87,48 @@ const SignUp = () => {
       return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const email = formData.email.toLowerCase().trim()
-      const password = formData.password
+      // 1. Create the user in MongoDB via our new backend API
+      const res = await fetch("http://localhost:3000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          password: formData.password,
+        }),
+      });
 
-      const res = await signUp({ email, password })
-      if (res?.error) throw res.error
+      const data = await res.json();
 
-      const userId = res?.data?.user?.id || (await supabase.auth.getUser()).data?.user?.id
-
-      // Persist user profile into `users` table
-      try {
-        const upsertPayload = {
-          id: userId,
-          email,
-          name: `${formData.firstName} ${formData.lastName}`.trim() || null,
-          phone: formData.phone || null,
-          address: formData.address || null,
-          city: formData.city || null,
-          state: formData.state || null,
-          role: 'customer'
-        };
-        const { data: upData, error: upErr } = await supabase.from('users').upsert(upsertPayload).select();
-        if (upErr) {
-          console.error('Failed to upsert user profile after signup', upErr);
-          toast.error('Account created but failed to save profile information. Please contact support.');
-        }
-      } catch (dbErr) {
-        console.error('Error saving profile after signup', dbErr);
-        toast.error('Account created but failed to save profile information. Please contact support.');
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed');
       }
 
-      // fetch role from users table to decide redirect
-      let role = null;
-      try {
-        if (userId) {
-          const { data: profile, error: profileErr } = await supabase.from('users').select('role').eq('id', userId).single();
-          if (!profileErr) role = profile?.role
-        }
-      } catch (fetchRoleErr) {
-        console.warn('Failed to read role after signup', fetchRoleErr);
+      // 2. Automatically log them in using our custom AuthContext
+      const loginRes = await login(formData.email, formData.password);
+
+      if (!loginRes || !loginRes.success) {
+        throw new Error(loginRes?.error || "Account created, but auto-login failed. Please sign in manually.");
       }
 
-      toast.success('Registration successful — you are signed in')
-      navigate(role === 'admin' ? '/admin' : '/dashboard', { replace: true })
+      toast.success('Registration successful!');
+      navigate('/dashboard', { replace: true });
+
     } catch (err) {
-      console.error('Registration error:', err)
-      const message = err?.message || err?.error_description || 'Sign up failed. Please try again.'
-      toast.error(message)
+      console.error('Registration error:', err);
+      toast.error(err.message || 'Sign up failed. Please try again.');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   };
 

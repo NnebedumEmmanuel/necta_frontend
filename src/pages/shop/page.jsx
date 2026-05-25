@@ -8,7 +8,6 @@ import { Link } from "react-router-dom";
 import RatingFilter from "../../components/shop/RatingsFilter";
 import PriceFilter from "../../components/shop/PriceFilter";
 import ShopByCategoryDropdown from "../../components/shop/ShopByCategory";
-import Pagination from "../../components/shop/Pagination";
 import ProductGrid from "../../components/home/home-products/ProductsGrid";
 import ComingSoon from "../../components/shop/ComingSoon";
 
@@ -39,14 +38,12 @@ function ShopContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sortOption, setSortOption] = useState("rating");
 
-  // Simplified Filters State (Only Price & Rating)
   const [filters, setFilters] = useState({
     minPrice: 0,
     maxPrice: 200000,
     rating: 0,
   });
 
-  // Local state for Price Slider UI
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(200000);
 
@@ -83,10 +80,6 @@ function ShopContent() {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleSearch(e);
-  };
-
   const updateFilter = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
@@ -97,6 +90,9 @@ function ShopContent() {
     setFilters({ minPrice: 0, maxPrice: 200000, rating: 0 });
     setMinPrice(0);
     setMaxPrice(200000);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', '1');
+    navigate(`${location.pathname}?${params.toString()}`);
   };
 
   const clearSearch = () => {
@@ -113,43 +109,15 @@ function ShopContent() {
 
     const fetchProducts = async () => {
       try {
-        const rawFilterPayload = {
-          minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice,
-          rating: filters.rating,
-          q: searchQuery,
-        };
-
-        // Filter Logic: Remove nulls AND ensure we don't send minPrice=0
         const filterPayload = {};
-        
-        // Only send minPrice if it's actually greater than 0
-        if (rawFilterPayload.minPrice > 0) {
-          filterPayload.minPrice = rawFilterPayload.minPrice;
-        }
-        
-        // Only send maxPrice if it's less than the default max
-        if (rawFilterPayload.maxPrice < 200000) {
-          filterPayload.maxPrice = rawFilterPayload.maxPrice;
-        }
+        if (filters.minPrice > 0) filterPayload.minPrice = filters.minPrice;
+        if (filters.maxPrice < 200000) filterPayload.maxPrice = filters.maxPrice;
+        if (filters.rating > 0) filterPayload.rating = filters.rating;
+        if (searchQuery) filterPayload.q = searchQuery;
 
-        if (rawFilterPayload.rating > 0) {
-          filterPayload.rating = rawFilterPayload.rating;
-        }
-
-        if (rawFilterPayload.q) {
-          filterPayload.q = rawFilterPayload.q;
-        }
-
-        // Handle Category (Always send unless 'all')
         const activeCategory = category !== 'all' ? [category] : [];
-        if (activeCategory.length > 0) {
-          filterPayload.categories = activeCategory;
-        }
+        if (activeCategory.length > 0) filterPayload.categories = activeCategory;
 
-        console.log("FETCH PARAMS", filterPayload);
-
-        // Send nested 'filters' object (Backend Requirement)
         const res = await productService.getProducts({ 
           limit: itemsPerPage, 
           page, 
@@ -162,14 +130,23 @@ function ShopContent() {
         const enhanced = items.map(product => ({
           ...product,
           category: product.category || (product.categories?.name ?? 'speakers'),
-          // Simple fallback for brand to avoid crashing
           brand: product.brand || product.brands?.name || 'Generic',
           priceValue: parsePrice(String(product.price || '0')),
           rating: Number(product.rating) || 0,
           reviewCount: Number(product.reviewCount) || (Array.isArray(product.reviews) ? product.reviews.length : 0),
         }));
 
-        setProducts(enhanced);
+        // 🚨 FIX: If page 1, overwrite. If page > 1, APPEND the new products!
+        if (page === 1) {
+          setProducts(enhanced);
+        } else {
+          setProducts(prev => {
+            // Filter out duplicates just in case
+            const newProducts = enhanced.filter(e => !prev.some(p => p.id === e.id));
+            return [...prev, ...newProducts];
+          });
+        }
+        
         setTotal(res?.total ?? total);
       } catch (err) {
         if (mounted) setProductsError(err?.message || String(err));
@@ -221,15 +198,14 @@ function ShopContent() {
 
   const hasActiveFilters = filters.minPrice > 0 || filters.maxPrice < 200000 || filters.rating > 0;
   const totalProducts = (typeof total === 'number' && total > 0) ? total : products.length;
-  const totalPages = Math.ceil((totalProducts || 0) / itemsPerPage);
   const displayCategory = getDisplayCategory();
 
-  if (loadingProducts) return <ShopLoading />;
-  if (productsError) return <div className="text-center text-red-500 py-10">Failed: {productsError}</div>;
+  if (loadingProducts && page === 1) return <ShopLoading />;
+  if (productsError && page === 1) return <div className="text-center text-red-500 py-10">Failed: {productsError}</div>;
   if (isComingSoonCategory()) return <ComingSoon category={getDisplayCategory()} />;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-8">
+    <section className="max-w-7xl mx-auto px-4 py-8 mt-16">
       <div className="mb-6">
         <nav className="flex text-sm text-gray-500 mb-4">
           <Link to="/" className="hover:text-black transition-colors">Home</Link>
@@ -245,7 +221,6 @@ function ShopContent() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar */}
         <div className="hidden lg:block lg:w-64">
             <div className="space-y-4">
               <h3 className="font-semibold text-lg text-gray-900 mb-4">Filters</h3>
@@ -278,7 +253,6 @@ function ShopContent() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="flex-1">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -318,7 +292,23 @@ function ShopContent() {
                 wishlistState={wishlistState}
                 toggleWishlist={toggleWishlist}
               />
-              {totalPages > 1 && <div className="mt-8"><Pagination totalPages={totalPages} currentPage={page} /></div>}
+              
+              {/* 🚨 NEW: Load More Button instead of Pagination */}
+              {products.length < totalProducts && (
+                <div className="mt-12 flex justify-center">
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set('page', (page + 1).toString());
+                      navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+                    }}
+                    className="bg-black text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg disabled:opacity-50"
+                    disabled={loadingProducts}
+                  >
+                    {loadingProducts ? 'Loading...' : 'Load More Products'}
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-12">
@@ -328,44 +318,12 @@ function ShopContent() {
           )}
         </div>
       </div>
-
-      {/* Mobile Filter Modal */}
-      {isFilterOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setIsFilterOpen(false)} />
-          <div className="relative bg-white w-80 h-full p-6 overflow-y-auto shadow-xl">
-            <div className="flex justify-between mb-6">
-              <h2 className="font-bold text-xl">Filters</h2>
-              <button onClick={() => setIsFilterOpen(false)}>✕</button>
-            </div>
-            <PriceFilter 
-                range={[filters.minPrice, filters.maxPrice]}
-                onRangeChange={(range) => {
-                    setFilters(prev => ({ ...prev, minPrice: range[0], maxPrice: range[1] }));
-                    setMinPrice(range[0]);
-                    setMaxPrice(range[1]);
-                }}
-            />
-            <div className="mt-6">
-                <RatingFilter 
-                    selected={filters.rating ? [filters.rating] : []}
-                    onSelectionChange={(ratings) => updateFilter('rating', ratings.length ? Math.min(...ratings) : 0)}
-                />
-            </div>
-            <div className="mt-8">
-              <button onClick={() => setIsFilterOpen(false)} className="w-full bg-black text-white py-3 rounded">
-                Show Results
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
 
 function ShopLoading() {
-  return <div className="text-center py-20">Loading products...</div>;
+  return <div className="text-center py-20 mt-16 text-lg font-medium animate-pulse">Loading products...</div>;
 }
 
 export default function ShopPage() {
@@ -375,4 +333,3 @@ export default function ShopPage() {
     </Suspense>
   );
 }
-

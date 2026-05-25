@@ -12,14 +12,12 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
-  MoreVertical,
   Eye
 } from "lucide-react";
 import { useToast } from '@/context/ToastProvider';
 import { useEffect, useState } from "react";
 import { api } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
-import supabase from '../../lib/supabaseClient'
 import SalesChart from './SalesChart'
 
 export default function AdminOrders() {
@@ -33,9 +31,12 @@ export default function AdminOrders() {
   const [error, setError] = useState(null);
   const { showToast } = useToast();
   const navigate = useNavigate();
+  
+  const [isGeneratingWaybill, setIsGeneratingWaybill] = useState(false);
+  
   // Order fulfillment modal state
   const [showUpdateModal, setShowUpdateModal] = useState(false)
-  const [updateStatus, setUpdateStatus] = useState('processing')
+  const [updateStatus, setUpdateStatus] = useState('unfulfilled')
   const [trackingNumber, setTrackingNumber] = useState('')
   const [carrier, setCarrier] = useState('GIG Logistics')
   const [savingOrder, setSavingOrder] = useState(false)
@@ -49,23 +50,40 @@ export default function AdminOrders() {
     return `₦${n.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
   }
 
-  const normalizeOrder = (order) => ({
-    id: order.id,
-    orderNumber: order.order_number || order.orderNumber || order.id,
-    customer: order.customer || order.customer_info || { name: order.email || 'Customer', email: order.email },
-    createdAt: order.created_at || order.createdAt || null,
-    fulfillmentStatus: (order.status || order.fulfillment_status || 'pending').toString().toLowerCase(),
-    paymentStatus: order.payment_status || order.paymentStatus || 'unpaid',
-    items: order.items || order.line_items || [],
-    subtotal: order.subtotal || order.total || 0,
-    total: order.total || order.subtotal || 0,
-    shippingAddress: order.shipping_address || order.shippingAddress || '',
-    tracking_number: order.tracking_number || order.trackingNumber || null,
-    carrier: order.carrier || null,
-    shipped_at: order.shipped_at || order.shippedAt || null,
-    delivered_at: order.delivered_at || order.deliveredAt || null,
-    __raw: order,
-  })
+  const normalizeOrder = (order) => {
+    let addressString = 'No address provided';
+    if (typeof order.shippingAddress === 'string') {
+      addressString = order.shippingAddress;
+    } else if (order.shippingAddress && typeof order.shippingAddress === 'object') {
+      const { street, lga, city, state } = order.shippingAddress;
+      addressString = [street, lga, city, state].filter(Boolean).join(', ');
+    }
+
+    return {
+      id: order.id,
+      orderNumber: order.id ? `#${order.id.slice(-6).toUpperCase()}` : 'Unknown',
+      customer: { 
+        name: order.user?.name || order.email?.split('@')[0] || 'Guest Customer', 
+        email: order.email 
+      },
+      createdAt: order.createdAt || order.created_at || null,
+      fulfillmentStatus: (order.fulfillmentStatus || order.status || 'unfulfilled').toString().toLowerCase(),
+      paymentStatus: (order.paymentStatus || 'pending').toString().toLowerCase(),
+      items: (order.items || []).map(item => ({
+        name: item.product?.title || item.product?.name || 'Unknown Product',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        total: (item.price || 0) * (item.quantity || 1)
+      })),
+      subtotal: order.totalAmount || 0,
+      total: order.totalAmount || 0,
+      tax: (order.totalAmount || 0) * 0.075,
+      shippingAddress: addressString,
+      tracking_number: order.tracking_number || order.trackingNumber || null,
+      carrier: order.carrier || null,
+      __raw: order,
+    };
+  };
 
   const loadOrders = async () => {
     setIsLoading(true);
@@ -73,10 +91,9 @@ export default function AdminOrders() {
     try {
       const res = await api.get('/admin/orders');
       const data = res?.data?.orders ?? res?.data ?? [];
-
       const normalized = (Array.isArray(data) ? data : []).map((o) => normalizeOrder(o));
-
       const sortedOrders = normalized.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      
       setOrders(sortedOrders);
       setFilteredOrders(sortedOrders);
     } catch (err) {
@@ -110,28 +127,31 @@ export default function AdminOrders() {
     }
     
     if (statusFilter !== "all") {
-      filtered = filtered.filter(order => (order.fulfillmentStatus || '').toString().toLowerCase() === statusFilter);
+      filtered = filtered.filter(order => {
+        const stat = (order.fulfillmentStatus || '').toString().toLowerCase();
+        if (statusFilter === 'unfulfilled') return ['unfulfilled', 'pending', 'processing'].includes(stat);
+        if (statusFilter === 'delivered') return ['delivered', 'fulfilled'].includes(stat);
+        return stat === statusFilter;
+      });
     }
     
     setFilteredOrders(filtered);
   }, [searchTerm, statusFilter, orders]);
 
-  // No client-side editing of orders yet; read-only view only.
-
-
   const getStatusInfo = (status) => {
     const key = String(status || '').toLowerCase()
     switch (key) {
+      case "unfulfilled":
       case "pending":
-        return { icon: Clock, color: "bg-gray-500", textColor: "text-gray-800", bgColor: "bg-gray-100" };
       case "processing":
-        return { icon: Package, color: "bg-yellow-400", textColor: "text-yellow-800", bgColor: "bg-yellow-100" };
+        return { icon: Clock, color: "bg-amber-500", textColor: "text-amber-800", bgColor: "bg-amber-100" };
       case "shipped":
         return { icon: Truck, color: "bg-blue-500", textColor: "text-blue-800", bgColor: "bg-blue-100" };
       case "delivered":
+      case "fulfilled":
         return { icon: CheckCircle, color: "bg-emerald-500", textColor: "text-emerald-800", bgColor: "bg-emerald-100" };
       case "cancelled":
-        return { icon: XCircle, color: "bg-red-500", textColor: "text-red-700", bgColor: "bg-red-50" };
+        return { icon: XCircle, color: "bg-red-500", textColor: "text-red-800", bgColor: "bg-red-100" };
       default:
         return { icon: Clock, color: "bg-gray-500", textColor: "text-gray-700", bgColor: "bg-gray-50" };
     }
@@ -151,32 +171,25 @@ export default function AdminOrders() {
     }
   };
 
-  const calculateRevenue = () => {
-    return orders.reduce((total, order) => total + (order.total || 0), 0);
-  };
-
   const getOrderStats = () => {
-    const stats = {
+    return {
       total: orders.length,
-      pending: orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === "pending").length,
-      processing: orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === "processing").length,
-      shipped: orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === "shipped").length,
-      delivered: orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === "delivered").length,
-      revenue: calculateRevenue()
+      unfulfilled: orders.filter(o => ['unfulfilled', 'pending', 'processing'].includes(o.fulfillmentStatus)).length,
+      shipped: orders.filter(o => o.fulfillmentStatus === "shipped").length,
+      delivered: orders.filter(o => ['delivered', 'fulfilled'].includes(o.fulfillmentStatus)).length,
+      cancelled: orders.filter(o => o.fulfillmentStatus === "cancelled").length,
+      revenue: orders.reduce((total, order) => total + (order.total || 0), 0)
     };
-    return stats;
   };
 
   const stats = getOrderStats();
-  // Count shipped orders for the new summary card (match existing normalization)
-  const shippedCount = orders.filter(o => (o.fulfillmentStatus || o.status || '').toString().toLowerCase() === 'shipped').length;
 
   const MobileOrderCard = ({ order }) => {
-    const statusInfo = getStatusInfo(order.fulfillmentStatus || order.status);
+    const statusInfo = getStatusInfo(order.fulfillmentStatus);
     const StatusIcon = statusInfo.icon;
-  const isExpanded = expandedOrderId === order.id;
+    const isExpanded = expandedOrderId === order.id;
 
-  return (
+    return (
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex justify-between items-start mb-3">
           <div>
@@ -186,10 +199,7 @@ export default function AdminOrders() {
             </div>
             <div className="text-sm text-slate-600">{formatDate(order.createdAt)}</div>
           </div>
-          <button
-            onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
-            className="p-2 hover:bg-slate-100 rounded-lg"
-          >
+          <button onClick={() => setExpandedOrderId(isExpanded ? null : order.id)} className="p-2 hover:bg-slate-100 rounded-lg">
             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
         </div>
@@ -201,7 +211,7 @@ export default function AdminOrders() {
           </div>
           <div className={`px-3 py-1 rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium flex items-center gap-1`}>
             <StatusIcon size={12} />
-            {(order.fulfillmentStatus || order.status) && (order.fulfillmentStatus || order.status).toString().charAt(0).toUpperCase() + (order.fulfillmentStatus || order.status).toString().slice(1)}
+            {(order.fulfillmentStatus || 'unfulfilled').toString().charAt(0).toUpperCase() + (order.fulfillmentStatus || 'unfulfilled').toString().slice(1)}
           </div>
         </div>
 
@@ -218,24 +228,14 @@ export default function AdminOrders() {
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
             <div className="text-sm">
-              <div className="font-medium text-slate-700 mb-1">Customer Email</div>
-              <div className="text-slate-600">{order.customer?.email}</div>
-            </div>
-            
-            <div className="text-sm">
               <div className="font-medium text-slate-700 mb-1">Items</div>
               <div className="space-y-1">
-                {(order.items || []).slice(0, 3).map((item, index) => (
+                {(order.items || []).map((item, index) => (
                   <div key={index} className="flex justify-between">
                     <span className="text-slate-600">{item.name} × {item.quantity}</span>
                     <span className="font-medium">{formatCurrency(item.total)}</span>
                   </div>
                 ))}
-                {(order.items || []).length > 3 && (
-                  <div className="text-slate-500 text-xs">
-                    +{order.items.length - 3} more items
-                  </div>
-                )}
               </div>
             </div>
 
@@ -259,7 +259,6 @@ export default function AdminOrders() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
@@ -270,9 +269,8 @@ export default function AdminOrders() {
             </p>
           </div>
         </div>
-        {}
+        
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
@@ -285,12 +283,11 @@ export default function AdminOrders() {
             </div>
           </div>
           
-          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-slate-600 text-xs sm:text-sm font-medium">Pending</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">{stats.pending}</p>
+                <p className="text-slate-600 text-xs sm:text-sm font-medium">Unfulfilled</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">{stats.unfulfilled}</p>
               </div>
               <div className="p-2 sm:p-3 bg-amber-500/10 rounded-lg sm:rounded-xl">
                 <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
@@ -298,33 +295,18 @@ export default function AdminOrders() {
             </div>
           </div>
           
-          {}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-600 text-xs sm:text-sm font-medium">Processing</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">{stats.processing}</p>
-              </div>
-              <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg sm:rounded-xl">
-                <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-          
-          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-600 text-xs sm:text-sm font-medium">Shipped</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">{shippedCount}</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">{stats.shipped}</p>
               </div>
-              <div className="p-2 sm:p-3 bg-blue-50 rounded-lg sm:rounded-xl">
-                <Truck className="w-6 h-6 text-blue-600" />
+              <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg sm:rounded-xl">
+                <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
             </div>
           </div>
           
-          {}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
@@ -337,7 +319,18 @@ export default function AdminOrders() {
             </div>
           </div>
           
-          {}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-600 text-xs sm:text-sm font-medium">Cancelled</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mt-1">{stats.cancelled}</p>
+              </div>
+              <div className="p-2 sm:p-3 bg-red-500/10 rounded-lg sm:rounded-xl">
+                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
+              </div>
+            </div>
+          </div>
+          
           <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200 col-span-2 md:col-span-1 lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
@@ -353,12 +346,10 @@ export default function AdminOrders() {
           </div>
         </div>
 
-        {}
         <div className="mt-8">
           <SalesChart orders={orders} />
         </div>
 
-        {}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -384,8 +375,7 @@ export default function AdminOrders() {
                 className="w-full appearance-none pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all duration-200 shadow-sm hover:shadow-md text-sm sm:text-base"
               >
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
+                <option value="unfulfilled">Unfulfilled</option>
                 <option value="shipped">Shipped</option>
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
@@ -394,7 +384,6 @@ export default function AdminOrders() {
           </div>
         </div>
 
-        {}
         {isLoading ? (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
             <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
@@ -410,7 +399,6 @@ export default function AdminOrders() {
           </div>
         ) : (
           <>
-            {}
             <div className="lg:hidden">
               {filteredOrders.length === 0 ? (
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
@@ -427,7 +415,6 @@ export default function AdminOrders() {
               )}
             </div>
 
-            {}
             <div className="hidden lg:block">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
@@ -454,7 +441,7 @@ export default function AdminOrders() {
                         </tr>
                       ) : (
                         filteredOrders.map((order) => {
-                          const statusInfo = getStatusInfo(order.fulfillmentStatus || order.status);
+                          const statusInfo = getStatusInfo(order.fulfillmentStatus);
                           const StatusIcon = statusInfo.icon;
                           
                             return (
@@ -474,7 +461,7 @@ export default function AdminOrders() {
                               <td className="py-3 px-4">
                                 <div className={`px-3 py-1 rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium inline-flex items-center gap-2`}>
                                   <StatusIcon size={12} />
-                                  {(order.fulfillmentStatus || order.status || '').toString().charAt(0).toUpperCase() + (order.fulfillmentStatus || order.status || '').toString().slice(1)}
+                                  {(order.fulfillmentStatus || 'unfulfilled').toString().charAt(0).toUpperCase() + (order.fulfillmentStatus || 'unfulfilled').toString().slice(1)}
                                 </div>
                               </td>
                               <td className="py-3 px-4">
@@ -505,7 +492,6 @@ export default function AdminOrders() {
         )}
       </div>
 
-      {}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
           <div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -518,8 +504,7 @@ export default function AdminOrders() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      // initialize modal fields from selectedOrder
-                      setUpdateStatus(((selectedOrder.fulfillmentStatus || selectedOrder.status) || 'processing').toLowerCase())
+                      setUpdateStatus(((selectedOrder.fulfillmentStatus || selectedOrder.status) || 'unfulfilled').toLowerCase())
                       setTrackingNumber(selectedOrder.tracking_number || '')
                       setCarrier(selectedOrder.carrier || 'GIG Logistics')
                       setShowUpdateModal(true)
@@ -537,7 +522,6 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {}
               <div className="mb-4 sm:mb-6">
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3">Customer Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -562,7 +546,6 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {}
               <div className="mb-4 sm:mb-6">
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3">Order Items</h3>
                 <div className="space-y-2 sm:space-y-3">
@@ -581,7 +564,6 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {}
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg sm:rounded-xl lg:rounded-2xl p-4 sm:p-6">
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3">Order Summary</h3>
                 <div className="space-y-2">
@@ -612,18 +594,63 @@ export default function AdminOrders() {
         </div>
       )}
 
-      {/* Update Status Modal */}
       {showUpdateModal && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowUpdateModal(false)} />
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg p-6 z-10">
             <h3 className="text-lg font-semibold mb-4">Update Order Status</h3>
+            
+            {/* 🚨 NEW: The Automated GIG Button */}
+            <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-100">
+              <h4 className="text-sm font-semibold text-purple-900 mb-2">Automated Dispatch</h4>
+              <p className="text-xs text-purple-700 mb-3">
+                Generate a waybill and notify GIG Logistics automatically using the customer's address.
+              </p>
+              <button 
+                onClick={async () => {
+                  setIsGeneratingWaybill(true);
+                  try {
+                    const res = await api.post(`/admin/orders/${selectedOrder.id}/gig`);
+                    showToast?.(`Waybill ${res.data.waybill} generated successfully!`, 'success');
+                    setShowUpdateModal(false);
+                    await loadOrders();
+                  } catch (err) {
+                     console.error('GIG Dispatch Failed', err);
+                     showToast?.(err.response?.data?.error || 'Failed to generate GIG Waybill. Try manual dispatch.', 'error');
+                  } finally {
+                     setIsGeneratingWaybill(false);
+                  }
+                }}
+                disabled={isGeneratingWaybill || selectedOrder.fulfillmentStatus === 'shipped' || selectedOrder.fulfillmentStatus === 'delivered'}
+                className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded transition-colors disabled:bg-purple-300 flex items-center justify-center gap-2"
+              >
+                {isGeneratingWaybill ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Truck className="w-4 h-4" />
+                    Dispatch with GIG Logistics
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="relative flex items-center py-2 mb-4">
+              <div className="flex-grow border-t border-gray-300"></div>
+              <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium uppercase">Or Update Manually</span>
+              <div className="flex-grow border-t border-gray-300"></div>
+            </div>
+
             <div className="grid grid-cols-1 gap-3">
               <label className="text-sm font-medium">Status</label>
               <select value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)} className="border p-2 rounded w-full">
-                <option value="processing">Processing</option>
+                <option value="unfulfilled">Unfulfilled</option>
                 <option value="shipped">Shipped</option>
                 <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
               </select>
 
               {updateStatus === 'shipped' && (
@@ -642,7 +669,6 @@ export default function AdminOrders() {
               <div className="flex items-center justify-end gap-2 mt-3">
                 <button onClick={() => setShowUpdateModal(false)} className="px-4 py-2 rounded border">Cancel</button>
                 <button onClick={async () => {
-                  // Save logic
                   setSavingOrder(true)
                   try {
                     const payload = { status: updateStatus }
@@ -655,12 +681,10 @@ export default function AdminOrders() {
                       payload.delivered_at = new Date().toISOString()
                     }
 
-                    // Call backend admin endpoint to update order status so server can trigger emails
                     const res = await api.patch(`/admin/orders/${selectedOrder.id}/status`, payload)
                     const updated = res?.data?.order ?? res?.data
                     showToast?.('Order updated', 'success')
                     setShowUpdateModal(false)
-                    // refresh orders and selectedOrder from backend
                     await loadOrders()
                     if (updated) setSelectedOrder(normalizeOrder(updated))
                   } catch (err) {
@@ -679,4 +703,4 @@ export default function AdminOrders() {
       )}
     </div>
   );
-} 
+}

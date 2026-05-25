@@ -3,21 +3,22 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
-  ShoppingCart, 
-  Users, 
+  ShoppingCart,
+  Users,
   HelpCircle, 
   X,
-  LogOut,
-  Settings
+  Settings // 🚨 Using Settings for Store Tags
 } from 'lucide-react';
 
 const AdminSidebar = ({ isCollapsed, onClose, user }) => {
   const location = useLocation();
 
+  // Updated menuItems to include the new Meta Manager path
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Package, label: 'Products', path: '/admin/products' },
     { icon: ShoppingCart, label: 'Orders', path: '/admin/orders' },
+    { icon: Settings, label: 'Store Tags', path: '/admin/manage-tags' }, // 🚨 NEW LINK
     { icon: Users, label: 'Users', path: '/admin/users' },
     { icon: HelpCircle, label: 'Support', path: '/admin/support' },
   ];

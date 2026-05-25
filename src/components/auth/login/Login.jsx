@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuth } from '@/context/AuthContext';
-import supabase from '../../../lib/supabaseClient';
+import { useAuth } from '../../../context/AuthContext'; // Adjust path if necessary
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -10,41 +9,46 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  // Forgot password UI state
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
-  const [isSendingReset, setIsSendingReset] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [shake, setShake] = useState(false);
-  const { signIn, session, login } = useAuth();
+
+  // 1. Pull user and login from our native AuthContext
+  const { user, login } = useAuth();
   const navigate = useNavigate();
 
+  // 2. Watch for `user` (not session) to auto-redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    // Do not reset UI error state here; keep visible until user starts typing
+    if (e) e.preventDefault();
+    
     if (!email || !password) {
       setLoginError('Invalid email or password. Please try again.');
       setShake(true);
       setTimeout(() => setShake(false), 600);
       return;
     }
+    
     setIsLoading(true);
+    
     try {
-      const res = await signIn({ email, password });
-      if (res?.error) {
-        // For security, show a generic message for all auth failures
-        console.error('Auth failure:', res.error);
-        console.log('SETTING UI ERROR STATE NOW');
-        setLoginError('Invalid email or password. Please try again.');
-        setShake(true);
-        setTimeout(() => setShake(false), 600);
-        return;
+      // 3. Call the native login function
+      const loginRes = await login(email, password);
+      
+      if (!loginRes || !loginRes.success) {
+        throw new Error(loginRes?.error || "Invalid credentials");
       }
+      
       toast.success("Signed in successfully");
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error("Login error:", err);
-      // Show generic error to user while logging details to console for debugging
-      console.log('SETTING UI ERROR STATE NOW');
       setLoginError('Invalid email or password. Please try again.');
       setShake(true);
       setTimeout(() => setShake(false), 600);
@@ -53,56 +57,17 @@ const Login = () => {
     }
   };
 
-  const handleResetPassword = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    const emailToSend = (forgotEmail || email || '').trim();
-    if (!emailToSend) {
-      toast.error('Please enter an email address');
-      return;
-    }
-    setIsSendingReset(true);
-    try {
-      // Supabase v2 method to send reset email with redirect
-      const { data, error } = await supabase.auth.resetPasswordForEmail(emailToSend, {
-        // Use the current origin so dev and prod both work automatically.
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      // Regardless of whether an account exists, show neutral message for security
-      toast.success('If an account exists with this email, a reset link has been sent.');
-      setShowForgot(false);
-    } catch (err) {
-      console.error('Reset password error:', err);
-      toast.error('Unable to send reset link. Please try again later.');
-    } finally {
-      setIsSendingReset(false);
-    }
+  const handleGoogleSignIn = () => {
+    setIsLoading(true);
+    toast.info('Redirecting to Google for authentication...');
+    // 4. Native NextAuth Google Redirect (No Supabase required)
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/signin/google`;
   };
 
-  useEffect(() => {
-    if (session) {
-      try {
-        navigate('/dashboard', { replace: true });
-      } catch (e) {
-      }
-    }
-  }, [session, navigate]);
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-      if (error) {
-        toast.error(error.message || 'Google sign-in failed');
-        return;
-      }
-      toast.info('Redirecting to Google for authentication...');
-    } catch (err) {
-      console.error('Google sign-in error:', err);
-      toast.error(err?.message || 'Google sign-in failed');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleResetPassword = async (e) => {
+    if (e) e.preventDefault();
+    toast.info("Password reset endpoint needs to be configured in Phase 3.");
+    setShowForgot(false);
   };
 
   return (
@@ -143,6 +108,7 @@ const Login = () => {
               @keyframes shakeX { 0% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } 100% { transform: translateX(0); } }
               .animate-shake { animation: shakeX 0.6s ease-in-out; }
             `}</style>
+            
             <div className={shake ? 'animate-shake' : ''}>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
@@ -210,11 +176,10 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Forgot password moved outside the main form to avoid accidental submit on Enter */}
-
             {loginError && (
               <div className="bg-red-50 text-red-600 p-3 rounded text-sm text-center">{loginError}</div>
             )}
+            
             <div>
               <button
                 type="button"
@@ -243,7 +208,6 @@ const Login = () => {
                     type="email"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleResetPassword(e); } }}
                     placeholder="you@example.com"
                     className="mt-1 block w-full px-3 py-2 border rounded-md"
                     required
@@ -253,17 +217,15 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={handleResetPassword}
-                    disabled={isSendingReset}
-                    className="py-2 px-4 bg-orange-600 text-white rounded-md disabled:opacity-60"
+                    className="py-2 px-4 bg-orange-600 text-white rounded-md hover:bg-orange-700"
                   >
-                    {isSendingReset ? 'Sending...' : 'Send reset link'}
+                    Send reset link
                   </button>
                   <button type="button" onClick={() => setShowForgot(false)} className="text-sm text-gray-600 underline">Cancel</button>
                 </div>
               </div>
             </div>
           )}
-          {}
         </div>
       </div>
     </div>

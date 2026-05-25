@@ -56,18 +56,21 @@ export default function AdminProducts() {
 
   const handleToggleStatus = async (product) => {
     if (!product) return;
-    const newStatus = product.status === 'published' ? 'unpublished' : 'published';
+    const newStatus = product.status === 'published' ? 'draft' : 'published';
+    
+    // 🚨 FIX: Optimistically update the UI immediately so it feels lightning fast
+    const optimisticUpdate = { ...product, status: newStatus };
+    setProducts((prev) => prev.map((p) => (p.id === product.id ? optimisticUpdate : p)));
+
     try {
       setSubmitting(true);
-      const res = await api.patch(`/admin/products/${product.id}`, { status: newStatus });
-      const updated = res?.data?.product ?? res?.data ?? { ...product, status: newStatus };
-      setProducts((prev) => prev.map((p) => (p.id === product.id ? formatProduct(updated) : p)));
-      toast?.showToast?.('Status updated', { type: 'success' });
-      return updated;
+      await api.patch(`/admin/products/${product.id}`, { status: newStatus });
+      toast?.showToast?.(`Product changed to ${newStatus}`, { type: 'success' });
     } catch (err) {
       console.error('Status update failed', err);
+      // Revert the UI if the database fails
+      setProducts((prev) => prev.map((p) => (p.id === product.id ? product : p)));
       toast?.showToast?.('Status update failed', { type: 'error' });
-      throw err;
     } finally {
       setSubmitting(false);
     }
@@ -160,7 +163,8 @@ export default function AdminProducts() {
   const filteredProducts = useMemo(() => {
     const q = String(searchQuery || '').trim().toLowerCase();
     if (!q) return products;
-    return products.filter((p) => String(p.name || '').toLowerCase().includes(q));
+    // 🚨 FIX: Search both title and name
+    return products.filter((p) => String(p.title || p.name || '').toLowerCase().includes(q));
   }, [products, searchQuery]);
 
   return (
@@ -219,11 +223,25 @@ export default function AdminProducts() {
                         </div>
                       </div>
 
-                      <div className="p-4 flex flex-col gap-2">
-                        <h3 className="font-semibold text-sm mb-1 truncate">{product.name}</h3>
-                        <div className="flex items-center justify-between">
-                          <div className="font-bold">₦{Number(product.price || 0).toLocaleString()}</div>
-                          <button onClick={() => handleToggleStatus(product)} className={`px-2 py-1 text-xs rounded ${product.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                   <div className="p-4 flex flex-col gap-2">
+                        {/* 🚨 FIX: Look for title first, fallback to name for older test products */}
+                        <h3 className="font-semibold text-sm mb-1 truncate" title={product.title || product.name}>
+                          {product.title || product.name || 'Untitled Product'}
+                        </h3>
+                        
+                        <div className="flex items-center justify-between gap-2 mt-auto pt-1 border-t border-slate-100">
+                          <div className="font-extrabold text-lg text-slate-800">₦{Number(product.price || 0).toLocaleString()}</div>
+                          
+                          <button 
+                            onClick={() => handleToggleStatus(product)} 
+                            title={product.status === 'published' ? 'Hide from store' : 'Publish to store'}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border shadow-sm whitespace-nowrap ${
+                              product.status === 'published' 
+                                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200' 
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200'
+                            }`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${product.status === 'published' ? 'bg-green-500' : 'bg-slate-400'}`}></span>
                             {product.status === 'published' ? 'Published' : 'Draft'}
                           </button>
                         </div>

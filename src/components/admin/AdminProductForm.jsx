@@ -70,15 +70,17 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
         ])
 
         if (!mounted) return
-        const colsData = colsRes?.data?.collections ?? []
-        const catsData = catsRes?.data?.categories ?? []
-        const brandsList = brandsRes?.data?.brands ?? []
 
-        setCollections(Array.isArray(colsData) ? colsData : [])
-        setCategories(Array.isArray(catsData) ? catsData : [])
-        setBrands(Array.isArray(brandsList) ? brandsList : [])
+        // Bulletproof check: handles both standard Axios AND custom wrappers
+        const colsData = Array.isArray(colsRes) ? colsRes : (Array.isArray(colsRes?.data) ? colsRes.data : [])
+        const catsData = Array.isArray(catsRes) ? catsRes : (Array.isArray(catsRes?.data) ? catsRes.data : [])
+        const brandsList = Array.isArray(brandsRes) ? brandsRes : (Array.isArray(brandsRes?.data) ? brandsRes.data : [])
+
+        setCollections(colsData)
+        setCategories(catsData)
+        setBrands(brandsList)
       } catch (err) {
-        console.error('Failed to fetch collections/categories/brands', err)
+        console.error('Fetch error details:', err)
         if (mounted) {
           setCollections([])
           setCategories([])
@@ -91,61 +93,46 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
     return () => { mounted = false }
   }, [])
 
-  const handleAddBrand = async () => {
-    const name = window.prompt('Enter new brand name')
-    if (!name || !name.trim()) return
+ const handleAddBrand = async () => {
+    const name = window.prompt("Enter new brand name:");
+    if (!name) return;
     try {
-      const res = await api.post('/admin/brands', { name: name.trim() })
-      const created = res?.data?.brand
-      if (created && created.id) {
-        setBrands(prev => [...prev, created])
-        setFormData(prev => ({ ...prev, brand_id: created.id }))
-      } else {
-        alert('Failed to create brand')
-      }
-    } catch (err) {
-      console.error('create brand failed', err)
-      alert('Failed to create brand: ' + (err?.response?.data?.error || err.message || String(err)))
+      const res = await api.post('/admin/brands', { name }); // This one is already correct!
+      const newBrand = res.data || res; 
+      setBrands(prev => [...prev, newBrand]);
+    } catch (error) {
+      console.error("Add brand error:", error);
+      alert("Failed to create brand.");
     }
-  }
+  };
 
-  const handleAddNewCategory = async () => {
-    const name = window.prompt('Enter new category name')
-    if (!name || !name.trim()) return
+  const handleAddCategory = async () => {
+    const name = window.prompt("Enter new category name:");
+    if (!name) return;
     try {
-      const res = await api.post('/admin/categories', { name: name.trim() })
-      const created = res?.data?.category
-      if (created && created.id) {
-        setCategories(prev => [...prev, created])
-        setFormData(prev => ({ ...prev, category_id: created.id }))
-      } else {
-        alert('Failed to create category')
-      }
-    } catch (err) {
-      console.error('create category failed', err)
-      alert('Failed to create category: ' + (err?.response?.data?.error || err.message || String(err)))
+      // 🚨 FIX: Added /admin/ to the route
+      const res = await api.post('/admin/categories', { name }); 
+      const newCat = res.data || res;
+      setCategories(prev => [...prev, newCat]);
+    } catch (error) {
+      console.error("Add category error:", error);
+      alert("Failed to create category.");
     }
-  }
+  };
 
   const handleAddNewCollection = async () => {
-    const name = window.prompt('Enter new collection name')
-    if (!name || !name.trim()) return
+    const name = window.prompt("Enter new collection name:");
+    if (!name) return;
     try {
-      // POST to admin collections endpoint
-      const res = await api.post('/admin/collections', { name: name.trim() })
-      const created = res?.data?.collection
-      if (created && created.id) {
-        setCollections(prev => [...prev, created])
-        setFormData(prev => ({ ...prev, collection_id: created.id }))
-      } else {
-        alert('Failed to create collection')
-      }
-    } catch (err) {
-      console.error('create collection failed', err)
-      alert('Failed to create collection: ' + (err?.response?.data?.error || err.message || String(err)))
+      // 🚨 FIX: Added /admin/ to the route
+      const res = await api.post('/admin/collections', { name }); 
+      const newCol = res.data || res;
+      setCollections(prev => [...prev, newCol]);
+    } catch (error) {
+      console.error("Add collection error:", error);
+      alert("Failed to create collection.");
     }
-  }
-
+  };
   const setField = useCallback((name, value) => setFormData(prev => ({ ...prev, [name]: value })), [])
 
   const handleChange = (e) => {
@@ -167,17 +154,14 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
     setUploading(true)
     const uploaded = []
     try {
-      // Upload files via server-side proxy to avoid client-side CORS issues
       for (const file of Array.from(files)) {
         try {
           const fd = new FormData()
-          fd.append('file', file, file.name)
-          // Use configured api instance so baseURL (VITE_API_BASE_URL) is prepended
+          fd.append('image', file) // Changed to 'image' to match your backend Cloudinary route
           const res = await api.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-          const json = res?.data
+          const json = res?.data || res
           if (json && json.url) uploaded.push(json.url)
         } catch (e) {
-          // Axios throws for non-2xx; surface a helpful message when possible
           console.error('uploadFiles: network/error', e)
           const msg = e?.response?.data?.error || e?.message || String(e)
           alert('Image upload failed: ' + msg)
@@ -213,15 +197,23 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
     e.preventDefault()
     setLoading(true)
     try {
-      // build specs object
+     // build specs object
       const specsJson = specs.reduce((acc, cur) => {
         if (cur.key && cur.key.trim()) acc[cur.key.trim()] = cur.value
         return acc
       }, {})
 
+      // 🚨 FIX: Map frontend names to strict Mongoose Schema names & auto-generate slug
       const payload = {
-        ...formData,
-        price: formData.price === '' ? null : Number(formData.price),
+        title: formData.name,               
+        slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''), // Generates "wireless-headphone"
+        category: formData.category_id,     
+        brand: formData.brand_id || null,             
+        collection_id: formData.collection_id || null, 
+        collectionRef: formData.collection_id || null,
+        description: formData.description, // We removed the fallback text because of your required fix below!
+        short_description: formData.short_description || "",
+        price: formData.price === '' ? 0 : Number(formData.price),
         discount: formData.discount === '' ? 0 : Number(formData.discount),
         stock: formData.stock === '' ? 0 : Number(formData.stock),
         specs: specsJson,
@@ -229,7 +221,7 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
       }
 
       // Validation: category required
-      if (!payload.category_id || String(payload.category_id).trim() === '') {
+      if (!payload.category || String(payload.category).trim() === '') {
         alert('Please select a Category for the product.')
         setLoading(false)
         return
@@ -249,7 +241,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
 
   return (
     <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl flex flex-col max-h-[85vh] overflow-hidden">
-      {/* Header */}
       <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl">
         <h2 className="text-2xl font-extrabold text-black tracking-tight">{initialData ? 'Edit Product' : 'Add New Product'}</h2>
         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
@@ -268,7 +259,11 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
             <div className="flex items-center gap-2">
               <select name="brand_id" value={formData.brand_id} onChange={handleChange} className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`}>
                 <option value="">Select a Brand (optional)</option>
-                {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                {Array.isArray(brands) && brands.length > 0 ? (
+                  brands.map((b, idx) => <option key={b._id || b.id || idx} value={b._id || b.id}>{b.name}</option>)
+                ) : (
+                  <option value="" disabled>No brands found</option>
+                )}
               </select>
               <button type="button" onClick={handleAddBrand} title="Add brand" className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50">
                 <Plus size={16} className="text-[#FF6B00]" />
@@ -277,16 +272,19 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        {/* Category & Collection side-by-side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Category <span className="text-red-500">*</span></label>
             <div className="flex items-center gap-2">
               <select name="category_id" value={formData.category_id} onChange={handleChange} required className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`}>
                 <option value="">Select a Category</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {Array.isArray(categories) && categories.length > 0 ? (
+                  categories.map((c, idx) => <option key={c._id || c.id || idx} value={c._id || c.id}>{c.name}</option>)
+                ) : (
+                  <option value="" disabled>No categories found</option>
+                )}
               </select>
-              <button type="button" onClick={handleAddNewCategory} title="Add category" className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50">
+              <button type="button" onClick={handleAddCategory} title="Add category" className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50">
                 <Plus size={16} className="text-[#FF6B00]" />
               </button>
             </div>
@@ -297,7 +295,11 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
             <div className="flex items-center gap-2">
               <select name="collection_id" value={formData.collection_id} onChange={handleChange} className={`flex-1 rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`}>
                 <option value="">Select a Collection</option>
-                {collections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {Array.isArray(collections) && collections.length > 0 ? (
+                  collections.map((c, idx) => <option key={c._id || c.id || idx} value={c._id || c.id}>{c.name}</option>)
+                ) : (
+                  <option value="" disabled>No collections found</option>
+                )}
               </select>
               <button type="button" onClick={handleAddNewCollection} title="Add collection" className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50">
                 <Plus size={16} className="text-[#FF6B00]" />
@@ -306,7 +308,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        {/* Price / Discount / Stock grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Price (₦)</label>
@@ -322,7 +323,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        {/* Image dropzone */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-3">Product Images</label>
           <div
@@ -351,12 +351,11 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Description</label>
-          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className={`w-full rounded-xl bg-gray-50 p-4 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`} />
+      <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Description <span className="text-red-500">*</span></label>
+          <textarea name="description" value={formData.description} onChange={handleChange} required rows={4} className={`w-full rounded-xl bg-gray-50 p-4 outline-none transition focus:bg-white focus:ring-2 focus:ring-[var(--necta-orange)] focus:border-[var(--necta-orange)]`} />
         </div>
 
-        {/* Specs */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="block text-sm font-semibold uppercase tracking-wider text-gray-700">Specifications</label>
@@ -373,7 +372,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        {/* Footer actions inside form so it scrolls into view */}
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} className="px-6 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-xl transition">Cancel</button>
           <button type="submit" disabled={loading || uploading} style={{ background: ORANGE }} className="px-6 py-2 text-white font-bold rounded-xl hover:opacity-95 transition disabled:opacity-50 flex items-center gap-2">{loading ? 'Saving...' : 'Save Product'}</button>
