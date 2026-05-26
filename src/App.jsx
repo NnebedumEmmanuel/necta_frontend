@@ -17,14 +17,10 @@ import AboutPage from './pages/about/AboutPage';
 import ContactPage from './pages/Contact/ContactPage';
 import WishlistPage from './pages/wishlist/page';
 import OrderDetailsPage from './pages/order/OrderDetailsPage';
-import PrivacyPolicy from './pages/support/PrivacyPolicy';
-import TermsOfService from './pages/support/TermsOfService';
-import ShippingReturns from './pages/support/ShippingReturns';
 
 // ✅ AUTH & CHECKOUT
 import LoginPage from './pages/account/LoginPage';
-import SignupPage from './pages/account/SignupPage';
-import ResetPasswordPage from './pages/account/ResetPasswordPage';
+import SignUp from './components/auth/signup/Signup';
 import CheckoutPage from './pages/Checkout/Checkoutpage';
 import PaymentCallback from './pages/PaymentCallback';
 
@@ -67,13 +63,9 @@ function AppContent() {
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/shipping-returns" element={<ShippingReturns />} />
           
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/signup" element={<SignUp />} />
 
           {/* --- PROTECTED USER ROUTES --- */}
           <Route 
@@ -110,7 +102,7 @@ function AppContent() {
 
 
           {/* --- ADMIN ROUTES --- */}
-          {/* We use 'ProtectedRoute' with adminOnly={true} instead of the old AdminProtectedRoute alpha and etc */}
+          {/* We use 'ProtectedRoute' with adminOnly={true} instead of the old AdminProtectedRoute */}
           <Route 
             path="/admin" 
             element={
@@ -127,7 +119,6 @@ function AppContent() {
              <Route path="users" element={<AdminUsers />} />
              <Route path="support" element={<AdminSupport />} />
              <Route path="manage-tags" element={<AdminMetaManager />} />
-
           </Route>
 
           {/* Fallback */}
@@ -144,7 +135,7 @@ export default function App() {
   return (
     <BrowserRouter>
       {/* NOTE: Providers (AuthProvider, CartProvider, etc.) are now in main.jsx 
-         Do NOT add them here again, or the app will break! cose break here 
+         Do NOT add them here again, or the app will break!
       */}
       <AppContent />
     </BrowserRouter>

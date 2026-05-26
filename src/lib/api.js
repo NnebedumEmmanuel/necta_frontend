@@ -1,62 +1,66 @@
 import axios from 'axios'
-import supabase from './supabaseClient'
+
+const TOKEN_KEY = 'necta_auth_token'
 
 const RAW_API_BASE = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL
   ? String(import.meta.env.VITE_API_BASE_URL)
   : ''
 
-// If VITE_API_BASE_URL is set, use that origin + '/api' suffix (e.g. https://necta-backend.vercel.app/api)
-export const API_BASE_URL = RAW_API_BASE ? `${RAW_API_BASE.replace(/\/$/, '')}/api` : '/api'
-
-if (!RAW_API_BASE) {
-  // eslint-disable-next-line no-console
-  console.info(`api: using relative API base '${API_BASE_URL}' (no VITE_API_BASE_URL). Set VITE_API_BASE_URL to target a remote backend.`)
-} else {
-  // eslint-disable-next-line no-console
-  console.info(`api: using backend base ${API_BASE_URL}`)
+function normalizeApiBase(rawBase) {
+  if (!rawBase) return '/api'
+  const trimmed = rawBase.replace(/\/+$/, '')
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
 }
 
-// Create a single axios instance that sends credentials (cookies) to the backend.
-// This ensures the browser includes auth cookies for server-authenticated endpoints.
-export const api = axios.create({
+export const API_BASE_URL = normalizeApiBase(RAW_API_BASE)
+
+const authApi = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // <--- ensure cookies are sent
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
+  withCredentials: false,
 })
 
-// Public client (no credentials) for unauthenticated/public endpoints
 export const publicApi = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: false,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
+  // Important: do NOT send credentials to public endpoints (CORS wildcard)
+  withCredentials: false,
 })
 
-// Attach Supabase access token (if any) to every request using an interceptor.
-// This reads the current session via supabase.auth.getSession() and sets
-// Authorization: Bearer <access_token> when present. If no session exists,
-// requests proceed without the header.
-api.interceptors.request.use(async (config) => {
+// Keep `api` name for backwards compatibility with existing imports that
+// expect a credentialed client. Export `api` as the auth client.
+export { authApi as api }
+
+// local binding named `api` for convenience & default export consumers
+const api = authApi
+
+// Attach interceptor only to the credentialed/auth client (authApi)
+authApi.interceptors.request.use(async (config) => {
   try {
-    if (!supabase || !supabase.auth || typeof supabase.auth.getSession !== 'function') return config
-    const sessionRes = await supabase.auth.getSession()
-    const token = sessionRes?.data?.session?.access_token
+    const token = localStorage.getItem(TOKEN_KEY)
     if (token) {
       config.headers = config.headers || {}
       config.headers['Authorization'] = `Bearer ${token}`
     }
   } catch (err) {
-    // If anything goes wrong, don't block the request; proceed without token
-    // eslint-disable-next-line no-console
-    console.warn('api interceptor: failed to attach supabase token', err)
+    console.warn('api interceptor: failed to attach auth token', err)
   }
   return config
 }, (error) => Promise.reject(error))
 
 export function attachAuthToken(token) {
-  if (token) api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-  else delete api.defaults.headers.common['Authorization']
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {}
+
+  if (token) {
+    authApi.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  } else {
+    delete authApi.defaults.headers.common['Authorization']
+  }
 }
 
 export function handleApiError(error) {
@@ -77,5 +81,5 @@ export function handleApiError(error) {
   return error;
 }
 
-export default api
+export default { api, attachAuthToken, handleApiError }
 

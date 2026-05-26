@@ -27,6 +27,7 @@ export function WishlistProvider({ children }) {
     const sync = async () => {
       try {
         const token = session?.access_token || session?.accessToken || null;
+        if (!token) return;
         if (token) attachAuthToken(token);
         const res = await api.get('/me/wishlist');
         const rows = res?.data?.data ?? res?.data ?? [];
@@ -56,13 +57,14 @@ export function WishlistProvider({ children }) {
 
   // Optimistic add/remove with background API calls
   const addToWishlist = async (product) => {
-    try {
-      if (wishlist.some(item => item.id === product.id)) return;
+      try {
+        if (wishlist.some(item => item.id === product.id)) return;
       // Optimistic update
       setWishlist(prev => [...prev, product]);
       // Try to sync to server (best-effort)
-      const token = session?.access_token || session?.accessToken || null;
-      if (token) attachAuthToken(token);
+        const token = session?.access_token || session?.accessToken || null;
+        if (!token) return;
+        if (token) attachAuthToken(token);
       await api.post('/me/wishlist', { product_id: product.id }).catch(e => { throw e; });
     } catch (err) {
       console.warn('Failed to sync addToWishlist (ignoring):', err?.message || err);
@@ -75,8 +77,9 @@ export function WishlistProvider({ children }) {
       // Optimistic update
       setWishlist(prev => prev.filter(item => item.id !== productId));
       // Try to sync to server (best-effort)
-      const token = session?.access_token || session?.accessToken || null;
-      if (token) attachAuthToken(token);
+        const token = session?.access_token || session?.accessToken || null;
+        if (!token) return;
+        if (token) attachAuthToken(token);
       // Try DELETE by id; if API expects body, servers should handle it — swallow failures
       await api.delete(`/me/wishlist/${productId}`).catch(async (e) => {
         // fallback: try POST to remove endpoint

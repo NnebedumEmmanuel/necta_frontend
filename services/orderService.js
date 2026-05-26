@@ -18,40 +18,40 @@ class OrderService {
       throw handleApiError(error);
     }
   }
- 
+
   async addOrder(orderData) {
     try {
-      // Forward full order data to backend so the server has the calculated totals
-      // and can create the Paystack payment with the correct amount (amountKobo)
       const payload = {
-        // Ensure top-level email and shipping_address exist as backend expects
-        email: orderData.email || (orderData.customer && orderData.customer.email) || null,
-        shipping_address: orderData.shipping_address || orderData.shippingAddress || null,
-        // Support structured address fields for logistics providers
-        lga: orderData.lga ?? (orderData.customer && orderData.customer.lga) ?? null,
-        houseDescription: orderData.houseDescription ?? (orderData.customer && orderData.customer.houseDescription) ?? null,
-        landmark: orderData.landmark ?? (orderData.customer && orderData.customer.landmark) ?? null,
-        coordinates: orderData.coordinates ?? (orderData.customer && orderData.customer.coordinates) ?? null,
-        // Items must include qty and price (server computes subtotal from these)
         items: (orderData.items || []).map(i => ({
-          product_id: i.product_id || i.id || null,
+          product_id: i.product_id || i._id || i.id,
+          id: i.id || i.product_id || i._id,
           name: i.name || i.title || i.product_name || '',
+          quantity: Number(i.quantity || i.qty || 1),
           qty: Number(i.quantity || i.qty || 1),
           price: Number(i.price || 0),
         })),
-        subtotal: orderData.subtotal ?? null,
-        tax: orderData.tax ?? null,
-        total: orderData.total ?? null,
-        // amountKobo if provided, otherwise derived from total (NGN -> kobo)
-        amountKobo: orderData.amountKobo ?? (orderData.total ? Math.round(Number(orderData.total) * 100) : null),
-  // callback_url: prefer explicit callback_url or derive from current origin (frontend payment callback page)
-  callback_url: orderData.callback_url ?? (typeof window !== 'undefined' ? `${window.location.origin}/payment/callback` : null),
-        status: orderData.status || 'pending',
-        metadata: orderData.metadata || {},
-      };
-
+        email: orderData.customer?.email || orderData.email || '',
+        customer: orderData.customer || null,
+        shipping_address: orderData.shippingAddress || orderData.shipping_address || '',
+        total: Number(orderData.total ?? orderData.total_amount ?? 0),
+        total_amount: Number(orderData.total_amount ?? orderData.total ?? 0),
+        subtotal: Number(orderData.subtotal || 0),
+        tax: Number(orderData.tax || 0),
+        idempotency_key: orderData.idempotency_key,
+      }
       const response = await api.post('/checkout', payload);
-      return response.data;
+      const data = response.data;
+      return {
+        ...data,
+        data: {
+          ...(data?.data || {}),
+          order: data?.data?.order || (data?.order_id ? { id: data.order_id } : null),
+          paystack: data?.data?.paystack || {
+            authorization_url: data?.paystack_auth_url,
+            reference: data?.paystack_reference,
+          },
+        },
+      };
     } catch (error) {
       throw handleApiError(error);
     }

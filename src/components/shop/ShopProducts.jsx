@@ -105,8 +105,8 @@ const ProductCard = ({
         </div>
 
         {}
-       <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 h-14">
-          {product.title || product.name}
+        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 h-14">
+          {name}
         </h3>
 
         {}

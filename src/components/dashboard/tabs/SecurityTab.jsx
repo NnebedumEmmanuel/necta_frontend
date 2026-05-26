@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import supabase from '../../../lib/supabaseClient'
+import { api } from '@/lib/api'
 import { useToast } from '@/context/ToastProvider'
 
 export default function SecurityTab({ user = null }) {
@@ -29,8 +29,7 @@ export default function SecurityTab({ user = null }) {
     }
     setLoading(true)
     try {
-      const { data, error } = await supabase.auth.updateUser({ password: newPassword })
-      if (error) throw error
+      await api.patch('/me/password', { password: newPassword })
       showToast?.('Password updated successfully', 'success')
       setNewPassword('')
       setConfirmPassword('')

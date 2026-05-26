@@ -1,7 +1,7 @@
 import { api, attachAuthToken, handleApiError } from '../src/lib/api';
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'user_data';
+const TOKEN_KEY = 'necta_auth_token';
+const USER_KEY = 'necta_auth_user';
 const IS_ADMIN_KEY = 'is_admin';
 
 class AuthService {
@@ -16,13 +16,14 @@ class AuthService {
   
   async login(identifier, password) {
     try {
-      const res = await api.post('/auth/login', { identifier, password });
-      const data = res.data;
+      const res = await api.post('/auth/login', { email: identifier, identifier, password });
+      const raw = res.data;
+      const data = raw?.data || raw;
       if (data?.access_token || data?.token) {
         const token = data.access_token || data.token;
         this.setToken(token);
         this.setUser(data.user || data);
-        this.setAdminStatus((data.user && data.user.role === 'admin') || data.username === 'emilys');
+        this.setAdminStatus((data.user && data.user.role === 'admin') || data.role === 'admin');
         return data;
       }
       throw new Error('No token received from backend');
@@ -36,13 +37,14 @@ class AuthService {
 
   async loginWithEmail(email, password) {
     try {
-      const res = await api.post('/auth/login', { identifier: email, password });
-      const data = res.data;
+      const res = await api.post('/auth/login', { email, identifier: email, password });
+      const raw = res.data;
+      const data = raw?.data || raw;
       if (data?.access_token || data?.token) {
         const token = data.access_token || data.token;
         this.setToken(token);
         this.setUser(data.user || data);
-        this.setAdminStatus((data.user && data.user.role === 'admin') || data.username === 'emilys');
+        this.setAdminStatus((data.user && data.user.role === 'admin') || data.role === 'admin');
         return data;
       }
       throw new Error('No token received from backend');
@@ -126,52 +128,14 @@ class AuthService {
 
   
   async adminLogin(email, password) {
-    const adminCredentials = {
-      email: 'admin@necta.com',
-      password: 'Admin@123',
-      username: 'admin',
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'admin'
-    };
-
-    if ((email === adminCredentials.email || email === adminCredentials.username) && 
-        password === adminCredentials.password) {
-      const adminData = {
-        ...adminCredentials,
-        token: 'admin-demo-token-' + Date.now(),
-        id: 999
-      };
-      
-      this.setToken(adminData.token);
-      this.setUser(adminData);
-      this.setAdminStatus(true);
-      return adminData;
+    const data = await this.login(email, password);
+    const user = data?.user || data;
+    if (user?.role !== 'admin') {
+      this.logout();
+      throw new Error('This account is not an admin.');
     }
-    
-    if ((email === 'emilys' || email === 'emilys@example.com') && 
-        password === 'emilyspass') {
-      try {
-        return await this.login('emilys', password);
-      } catch (error) {
-        const emilysData = {
-          email: 'emilys@example.com',
-          username: 'emilys',
-          firstName: 'Emily',
-          lastName: 'Johnson',
-          token: 'emilys-demo-token-' + Date.now(),
-          id: 998,
-          role: 'admin'
-        };
-        
-        this.setToken(emilysData.token);
-        this.setUser(emilysData);
-        this.setAdminStatus(true);
-        return emilysData;
-      }
-    }
-    
-    throw new Error('Invalid admin credentials');
+    this.setAdminStatus(true);
+    return data;
   }
 
   getAdminInfo() {
@@ -202,12 +166,9 @@ class AuthService {
     try { attachAuthToken(null); } catch (e) {  }
   }
 
-  setToken(token, rememberMe = false) {
-    if (rememberMe) {
-      localStorage.setItem(TOKEN_KEY, token);
-    } else {
-      sessionStorage.setItem(TOKEN_KEY, token);
-    }
+  setToken(token, rememberMe = true) {
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem(TOKEN_KEY, token);
     try { attachAuthToken(token); } catch (e) {  }
   }
 
@@ -241,9 +202,7 @@ class AuthService {
     const user = this.getUser();
     
     return adminStatus === 'true' || 
-           user?.username === 'emilys' || 
-           user?.role === 'admin' ||
-           user?.email === 'admin@necta.com';
+           user?.role === 'admin';
   }
 
   handleError(error) {

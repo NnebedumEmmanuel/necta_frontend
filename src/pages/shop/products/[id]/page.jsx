@@ -38,9 +38,12 @@ export default function ProductPage() {
 
     return {
       ...data,
-      name: data.name || 'Untitled Product',
+      id: data.id || data._id,
+      name: data.name || data.title || 'Untitled Product',
+      title: data.title || data.name || 'Untitled Product',
       price: Number(data.price) || 0,
       oldPrice: Number(data.old_price ?? data.oldPrice) || 0,
+      old_price: Number(data.old_price ?? data.oldPrice) || 0,
       images,
       specs: specs || {},
       description: data.description || data.short_description || 'No description available.'

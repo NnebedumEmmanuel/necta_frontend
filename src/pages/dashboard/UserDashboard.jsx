@@ -23,7 +23,6 @@ import { useAuth } from '../../../context/AuthContext';
 // orderService not used here; use api directly for per-tab requests
 import { useWishlist } from '@/context/WishlistContext';
 import { api, attachAuthToken, handleApiError } from '../../../src/lib/api';
-import supabase from '../../lib/supabaseClient'
 import { useToast } from '../../../context/ToastProvider';
 import SupportTab from '../../components/dashboard/tabs/SupportTab'
 import OrdersTab from '../../components/dashboard/tabs/OrdersTab'
@@ -40,58 +39,17 @@ const UserDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileForm, setProfileForm] = useState({});
+  const [activeTab, setActiveTab] = useState("overview");
   const { showToast } = useToast();
+  const { user: authUser, session, loading: authLoading, signOut } = useAuth();
+  // no local wishlistState needed; context provides `wishlist` directly
   const navigate = useNavigate();
   const location = useLocation();
- const { user: authUser, session, loading: authLoading, logout } = useAuth();
-  // no local wishlistState needed; context provides `wishlist` directly
-  const [activeTab, setActiveTab] = useState(() => (location?.state && location.state.activeTab) ? location.state.activeTab : "overview");
 
   // Make a reusable loader for profile/user data so child tabs can refresh it
   async function loadUserData() {
     setLoading(true);
     try {
-      // Prefer reading directly from Supabase (auth + profiles table)
-      let supUser = null
-      try {
-        const supRes = await supabase.auth.getUser();
-        supUser = supRes?.data?.user ?? null;
-      } catch (supErr) {
-        console.warn('supabase.auth.getUser() failed, falling back to API', supErr)
-        supUser = null
-      }
-
-      if (supUser) {
-        const { data: profRow, error: profErr } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', supUser.id)
-          .limit(1)
-          .maybeSingle?.() ?? await (async () => {
-            const r = await supabase.from('users').select('*').eq('id', supUser.id).single().catch(e => ({ data: null, error: e }));
-            return r;
-          })();
-
-        // Merge auth user and db profile so components receive the full shape
-        setUser({ ...(supUser || {}), ...(profRow || {}) });
-        setProfile(profRow || null);
-        const fullName = profRow?.name ?? '';
-        const nameParts = fullName ? String(fullName).trim().split(/\s+/) : [];
-        const first = nameParts.length > 0 ? nameParts[0] : '';
-        const last = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-        setProfileForm({
-          first_name: first,
-          last_name: last,
-          email: supUser?.email ?? profRow?.email ?? '',
-          phone: profRow?.phone ?? profRow?.phone_number ?? supUser?.phone ?? ''
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Fallback to API
-      const token = session?.access_token || session?.accessToken || null;
-      attachAuthToken(token);
       const res = await api.get('/me');
       const payload = res?.data?.data ?? res?.data ?? {};
   // Merge API user and profile so components receive the full shape
@@ -170,49 +128,6 @@ const UserDashboard = () => {
     async function fetchProfileForTab() {
       setLoading(true);
       try {
-        // Prefer reading directly from Supabase (auth + profiles table)
-        let supUser = null
-        try {
-          const supRes = await supabase.auth.getUser();
-          supUser = supRes?.data?.user ?? null;
-        } catch (supErr) {
-          console.warn('supabase.auth.getUser() failed, falling back to API', supErr)
-          supUser = null
-        }
-
-        if (supUser) {
-          // try to fetch profile row by user id
-          const { data: profRow, error: profErr } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', supUser.id)
-            .limit(1)
-            .maybeSingle?.() ?? await (async () => {
-              // some supabase versions may not have maybeSingle; fall back to single and handle not found
-              const r = await supabase.from('users').select('*').eq('id', supUser.id).single().catch(e => ({ data: null, error: e }));
-              return r;
-            })();
-
-          if (!mounted) return;
-          // Merge auth user and db profile so ProfileTab receives full data (email + shipping_address etc.)
-          setUser({ ...(supUser || authUser || {}), ...(profRow || {}) });
-          setProfile(profRow || null);
-          // users table has a single `name` column; split it into first/last for the form
-          const fullName = profRow?.name ?? '';
-          const nameParts = fullName ? String(fullName).trim().split(/\s+/) : [];
-          const first = nameParts.length > 0 ? nameParts[0] : '';
-          const last = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-          setProfileForm({
-            first_name: first,
-            last_name: last,
-            email: supUser?.email ?? profRow?.email ?? '',
-            phone: profRow?.phone ?? profRow?.phone_number ?? supUser?.phone ?? ''
-          });
-          setLoading(false);
-          return;
-        }
-
-        // Fallback to existing API endpoint if supabase auth/profile is unavailable
         const token = session?.access_token || session?.accessToken || null;
         attachAuthToken(token);
         const res = await api.get('/me');
@@ -266,22 +181,7 @@ const UserDashboard = () => {
 
     // Decide which tab to fetch
     if (authUser?.id) {
-      // Fetch DB profile to ensure header name is always correct
-      supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .single()
-        .then(({ data: dbProfile, error }) => {
-          if (error) {
-            // fallback to authUser only
-            setUser(authUser);
-          } else {
-            // Merge Auth User (email/ids) + DB profile (name, shipping_address, etc.)
-            setUser({ ...authUser, ...(dbProfile || {}) });
-          }
-        })
-        .catch(() => setUser(authUser));
+      setUser(authUser);
       if (activeTab === 'orders') fetchOrdersForTab(1, 100);
       else if (activeTab === 'profile') fetchProfileForTab();
       else if (activeTab === 'security') fetchSecurityForTab();
@@ -297,33 +197,6 @@ const UserDashboard = () => {
   async function saveProfile() {
     setLoading(true);
     try {
-      // Prefer updating the Supabase profiles table directly
-      try {
-        const supRes = await supabase.auth.getUser();
-        const supUser = supRes?.data?.user ?? null;
-        if (supUser) {
-          // users table stores a single `name` column; combine first + last
-          const combinedName = [profileForm.first_name, profileForm.last_name].filter(Boolean).join(' ').trim() || null;
-          const updPayload = {
-            name: combinedName,
-            phone: profileForm.phone ?? null,
-            email: profileForm.email ?? null,
-            updated_at: new Date().toISOString()
-          };
-
-          const { data: updData, error: updErr } = await supabase.from('users').update(updPayload).eq('id', supUser.id).select();
-          if (updErr) throw updErr;
-          const newProfile = Array.isArray(updData) ? updData[0] : updData;
-          setProfile(newProfile || profile);
-          showToast?.('Profile updated', 'success');
-          setLoading(false);
-          return;
-        }
-      } catch (supErr) {
-        console.warn('Supabase profile update failed, falling back to API', supErr);
-      }
-
-      // Fallback to existing API
       const token = session?.access_token || session?.accessToken || null;
       attachAuthToken(token);
       const payload = { ...profileForm };
@@ -341,7 +214,7 @@ const UserDashboard = () => {
 
   const handleLogout = async () => {
     try {
-     await logout();
+      await signOut();
     } catch (err) {
       console.error('Logout failed', err);
     }

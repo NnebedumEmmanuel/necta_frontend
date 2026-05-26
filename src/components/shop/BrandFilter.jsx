@@ -8,12 +8,30 @@ export default function BrandFilter({ options = [], selected = [], onSelectionCh
 
   const handleToggle = (brand) => {
     if (!onSelectionChange) return;
-    if (selected.includes(brand)) {
-      onSelectionChange(selected.filter(b => b !== brand));
+    if (brand.isComingSoon) return;
+    if (selected.includes(brand.value)) {
+      onSelectionChange(selected.filter(b => b !== brand.value));
     } else {
-      onSelectionChange([...selected, brand]);
+      onSelectionChange([...selected, brand.value]);
     }
   };
+
+  const normalizedOptions = options.map((option) => {
+    if (typeof option === 'string') {
+      return { key: option, label: option, value: option, isComingSoon: false };
+    }
+
+    const label = option?.name || option?.label || option?.slug || 'Untitled';
+    const value = option?.slug || option?.id || label;
+
+    return {
+      key: option?.id || option?._id || value,
+      label,
+      value,
+      isComingSoon: Boolean(option?.isComingSoon),
+      productCount: Number(option?.productCount || option?.count || 0),
+    };
+  });
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -25,17 +43,32 @@ export default function BrandFilter({ options = [], selected = [], onSelectionCh
       {isOpen && (
         <div className="border-t p-3">
           <div className="space-y-2 max-h-44 overflow-y-auto">
-            {options.map((b) => {
-              const isSelected = selected.includes(b);
+            {normalizedOptions.map((brand) => {
+              const isSelected = selected.includes(brand.value);
               return (
-                <label key={b} className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                <label
+                  key={brand.key}
+                  className={`flex items-center gap-3 p-2 rounded transition-colors ${
+                    brand.isComingSoon
+                      ? 'opacity-70 cursor-not-allowed'
+                      : isSelected
+                      ? 'bg-blue-50 cursor-pointer'
+                      : 'hover:bg-gray-50 cursor-pointer'
+                  }`}
+                >
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => handleToggle(b)}
+                    disabled={brand.isComingSoon}
+                    onChange={() => handleToggle(brand)}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm text-gray-700">{b}</span>
+                  <span className="text-sm text-gray-700 flex-1">{brand.label}</span>
+                  {brand.isComingSoon ? (
+                    <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">Coming Soon</span>
+                  ) : brand.productCount > 0 ? (
+                    <span className="text-xs text-gray-500">{brand.productCount}</span>
+                  ) : null}
                 </label>
               );
             })}

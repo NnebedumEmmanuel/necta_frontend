@@ -1,14 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/context/ToastProvider';
 import { useCart } from '../../../context/useCartHook';
+import { publicApi as api } from '@/lib/api';
 
-const DiscountPage = () => {
-  const navigate = useNavigate();
-  
-  const speakers = [
+const premiumAudioFallback = [
     {
-      id: 1,
+      id: "t-g-tg659-trending-high-quality-audio",
+      slug: "t-g-tg659-trending-high-quality-audio",
       name: "T&G TG659 Trending High Quality Audio",
       image: "/images/img1.png",
       originalPrice: "₦10,000.00",
@@ -16,7 +15,8 @@ const DiscountPage = () => {
       badge: "New"
     },
     {
-      id: 2,
+      id: "t-g-tg691-bluetooth-speaker-outdoor",
+      slug: "t-g-tg691-bluetooth-speaker-outdoor",
       name: "T&G TG691 Bluetooth Speaker Outdoor",
       image: "/images/img2.png",
       originalPrice: "₦8,500",
@@ -24,7 +24,8 @@ const DiscountPage = () => {
       badge: null
     },
     {
-      id: 3,
+      id: "t-g-tg689-bluetooth-speaker-outdoor",
+      slug: "t-g-tg689-bluetooth-speaker-outdoor",
       name: "T&G TG689 Bluetooth Speaker Outdoor",
       image: "/images/img3.png",
       originalPrice: "₦12,000",
@@ -32,7 +33,8 @@ const DiscountPage = () => {
       badge: "New"
     },
     {
-      id: 4,
+      id: "t-g-tg-676-wireless-portable-stereo-woofer",
+      slug: "t-g-tg-676-wireless-portable-stereo-woofer",
       name: "T&G TG-676 Wireless Portable Stereo Woofer",
       image: "/images/img4.png",
       originalPrice: "₦43,000",
@@ -41,24 +43,115 @@ const DiscountPage = () => {
     }
   ];
 
-  const handleViewDetails = (productId, e) => {
+const formatMoney = (value) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return `NGN ${amount.toLocaleString()}`;
+};
+
+const normalizePremiumAudioProduct = (product, fallback = {}) => {
+  const images = Array.isArray(product?.images) && product.images.length
+    ? product.images
+    : [product?.image || fallback.image].filter(Boolean);
+  const price = Number(product?.price) || 0;
+  const oldPrice = Number(product?.old_price || product?.compare_at_price) || 0;
+
+  return {
+    ...fallback,
+    ...product,
+    id: product?.id || product?._id || fallback.id,
+    slug: product?.slug || fallback.slug,
+    name: product?.name || product?.title || fallback.name,
+    title: product?.title || product?.name || fallback.name,
+    image: product?.image || images[0] || fallback.image,
+    images,
+    originalPrice: oldPrice ? formatMoney(oldPrice) : formatMoney(price) || fallback.originalPrice,
+    discountedPrice: oldPrice ? formatMoney(price) : null,
+    badge: fallback.badge,
+  };
+};
+
+const DiscountPage = () => {
+  const navigate = useNavigate();
+  const [speakers, setSpeakers] = useState(premiumAudioFallback);
+
+  useEffect(() => {
+    let mounted = true;
+
+    api.get('/products', { params: { collections: 'premium-audio', limit: 4 } })
+      .then((res) => {
+        const body = res?.data;
+        const rows = Array.isArray(body)
+          ? body
+          : Array.isArray(body?.data)
+          ? body.data
+          : Array.isArray(body?.products)
+          ? body.products
+          : [];
+
+        if (mounted && rows.length) {
+          setSpeakers(rows.slice(0, 4).map((product, index) => (
+            normalizePremiumAudioProduct(product, premiumAudioFallback[index] || {})
+          )));
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load premium audio products', error);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const normalizeStoreProduct = (data, fallback) => {
+    const images = Array.isArray(data?.images) && data.images.length
+      ? data.images
+      : [data?.image || fallback.image];
+
+    return {
+      ...fallback,
+      ...data,
+      id: data?.id || data?._id || fallback.id,
+      name: data?.name || data?.title || fallback.name,
+      title: data?.title || data?.name || fallback.name,
+      price: Number(data?.price) || Number(String(fallback.discountedPrice || fallback.originalPrice).replace(/[^0-9.-]+/g, '')) || 0,
+      images,
+      image: data?.image || images[0] || fallback.image,
+      quantity: 1,
+    };
+  };
+
+  const fetchStoreProduct = async (product) => {
+    const res = await api.get(`/products/${product.slug}`);
+    const raw = res?.data?.product ?? res?.data?.data ?? res?.data;
+    return normalizeStoreProduct(raw, product);
+  };
+
+  const handleViewDetails = (product, e) => {
     e.stopPropagation();
     window.scrollTo(0, 0);
-    navigate(`/shop/products/${productId}`);
+    navigate(`/shop/products/${product.slug}`);
   };
 
   const { addToCart } = useCart();
   const { showToast } = useToast();
 
-  const handleAddToCart = (product, e) => {
+  const handleAddToCart = async (product, e) => {
     e.stopPropagation();
-    addToCart({ ...product, quantity: 1 });
-    showToast(`${product.name} added to cart`, { type: 'success' });
+    try {
+      const storeProduct = await fetchStoreProduct(product);
+      addToCart({ ...storeProduct, quantity: 1 });
+      showToast(`${storeProduct.name} added to cart`, 'success');
+    } catch (error) {
+      console.error('Premium audio add-to-cart failed:', error);
+      showToast('This product is still syncing. Open details and try again.', 'error');
+    }
   };
 
   const handleProductClick = (product) => {
     window.scrollTo(0, 0);
-    navigate(`/shop/products/${product.id}`);
+    navigate(`/shop/products/${product.slug}`);
   };
 
   return (
@@ -179,7 +272,7 @@ const DiscountPage = () => {
               ">
                 <div className="flex gap-2">
                   <button 
-                    onClick={(e) => handleViewDetails(speaker.id, e)}
+                    onClick={(e) => handleViewDetails(speaker, e)}
                     className="
                       flex-1 py-2 text-sm font-semibold rounded-lg
                       border border-gray-200 text-gray-700
