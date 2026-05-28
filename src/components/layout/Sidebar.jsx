@@ -269,7 +269,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   </div>
                   {!category.available && (
                     <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
-                      Soon
+                      Coming Soon
                     </span>
                   )}
                 </a>

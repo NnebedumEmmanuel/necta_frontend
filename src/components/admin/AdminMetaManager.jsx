@@ -29,9 +29,15 @@ export default function AdminMetaManager() {
     try {
       const currentTab = tabs.find(t => t.id === activeTab);
       const res = await api.get(currentTab.path);
-      setItems(res.data || []);
+      
+      // 🚨 THE FIX: Defensively extract the array from the Next.js response object
+      const payload = res.data || res;
+      const itemsArray = Array.isArray(payload) ? payload : (payload?.data || []);
+      
+      setItems(itemsArray);
     } catch (err) {
       showToast("Failed to fetch " + activeTab, { type: 'error' });
+      setItems([]); // Fallback to empty array on error
     } finally {
       setLoading(false);
     }
@@ -47,7 +53,7 @@ export default function AdminMetaManager() {
       
       if (!itemId) return showToast("Error: Missing Item ID", { type: 'error' });
 
-      setItems(prev => prev.map(i => (i._id || i.id) === itemId ? { ...i, isComingSoon: newStatus } : i));
+      setItems(prev => Array.isArray(prev) ? prev.map(i => (i._id || i.id) === itemId ? { ...i, isComingSoon: newStatus } : i) : []);
       await api.patch(`${currentTab.path}/${itemId}`, { isComingSoon: newStatus });
       showToast(`${item.name} updated`, { type: 'success' });
     } catch (err) {
@@ -64,7 +70,9 @@ export default function AdminMetaManager() {
     try {
       const currentTab = tabs.find(t => t.id === activeTab);
       const res = await api.get(`/products?${currentTab.queryParam}=${item.slug}`);
-      const productArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      
+      const payload = res.data || res;
+      const productArray = Array.isArray(payload) ? payload : (payload?.data || []);
       setMetaProducts(productArray);
     } catch (error) {
       showToast("Failed to load attached products", { type: 'error' });
@@ -78,7 +86,8 @@ export default function AdminMetaManager() {
     setLoadingProducts(true);
     try {
       const res = await api.get('/products?limit=100'); 
-      const productArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const payload = res.data || res;
+      const productArray = Array.isArray(payload) ? payload : (payload?.data || []);
       setAllProducts(productArray);
     } catch (error) {
       showToast("Failed to fetch products for searching", { type: 'error' });
@@ -104,17 +113,14 @@ export default function AdminMetaManager() {
     }
   };
 
-  // 🚨 NEW: Unlink Product Function
   const unlinkProductFromMeta = async (product) => {
     try {
       const currentTab = tabs.find(t => t.id === activeTab);
       const productId = product._id || product.id;
 
-      // Send a PATCH to overwrite the category/brand with "unassigned"
       await api.patch(`/products/${productId}`, { [currentTab.queryParam]: "unassigned" });
       showToast(`${product.name} removed from tag!`, { type: 'success' });
       
-      // Instantly remove it from the screen
       setMetaProducts(prev => prev.filter(p => (p._id || p.id) !== productId));
     } catch (error) {
       showToast("Failed to remove product", { type: 'error' });
@@ -154,31 +160,35 @@ export default function AdminMetaManager() {
           <tbody>
            {loading ? (
               <tr><td colSpan="3" className="p-12 text-center"><Loader className="animate-spin mx-auto text-orange-600" /></td></tr>
-            ) : items.map(item => (
-              <tr key={item._id || item.id} className="border-b hover:bg-slate-50/50">
-                <td className="p-4 font-medium">{item.name}</td>
-                <td className="p-4">
-                  <button 
-                    onClick={() => handleToggleSoon(item)}
-                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
-                      item.isComingSoon ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-                    }`}
-                  >
-                    {item.isComingSoon ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
-                    {item.isComingSoon ? 'Coming Soon' : 'Active'}
-                  </button>
-                </td>
-                <td className="p-4 text-right flex items-center justify-end gap-3">
-                   <button 
-                     onClick={() => openProductsModal(item)}
-                     className="text-orange-600 hover:text-orange-800 flex items-center gap-1 text-sm font-bold bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
-                   >
-                     <Eye size={16}/> View Products
-                   </button>
-                   <button className="text-slate-400 hover:text-red-600 p-1"><Trash2 size={18}/></button>
-                </td>
-              </tr>
-            ))}
+            ) : Array.isArray(items) && items.length > 0 ? (
+              items.map(item => (
+                <tr key={item._id || item.id} className="border-b hover:bg-slate-50/50">
+                  <td className="p-4 font-medium">{item.name}</td>
+                  <td className="p-4">
+                    <button 
+                      onClick={() => handleToggleSoon(item)}
+                      className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
+                        item.isComingSoon ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                      }`}
+                    >
+                      {item.isComingSoon ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
+                      {item.isComingSoon ? 'Coming Soon' : 'Active'}
+                    </button>
+                  </td>
+                  <td className="p-4 text-right flex items-center justify-end gap-3">
+                     <button 
+                       onClick={() => openProductsModal(item)}
+                       className="text-orange-600 hover:text-orange-800 flex items-center gap-1 text-sm font-bold bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
+                     >
+                       <Eye size={16}/> View Products
+                     </button>
+                     <button className="text-slate-400 hover:text-red-600 p-1"><Trash2 size={18}/></button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan="3" className="p-12 text-center text-slate-500 font-medium">No items found.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -263,7 +273,6 @@ export default function AdminMetaManager() {
                           <p className="text-xs text-slate-500 font-medium mt-1">₦{Number(prod.price || 0).toLocaleString()}</p>
                         </div>
                         
-                        {/* 🚨 NEW: Unlink Button (Hover to reveal) */}
                         <button 
                           onClick={() => unlinkProductFromMeta(prod)}
                           className="absolute top-2 right-2 p-1.5 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-sm"

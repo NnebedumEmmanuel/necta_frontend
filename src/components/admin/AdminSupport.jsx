@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import supabase from '../../lib/supabaseClient'
 import { useToast } from '../../../context/ToastProvider'
+
+// 🚨 DYNAMIC URL: Uses your deployed Next.js domain in production, or localhost in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function AdminSupport() {
   const { showToast } = useToast()
@@ -8,7 +10,7 @@ export default function AdminSupport() {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [filter, setFilter] = useState('all') // all | open | resolved
+  const [filter, setFilter] = useState('all')
   const [updatingId, setUpdatingId] = useState(null)
   const [selectedTicket, setSelectedTicket] = useState(null)
   const [replies, setReplies] = useState([])
@@ -16,22 +18,49 @@ export default function AdminSupport() {
   const [replyText, setReplyText] = useState('')
   const [sendingReply, setSendingReply] = useState(false)
 
+  // 🚨 AUTH HELPER: Customize this based on how you store your admin token
+  const getAuthHeaders = () => {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    // IF YOU USE LOCALSTORAGE FOR TOKENS, UNCOMMENT THESE LINES:
+    // const token = localStorage.getItem('token'); // or whatever your token key is
+    // if (token) {
+    //   headers['Authorization'] = `Bearer ${token}`;
+    // }
+    
+    return headers;
+  };
+
+  // IF YOU USE COOKIES FOR AUTH, KEEP THIS AS 'include'. OTHERWISE, REMOVE IT.
+  const fetchOptions = {
+    credentials: 'include', 
+  };
+
   useEffect(() => {
     fetchTickets()
   }, [])
 
+  // 1. Fetch Tickets
   async function fetchTickets() {
     setLoading(true)
     setError(null)
     try {
-      // include the joined users row (email, name, phone)
-      const { data, error } = await supabase
-        .from('support_tickets')
-        .select('*, users(email, name, phone)')
-        .order('created_at', { ascending: false })
+      const response = await fetch(`${API_BASE_URL}/api/admin/support-tickets`, {
+        ...fetchOptions,
+        headers: getAuthHeaders(),
+      })
+      
+      if (!response.ok) {
+        if (response.status === 401) throw new Error('Unauthorized: Please log in as an Admin');
+        throw new Error('Failed to fetch tickets');
+      }
+      
+      const result = await response.json()
+      if (!result.success) throw new Error(result.error)
 
-      if (error) throw error
-      setTickets(Array.isArray(data) ? data : [])
+      setTickets(Array.isArray(result.data) ? result.data : [])
     } catch (err) {
       console.error('Failed to load admin support tickets', err)
       setError(err?.message || String(err))
@@ -53,14 +82,22 @@ export default function AdminSupport() {
     return <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">Open</span>
   }
 
+  // 2. Change Status
   async function changeStatus(id, newStatus) {
     setUpdatingId(id)
     try {
-      const { error } = await supabase.from('support_tickets').update({ status: (newStatus || 'open').toLowerCase() }).eq('id', id)
-      if (error) throw error
+      const response = await fetch(`${API_BASE_URL}/api/admin/support-tickets/${id}`, {
+        ...fetchOptions,
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ status: (newStatus || 'open').toLowerCase() })
+      })
+      
+      if (!response.ok) throw new Error('Failed to update ticket status')
+
       showToast?.('Ticket status updated', 'success')
       await fetchTickets()
-      // if the currently-selected ticket was updated, reflect the change locally
+      
       if (selectedTicket && selectedTicket.id === id) {
         setSelectedTicket({ ...selectedTicket, status: (newStatus || 'open').toLowerCase() })
       }
@@ -72,7 +109,7 @@ export default function AdminSupport() {
     }
   }
 
-  // Open ticket details and load replies
+  // Open ticket details
   async function openTicket(ticket) {
     setSelectedTicket(ticket)
     await fetchReplies(ticket.id)
@@ -84,49 +121,52 @@ export default function AdminSupport() {
     setReplyText('')
   }
 
+  // 3. Fetch Replies
   async function fetchReplies(ticketId) {
     setRepliesLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('support_replies')
-        .select('*')
-        .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: true })
+      const response = await fetch(`${API_BASE_URL}/api/admin/support-tickets/${ticketId}/replies`, {
+        ...fetchOptions,
+        headers: getAuthHeaders(),
+      })
+      
+      if (!response.ok) throw new Error('Failed to fetch replies')
 
-      if (error) throw error
-      setReplies(Array.isArray(data) ? data : [])
+      const result = await response.json()
+      setReplies(Array.isArray(result.data) ? result.data : [])
     } catch (err) {
       console.error('Failed to fetch replies', err)
-      showToast?.(err?.message || 'Failed to load replies', 'error')
+      setReplies([]) 
     } finally {
       setRepliesLoading(false)
     }
   }
 
+  // 4. Send Reply
   async function sendReply() {
     if (!selectedTicket) return
     if (!replyText.trim()) return showToast?.('Reply cannot be empty', 'error')
     setSendingReply(true)
+    
     try {
-      const payload = {
-        ticket_id: selectedTicket.id,
-        message: replyText.trim(),
-        is_admin_reply: true,
-      }
+      const response = await fetch(`${API_BASE_URL}/api/admin/support-tickets/${selectedTicket.id}/replies`, {
+        ...fetchOptions,
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          message: replyText.trim(),
+          is_admin_reply: true
+        })
+      })
 
-      const { data, error } = await supabase.from('support_replies').insert(payload).select().single()
-      if (error) throw error
+      if (!response.ok) throw new Error('Failed to send reply')
+      const result = await response.json()
 
-      // If ticket was open, mark as in_progress
       if ((selectedTicket.status || 'open').toLowerCase() === 'open') {
-        const { error: upErr } = await supabase.from('support_tickets').update({ status: 'in_progress' }).eq('id', selectedTicket.id)
-        if (upErr) throw upErr
-        // reflect locally
-        setSelectedTicket({ ...selectedTicket, status: 'in_progress' })
+        await changeStatus(selectedTicket.id, 'in_progress')
       }
 
-      // append new reply and clear input
-      setReplies((r) => [...r, data])
+      setReplies((r) => [...r, result.data])
       setReplyText('')
       showToast?.('Reply sent', 'success')
       await fetchTickets()
@@ -149,7 +189,7 @@ export default function AdminSupport() {
           <button onClick={() => setFilter('all')} className={`px-3 py-1 rounded-md ${filter==='all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}>All</button>
           <button onClick={() => setFilter('open')} className={`px-3 py-1 rounded-md ${filter==='open' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Open</button>
           <button onClick={() => setFilter('resolved')} className={`px-3 py-1 rounded-md ${filter==='resolved' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Resolved</button>
-  </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -175,12 +215,12 @@ export default function AdminSupport() {
                 <tr key={t.id} className="hover:bg-slate-50">
                   <td className="py-3 px-3">{statusBadge(t.status)}</td>
                   <td className="py-3 px-3 font-medium">{t.subject}</td>
-                  <td className="py-3 px-3">{(t.users && t.users.email) || t.email || '—'}</td>
-                  <td className="py-3 px-3">{t.created_at ? new Date(t.created_at).toLocaleString() : '—'}</td>
+                  <td className="py-3 px-3">{t.assigned_to || t.customer_email || '—'}</td>
+                  <td className="py-3 px-3">{t.createdAt || t.created_at ? new Date(t.createdAt || t.created_at).toLocaleString() : '—'}</td>
                   <td className="py-3 px-3 flex items-center gap-2">
                     <button
                       onClick={() => openTicket(t)}
-                      className="text-sm px-3 py-1 rounded-md bg-white/10 hover:bg-white/20"
+                      className="text-sm px-3 py-1 rounded-md border hover:bg-gray-50"
                     >
                       View Details
                     </button>
@@ -202,13 +242,11 @@ export default function AdminSupport() {
         </table>
       </div>
       
-      {/* Details / Replies panel */}
       {selectedTicket && (
         <div className="fixed right-6 top-12 bottom-6 w-[480px] bg-white rounded-2xl shadow-xl border z-50 overflow-hidden flex flex-col">
           <div className="p-4 border-b flex items-start justify-between">
             <div>
               <h3 className="text-lg font-semibold">{selectedTicket.subject}</h3>
-              <div className="text-sm text-slate-500">{(selectedTicket.users && (selectedTicket.users.name || selectedTicket.users.email)) || selectedTicket.email}</div>
             </div>
             <div className="flex items-center gap-2">
               <select
@@ -220,14 +258,14 @@ export default function AdminSupport() {
                 <option value="in_progress">In Progress</option>
                 <option value="resolved">Resolved</option>
               </select>
-              <button onClick={closeTicket} className="ml-2 text-sm px-2 py-1 bg-gray-100 rounded">Close</button>
+              <button onClick={closeTicket} className="ml-2 text-sm px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">Close</button>
             </div>
           </div>
 
           <div className="p-4 overflow-y-auto flex-1 space-y-4">
             <div className="text-sm text-slate-700">
               <div className="font-medium mb-2">Original Message</div>
-              <div className="whitespace-pre-wrap text-sm text-slate-600">{selectedTicket.message || selectedTicket.body || selectedTicket.description || '—'}</div>
+              <div className="whitespace-pre-wrap text-sm text-slate-600">{selectedTicket.message || selectedTicket.description || '—'}</div>
             </div>
 
             <div className="space-y-3">
@@ -239,7 +277,7 @@ export default function AdminSupport() {
               ) : (
                 replies.map((r) => (
                   <div key={r.id} className={`p-3 rounded-md ${r.is_admin_reply ? 'bg-blue-50 self-end' : 'bg-slate-100'}`}>
-                    <div className="text-xs text-slate-500">{r.is_admin_reply ? 'Admin' : 'Customer'} • {r.created_at ? new Date(r.created_at).toLocaleString() : ''}</div>
+                    <div className="text-xs text-slate-500">{r.is_admin_reply ? 'Admin' : 'Customer'} • {r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
                     <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">{r.message}</div>
                   </div>
                 ))
@@ -254,13 +292,14 @@ export default function AdminSupport() {
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Write a reply..."
                 className="flex-1 border rounded px-3 py-2"
+                onKeyDown={(e) => e.key === 'Enter' && sendReply()}
               />
               <button
                 onClick={sendReply}
                 disabled={sendingReply}
-                className="px-4 py-2 bg-indigo-600 text-white rounded"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
               >
-                {sendingReply ? 'Sending...' : 'Send Reply'}
+                {sendingReply ? 'Sending...' : 'Send'}
               </button>
             </div>
           </div>

@@ -49,7 +49,7 @@ const FilterSection = ({ title, icon: Icon, items, type, loading, currentParam }
                     </span>
                     {item.isComingSoon && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold uppercase tracking-wider">
-                        Soon
+                       Coming Soon
                       </span>
                     )}
                   </Link>
