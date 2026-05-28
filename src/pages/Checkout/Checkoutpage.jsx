@@ -1,71 +1,66 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from '@/context/CartContext';
-import { STATE_LGA_MAP } from '@/lib/pricing';
+import { NIGERIAN_STATES } from '@/lib/pricing';
 import { orderService } from "../../../services/orderService";
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastProvider';
 
 const CheckoutPage = () => {
-  const { cartItems: ctxCartItems, state, deliveryState, setDeliveryState, clearCart } = useCart() || {};
-
-  const cartItems = (Array.isArray(ctxCartItems) && ctxCartItems.length > 0)
-    ? ctxCartItems
-    : (Array.isArray(state?.items) ? state.items : []);
-
-  const realItems = Array.isArray(cartItems) ? cartItems : [];
-
-  const subtotal = cartItems.reduce((acc, item) => {
-    const price = typeof item.price === 'number' ? item.price : parseFloat(String(item.price || '').replace(/[^0-9.-]+/g, '')) || 0;
-    const qty = Number(item.quantity || item.qty || 1) || 0;
-    return acc + (price * qty);
-  }, 0);
-
-  const SHIPPING_RATES = {
-    Lagos: 2500,
-    Default: 4500,
-    FreeThreshold: 5000000,
-  };
-
-  const shippingCost = React.useMemo(() => {
-    const stateSelected = deliveryState || '';
-    if (!stateSelected) return 0;
-    if (subtotal > (SHIPPING_RATES.FreeThreshold / 100)) return 0;
-    if (String(stateSelected).toLowerCase() === 'lagos') return SHIPPING_RATES.Lagos;
-    return SHIPPING_RATES.Default;
-  }, [deliveryState, subtotal]);
-
-  const tax = subtotal * 0.075;
-  const grandTotal = subtotal + tax + shippingCost;
-
+  // Use the cart context with the required destructured names for UI contract
+  const { cartItems, state, deliveryState, setDeliveryState, clearCart } = useCart() || {};
   const { showToast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const safeSetDeliveryState = typeof setDeliveryState === 'function' ? setDeliveryState : () => {};
 
-  // 🚨 NEW: Added processing state to prevent double clicks!
-  const [isProcessing, setIsProcessing] = useState(false);
-
+  // Safe cart extraction (keep this logic to prevent "Cart is empty" errors)
+  const realItems = (Array.isArray(cartItems) && cartItems.length > 0) ? cartItems : (Array.isArray(state?.items) ? state.items : []);
   const [formData, setFormData] = useState({
-    fullName: user?.firstName ? `${user.firstName} ${user.lastName}` : "",
+    fullName: user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : (user?.name || ""),
     email: user?.email || "",
     phone: "",
     address: "",
     city: "",
     state: deliveryState || "",
-    lga: "",
-    houseDescription: "",
-    landmark: "",
-    coordinates: null,
   });
 
-  const currentLgas = React.useMemo(() => {
-    return (STATE_LGA_MAP[formData.state] || []);
-  }, [formData.state]);
+  // Force-local calculations to avoid stale context values and ensure UI + Paystack stay in sync
+  const subtotal = (Array.isArray(realItems) ? realItems : []).reduce((acc, item) => {
+    const price = typeof item.price === 'number' ? item.price : parseFloat(String(item.price || '').replace(/[^0-9.-]+/g, '')) || 0;
+    const qty = Number(item.quantity || item.qty || 1) || 0;
+    return acc + (price * qty);
+  }, 0);
 
-  React.useEffect(() => {
-    setFormData(prev => ({ ...prev, lga: '' }));
-  }, [formData.state]);
+  // Shipping rates and free-threshold (FreeThreshold is in kobo: 5,000,000 kobo => ₦50,000)
+  const SHIPPING_RATES = {
+    Lagos: 2500,
+    Default: 4500,
+    FreeThreshold: 5000000,
+  }
 
+  // Compute shipping cost based on selected state and subtotal. We watch formData.state
+  // Free threshold comparison: subtotal (NGN) > FreeThreshold/100 (because FreeThreshold is in kobo)
+  const shippingCost = React.useMemo(() => {
+    const stateSelected = formData?.state || ''
+    if (!stateSelected) return 0
+    // Free if subtotal exceeds the threshold
+    if (subtotal > (SHIPPING_RATES.FreeThreshold / 100)) return 0
+    if (String(stateSelected).toLowerCase() === 'lagos') return SHIPPING_RATES.Lagos
+    return SHIPPING_RATES.Default
+  }, [formData?.state, subtotal])
+
+  const tax = subtotal * 0.075;
+
+  const grandTotal = subtotal + tax + shippingCost;
+
+  // Paystack config uses the freshly computed grandTotal (amount must be in kobo)
+  const paystackConfig = {
+    amount: Math.round(grandTotal * 100), // Kobo
+    currency: 'NGN'
+  };
+
+  // Auto-fill form fields from authenticated user when available
   React.useEffect(() => {
     if (!user) return;
     setFormData(prev => ({
@@ -75,27 +70,27 @@ const CheckoutPage = () => {
       address: prev.address || user?.address || "",
       city: prev.city || user?.city || "",
       state: prev.state || deliveryState || user?.state || "",
-      lga: prev.lga || user?.lga || "",
-      houseDescription: prev.houseDescription || "",
-      landmark: prev.landmark || "",
-      coordinates: prev.coordinates || null,
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // keep formData.state and deliveryState in sync
   React.useEffect(() => {
     if (deliveryState && deliveryState !== formData.state) {
       setFormData(prev => ({ ...prev, state: deliveryState }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deliveryState]);
 
   React.useEffect(() => {
     if (formData.state !== deliveryState) {
-      setDeliveryState(formData.state || "");
+      safeSetDeliveryState(formData.state || "");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.state]);
 
-  const handlePayment = async () => {
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.lga) {
+  const handlePlaceOrder = async () => {
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.address) {
       showToast("Please fill in all required fields", "error");
       return;
     }
@@ -105,111 +100,86 @@ const CheckoutPage = () => {
       return;
     }
 
+    // Prevent empty cart orders
     if (!Array.isArray(realItems) || realItems.length === 0) {
-      showToast('Cart is empty!', 'error');
+      if (showToast) showToast('Cart is empty!', 'error');
+      else alert('Cart is empty!');
       return;
     }
 
-    // 🚨 Prevent double-clicks!
-    setIsProcessing(true);
-
+    // Map cart items explicitly to ensure payload contains product_id, quantity, price and name
     const orderItems = realItems.map(item => ({
-      product_id: item.id,
+      product_id: item.product_id || item._id || item.id,
       quantity: Number(item.quantity || item.qty || 1) || 1,
       price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price || '').replace(/[^0-9.-]+/g, '')) || 0,
       name: item.name || item.title || ''
     }));
 
+    if (orderItems.some(item => !item.product_id)) {
+      showToast("Please remove and re-add items to your cart before checkout.", "error");
+      return;
+    }
+
     const orderData = {
-      email: formData.email, 
-      shipping_address: `${formData.address}${formData.houseDescription ? ', ' + formData.houseDescription : ''}${formData.landmark ? ', near ' + formData.landmark : ''}, ${formData.lga || ''}, ${formData.state || ''}`,
-      total_amount: Number(grandTotal), 
-      total: Number(grandTotal), 
-      items: orderItems,
       customer: {
         userId: user?.id,
         name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
-        address: `${formData.address}${formData.houseDescription ? ', ' + formData.houseDescription : ''}${formData.landmark ? ', ' + formData.landmark : ''}`,
+        address: formData.address,
         city: formData.city,
-        state: formData.state,
-        lga: formData.lga,
-        houseDescription: formData.houseDescription,
-        landmark: formData.landmark,
-        coordinates: formData.coordinates
+        state: formData.state
       },
-      subtotal: Number(subtotal).toFixed(2),
-      tax: Number(tax).toFixed(2),
-      amountKobo: Math.round(Number(grandTotal) * 100),
+        items: orderItems,
+        subtotal: Number(subtotal).toFixed(2),
+        tax: Number(tax).toFixed(2),
+        total: Number(grandTotal).toFixed(2),
+        amountKobo: Math.round(Number(grandTotal) * 100),
+      shippingAddress: `${formData.address}, ${formData.city}, ${formData.state}`,
       status: 'pending'
     };
 
     try {
       const res = await orderService.addOrder(orderData);
-      console.log("Raw Service Response:", res); // Debug log just in case
 
-      if (res?.success || res?.data?.success) {
-        
-        // 🚨 Aggressive URL hunting! Checks every possible nested location
-        const authorizationUrl = 
-          res?.paystack_auth_url || 
-          res?.data?.paystack_auth_url || 
-          res?.data?.data?.paystack_auth_url || 
-          res?.paystack?.authorization_url;
+      if (res?.success) {
+        const order = res.data?.order;
+        const paystack = res.data?.paystack;
 
-        const orderId = res?.order_id || res?.data?.order_id;
-
-        // 1. If we found the Paystack URL, redirect!
+        const authorizationUrl = paystack?.authorization_url || paystack?.data?.authorization_url;
         if (authorizationUrl) {
           clearCart();
-          window.location.replace(authorizationUrl); // replace() is smoother for payment redirects
+          window.location.href = authorizationUrl;
           return;
         }
 
-        // 2. Fallback
-        if (orderId) {
+        if (order?.id) {
           clearCart();
-          showToast(`Order placed! Order Number: ${orderId}`, "success");
-          navigate(`/order-confirmation/${orderId}`);
+          showToast(`Order placed successfully! Order Number: ${order.id}`, "success");
+          navigate(`/order-confirmation/${order.id}`);
           return;
         }
       }
 
-      // UX FIX: Catch backend errors (like stock issues) properly
-      if (!res?.success && res?.error) {
-        showToast(res.error, "error");
-        return;
-      }
-      if (res?.data && !res.data.success && res.data.error) {
-        showToast(res.data.error, "error");
-        return;
-      }
-
-      showToast("Order processing issue. Please check your admin panel.", "error");
+      showToast("Failed to place order. Please try again.", "error");
     } catch (error) {
       console.error("Error placing order:", error);
-      
-      const errorMessage = error.response?.data?.error || error.message || "Failed to place order.";
-      const cleanMessage = errorMessage.replace(/^Error:\s*/, '');
-      
-      showToast(cleanMessage, "error");
-    } finally {
-      // 🚨 Turn off loading state no matter what happens
-      setIsProcessing(false);
+      showToast(error?.message || "Failed to place order. Please try again.", "error");
     }
   };
 
+  const currency = (value) => {
+    return Number(value).toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
+  };
+
   const needsState = Number(shippingCost) === 0 && !formData.state;
-  const isFormValid = Boolean(
-    formData.fullName && formData.email && formData.phone && formData.address && formData.state && formData.lga && !needsState
-  );
 
   return (
-    <main key={user?.id || 'guest'} className="container mx-auto p-4">
+    <main className="container mx-auto p-4">
       <h1 className="text-2xl font-semibold mb-6">Checkout</h1>
 
       <div className="grid md:grid-cols-3 gap-8">
+        {/* Left: Shipping form (span 2) */}
         <section className="md:col-span-2">
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <h2 className="text-lg font-medium mb-4">Shipping Details</h2>
@@ -245,17 +215,17 @@ const CheckoutPage = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">City</label>
-                <input
-                  className="w-full border p-2 rounded"
-                  value={formData.city}
-                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder="City"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">City</label>
+                  <input
+                    className="w-full border p-2 rounded"
+                    value={formData.city}
+                    onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="City"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium mb-1">State</label>
                   <select
@@ -263,28 +233,13 @@ const CheckoutPage = () => {
                     value={formData.state}
                     onChange={(e) => {
                       const s = e.target.value;
-                      setFormData(prev => ({ ...prev, state: s, lga: '' }));
-                      setDeliveryState(s);
+                      setFormData(prev => ({ ...prev, state: s }));
+                      safeSetDeliveryState(s);
                     }}
                   >
                     <option value="">Select state</option>
-                      {Object.keys(STATE_LGA_MAP).map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">LGA</label>
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={formData.lga}
-                    disabled={!formData.state}
-                    onChange={(e) => setFormData(prev => ({ ...prev, lga: e.target.value }))}
-                  >
-                    <option value="">Select LGA</option>
-                    {(currentLgas || []).map(l => (
-                      <option key={l} value={l}>{l}</option>
+                    {NIGERIAN_STATES.map(s => (
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
@@ -299,31 +254,11 @@ const CheckoutPage = () => {
                   placeholder="Email address"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">House Description (optional)</label>
-                <input
-                  className="w-full border p-2 rounded"
-                  value={formData.houseDescription}
-                  onChange={(e) => setFormData(prev => ({ ...prev, houseDescription: e.target.value }))}
-                  placeholder="e.g., Yellow gate, Flat 2B"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Landmark (optional)</label>
-                <input
-                  className="w-full border p-2 rounded"
-                  value={formData.landmark}
-                  onChange={(e) => setFormData(prev => ({ ...prev, landmark: e.target.value }))}
-                  placeholder="e.g., Near the transformer"
-                />
-              </div>
-
             </div>
           </div>
         </section>
 
+        {/* Right: Order summary (span 1) */}
         <aside className="bg-gray-50 p-6 rounded-lg shadow-sm h-fit sticky top-20">
           <h2 className="text-lg font-medium mb-4">Order Summary</h2>
 
@@ -372,18 +307,12 @@ const CheckoutPage = () => {
                 Please select a delivery state
               </button>
             ) : (
-              <div key={`${(cartItems || []).length}-${user?.id || 'guest'}`} className="w-full">
+              <div key={grandTotal} className="w-full">
                 <button
-                  type="button"
-                  onClick={handlePayment}
-                  disabled={!isFormValid || isProcessing}
-                  className={`w-full py-3 rounded-xl font-semibold transition-all ${
-                    isFormValid && !isProcessing 
-                      ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                  onClick={handlePlaceOrder}
+                  className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600"
                 >
-                  {isProcessing ? 'Processing... please wait' : 'Pay with Paystack'}
+                  Pay with Paystack
                 </button>
               </div>
             )}

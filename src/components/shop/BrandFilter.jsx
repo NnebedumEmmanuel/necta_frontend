@@ -6,20 +6,35 @@ export default function BrandFilter({ options = [], selected = [], onSelectionCh
 
   const toggle = () => setIsOpen(v => !v);
 
-  // Sort: Active first, Coming Soon last
-  const sortedOptions = [...options].sort((a, b) => {
-    const aSoon = typeof a === 'object' ? a.isComingSoon : false;
-    const bSoon = typeof b === 'object' ? b.isComingSoon : false;
-    if (aSoon === bSoon) return 0;
-    return aSoon ? 1 : -1;
+  const normalizedOptions = options.map((option) => {
+    if (typeof option === 'string') {
+      return { key: option, label: option, value: option, isComingSoon: false };
+    }
+    const label = option?.name || option?.label || option?.slug || 'Untitled';
+    const value = option?.slug || option?.id || label;
+
+    return {
+      key: option?.id || option?._id || value,
+      label,
+      value,
+      isComingSoon: Boolean(option?.isComingSoon),
+      productCount: Number(option?.productCount || option?.count || 0),
+    };
   });
 
-  const handleToggle = (itemValue) => {
+  const sortedOptions = [...normalizedOptions].sort((a, b) => {
+    if (a.isComingSoon === b.isComingSoon) return 0;
+    return a.isComingSoon ? 1 : -1;
+  });
+
+  const handleToggle = (brand) => {
     if (!onSelectionChange) return;
-    if (selected.includes(itemValue)) {
-      onSelectionChange(selected.filter(b => b !== itemValue));
+    if (brand.isComingSoon) return;
+    
+    if (selected.includes(brand.value)) {
+      onSelectionChange(selected.filter(b => b !== brand.value));
     } else {
-      onSelectionChange([...selected, itemValue]);
+      onSelectionChange([...selected, brand.value]);
     }
   };
 
@@ -31,57 +46,50 @@ export default function BrandFilter({ options = [], selected = [], onSelectionCh
       </button>
 
       {isOpen && (
-        <div className="border-t">
-          <div className="p-3">
-            {sortedOptions.length > 0 ? (
-              <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
-                {sortedOptions.map((opt, idx) => {
-                  const name = typeof opt === 'string' ? opt : opt.name;
-                  const itemValue = typeof opt === 'string' ? opt : (opt.slug || opt.name);
-                  const isComingSoon = typeof opt === 'object' ? opt.isComingSoon : false;
-                  const isSelected = selected.includes(itemValue);
-                  
-                  return (
-                    <label 
-                      key={itemValue || idx} 
-                      className={`flex items-center justify-between p-2 rounded transition-colors ${
-                        isComingSoon ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-gray-50'
-                      } ${isSelected && !isComingSoon ? 'bg-blue-50/50' : ''}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {!isComingSoon && (
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleToggle(itemValue)}
-                            disabled={isComingSoon}
-                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        )}
-                        <span className={`text-sm ${isComingSoon ? 'text-gray-400 font-normal' : 'text-gray-800 font-medium'}`}>
-                          {name}
-                        </span>
-                      </div>
-                      
-                      {isComingSoon && (
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium tracking-wide">
-                          COMING SOON
-                        </span>
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-sm text-gray-400 text-center py-4">No brands found</div>
-            )}
+        <div className="border-t p-3">
+          {sortedOptions.length > 0 ? (
+            <div className="space-y-2 max-h-44 overflow-y-auto">
+              {sortedOptions.map((brand) => {
+                const isSelected = selected.includes(brand.value);
+                return (
+                  <label
+                    key={brand.key}
+                    className={`flex items-center gap-3 p-2 rounded transition-colors ${
+                      brand.isComingSoon
+                        ? 'opacity-70 cursor-not-allowed'
+                        : isSelected
+                        ? 'bg-blue-50 cursor-pointer'
+                        : 'hover:bg-gray-50 cursor-pointer'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      disabled={brand.isComingSoon}
+                      onChange={() => handleToggle(brand)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                    />
+                    <span className={`text-sm flex-1 ${brand.isComingSoon ? 'text-gray-400 font-normal' : 'text-gray-700 font-medium'}`}>
+                      {brand.label}
+                    </span>
+                    {brand.isComingSoon ? (
+                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium tracking-wide">COMING SOON</span>
+                    ) : brand.productCount > 0 ? (
+                      <span className="text-xs text-gray-500">{brand.productCount}</span>
+                    ) : null}
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-sm text-gray-400 text-center py-4">No brands found</div>
+          )}
 
-            {selected.length > 0 && (
-              <button onClick={() => onSelectionChange([])} className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium px-2">
-                Clear brands
-              </button>
-            )}
-          </div>
+          {selected.length > 0 && (
+            <button onClick={() => onSelectionChange([])} className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium px-2">
+              Clear brands
+            </button>
+          )}
         </div>
       )}
     </div>

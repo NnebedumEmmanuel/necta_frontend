@@ -80,7 +80,7 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
         // Ensure price is a number
         const validPrice = Number(product.price) || Number(product.priceValue) || 0;
 
-  const rating = Number(product.rating) || 0;
+  const rating = getProductRating(product) || 0;
   const activeStars = Math.floor(rating);
   // Debug output to verify source of rating and reviews
   // eslint-disable-next-line no-console
@@ -109,8 +109,8 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
                     </span>
                   </div>
 
-                 <h3 className="text-sm font-bold text-gray-900 mb-2 line-clamp-2 h-10">
-                    {product.title || product.name}
+                  <h3 className="text-sm font-bold text-gray-900 mb-2 line-clamp-2 h-10">
+                    {product.name}
                   </h3>
 
                   <div className="flex items-center mb-2">
@@ -188,7 +188,7 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
 }
 
 function getBrandFromName(name) {
-  const brands = ["Apple", "Samsung", "Xiaomi", "Poco", "OPPO", "Honor", "Motorola", "Nokia", "Realme", "Vivo", "Lenovo", "Asus", "LG", "Google", "OnePlus", "Infinix", "Canon", "Sony", "Nikon", "Blackmagic", "Fujifilm", "Panasonic", "Bose", "Beats", "Sennheiser", "JBL", "PlayStation", "Xbox", "Nintendo", "Steam", "Razer", "Logitech"];
+  const brands = ["T&G", "Apple", "Samsung", "Xiaomi", "Poco", "OPPO", "Honor", "Motorola", "Nokia", "Realme", "Vivo", "Lenovo", "Asus", "LG", "Google", "OnePlus", "Infinix", "Canon", "Sony", "Nikon", "Blackmagic", "Fujifilm", "Panasonic", "Bose", "Beats", "Sennheiser", "JBL", "PlayStation", "Xbox", "Nintendo", "Steam", "Razer", "Logitech"];
   const foundBrand = brands.find(brand => (name || '').toLowerCase().includes(brand.toLowerCase()));
   return foundBrand || "Brand";
 }

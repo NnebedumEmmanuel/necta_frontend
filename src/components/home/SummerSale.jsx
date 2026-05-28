@@ -155,7 +155,7 @@ const BigSummerSale = ({
       {}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center text-white px-4">
      <h1 className="text-5xl md:text-7xl font-normal mb-6 tracking-tight">
-  Big Seasonal <span class='font-bold'>Sale</span>
+  Big Seasonal <span className="font-bold">Sale</span>
 </h1>
 <p className="text-xl md:text-2xl mb-8 max-w-2xl leading-relaxed opacity-90 text-[#787878]">
   Enjoy exclusive discounts on select items while supplies last.

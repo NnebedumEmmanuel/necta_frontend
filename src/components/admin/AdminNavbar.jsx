@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { Bell, Menu, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Bell, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollapsed, onToggleCollapse }) {
   const { user: authUser, signOut } = useAuth();
-  const name = authUser?.firstName || "Admin";
+  const name = authUser?.firstName || 'Admin';
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Simple relative time formatter
   const formatTimeAgo = (iso) => {
     try {
       const t = new Date(iso).getTime();
@@ -26,10 +25,11 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
     } catch (e) {
       return '';
     }
-  }
+  };
 
   useEffect(() => {
     let mounted = true;
+
     const load = async () => {
       try {
         const res = await api.get('/admin/notifications');
@@ -37,13 +37,16 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
         if (!mounted) return;
         const arr = Array.isArray(data) ? data : [];
         setNotifications(arr);
-        setUnreadCount(arr.filter(n => !n.read).length);
+        setUnreadCount(arr.filter((n) => !n.read).length);
       } catch (err) {
         console.warn('Failed to load admin notifications', err);
       }
-    }
+    };
+
     load();
-    return () => { mounted = false }
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const toggleNotifications = () => {
@@ -51,15 +54,17 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
   };
 
   const markAsRead = (id) => {
-    setNotifications(prev => {
-      const next = prev.map(notification => notification.id === id ? { ...notification, read: true } : notification);
-      setUnreadCount(next.filter(n => !n.read).length);
+    setNotifications((prev) => {
+      const next = prev.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification
+      );
+      setUnreadCount(next.filter((n) => !n.read).length);
       return next;
     });
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
     setUnreadCount(0);
   };
 
@@ -67,100 +72,98 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
     try {
       await signOut();
     } catch (e) {
+      // ignore signout errors here; route guard will handle session state
     }
+
     if (onLogout) onLogout();
   };
 
   return (
-    <header className="w-full bg-gradient-to-r from-slate-900 via-slate-700 to-orange-950 shadow-lg p-4 flex justify-between items-center sticky top-0 z-40">
-      <div className="flex items-center gap-3">
-        {}
+    <header className="sticky top-0 z-40 flex w-full items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-slate-700 to-orange-950 px-3 py-3 shadow-lg sm:px-4 sm:py-4">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+          className="rounded-lg bg-white/10 p-2 transition-colors hover:bg-white/20 lg:hidden"
         >
-          <Menu className="w-5 h-5 text-white" />
+          <Menu className="h-5 w-5 text-white" />
         </button>
 
-        {}
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:flex p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="hidden rounded-lg bg-white/10 p-2 transition-colors hover:bg-white/20 lg:flex"
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isSidebarCollapsed ? (
-              <ChevronRight className="w-5 h-5 text-white" />
+              <ChevronRight className="h-5 w-5 text-white" />
             ) : (
-              <ChevronLeft className="w-5 h-5 text-white" />
+              <ChevronLeft className="h-5 w-5 text-white" />
             )}
           </button>
         )}
 
-        <h2 className="text-xl sm:text-2xl font-bold text-white">
+        <h2 className="truncate text-base font-bold text-white sm:text-xl lg:text-2xl">
           {name} Dashboard
         </h2>
       </div>
 
-      <div className="flex items-center gap-3">
-        {}
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <div className="relative">
           <button
             onClick={toggleNotifications}
-            className="flex items-center justify-center w-10 h-10 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold transition relative shadow-md"
+            className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600 font-semibold text-white shadow-md transition hover:bg-purple-500"
             title="Notifications"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center shadow-lg">
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white shadow-lg">
                 {unreadCount}
               </span>
             )}
           </button>
 
-          {}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-2xl border border-purple-200 z-50">
-              <div className="p-4 border-b border-purple-200 flex justify-between items-center bg-gradient-to-r from-purple-50 to-indigo-50">
+            <div className="absolute right-0 z-50 mt-2 w-[calc(100vw-1.5rem)] max-w-sm rounded-lg border border-purple-200 bg-white shadow-2xl sm:w-96">
+              <div className="flex items-center justify-between border-b border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-4">
                 <h3 className="font-semibold text-gray-800">Notifications</h3>
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                    className="text-sm font-medium text-purple-600 hover:text-purple-800"
                   >
                     Mark all as read
                   </button>
                 )}
               </div>
-              
+
               <div className="max-h-96 overflow-y-auto">
                 {notifications.length > 0 ? (
                   notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-4 border-b border-gray-100 hover:bg-purple-50 cursor-pointer transition ${
-                        !notification.read ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-l-purple-500' : ''
+                      className={`cursor-pointer border-b border-gray-100 p-4 transition hover:bg-purple-50 ${
+                        !notification.read
+                          ? 'border-l-4 border-l-purple-500 bg-gradient-to-r from-blue-50 to-purple-50'
+                          : ''
                       }`}
                       onClick={() => markAsRead(notification.id)}
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex items-start justify-between">
                         <p className="text-sm text-gray-800">{notification.message}</p>
                         {!notification.read && (
-                          <span className="ml-2 inline-block w-2 h-2 bg-purple-500 rounded-full"></span>
+                          <span className="ml-2 inline-block h-2 w-2 rounded-full bg-purple-500" />
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(notification.created_at)}</p>
+                      <p className="mt-1 text-xs text-gray-500">{formatTimeAgo(notification.created_at)}</p>
                     </div>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    No new notifications
-                  </div>
+                  <div className="p-4 text-center text-gray-500">No new notifications</div>
                 )}
               </div>
-              
-              <div className="p-3 border-t border-purple-200 text-center bg-gradient-to-r from-purple-50 to-indigo-50">
-                <button className="text-sm text-purple-600 hover:text-purple-800 font-medium">
+
+              <div className="border-t border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-3 text-center">
+                <button className="text-sm font-medium text-purple-600 hover:text-purple-800">
                   View all notifications
                 </button>
               </div>
@@ -168,14 +171,18 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
           )}
         </div>
 
-        {}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition shadow-md"
+          className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-3 py-2 font-semibold text-white shadow-md transition hover:from-red-700 hover:to-red-800 sm:px-4"
           title="Logout"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
           </svg>
           <span className="hidden sm:inline">Logout</span>
         </button>

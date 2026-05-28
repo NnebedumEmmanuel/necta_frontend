@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { 
   Smartphone,
   Speaker,
@@ -8,52 +8,63 @@ import {
   Headphones
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { publicApi as api } from "@/lib/api";
+
+const iconBySlug = {
+  phones: Smartphone,
+  speakers: Speaker,
+  solar: Sun,
+  inverter: Zap,
+  tv: Tv,
+  headphones: Headphones,
+};
+
+const fallbackCategories = [
+  { name: "Phones", slug: "phones", isComingSoon: true },
+  { name: "Speakers", slug: "speakers", isComingSoon: false },
+  { name: "Solar", slug: "solar", isComingSoon: true },
+  { name: "Inverter", slug: "inverter", isComingSoon: true },
+  { name: "TV", slug: "tv", isComingSoon: true },
+  { name: "Headphones", slug: "headphones", isComingSoon: true },
+];
 
 export default function BrowseByCategory() {
-  const categories = [
-    { 
-      name: "Phones", 
-      icon: <Smartphone size={40} className="text-gray-600" />,
-      available: false 
-    },
-    { 
-      name: "Speakers", 
-      icon: <Speaker size={40} className="text-gray-600" />,
-      available: true 
-    },
-    { 
-      name: "Solar", 
-      icon: <Sun size={40} className="text-gray-600" />,
-      available: false 
-    },
-    { 
-      name: "Inverter", 
-      icon: <Zap size={40} className="text-gray-600" />,
-      available: false 
-    },
-    { 
-      name: "TV", 
-      icon: <Tv size={40} className="text-gray-600" />,
-      available: false 
-    },
-    { 
-      name: "Headphones", 
-      icon: <Headphones size={40} className="text-gray-600" />,
-      available: false 
-    },
-  ];
+  const [categories, setCategories] = useState(fallbackCategories);
+
+  useEffect(() => {
+    let mounted = true;
+
+    api.get("/categories")
+      .then((res) => {
+        const data = res?.data;
+        const rows = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.categories)
+          ? data.categories
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        if (mounted && rows.length) setCategories(rows);
+      })
+      .catch((error) => {
+        console.error("Failed to load categories", error);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
-    <section className="py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-
-        {}
-        <div className="flex items-center justify-between mb-12">
-          <h2 className="text-3xl font-bold">Browse By Category</h2>
+    <section className="bg-white px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div className="mx-auto max-w-[1728px]">
+        <div className="mb-12 flex items-center justify-between">
+          <h2 className="text-3xl font-extrabold tracking-tight text-black sm:text-4xl">Browse By Category</h2>
 
           <div className="flex gap-4">
             <button
-              className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-full hover:bg-gray-100 transition-colors duration-200"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 text-black transition-colors duration-200 hover:bg-gray-100 sm:h-14 sm:w-14"
               aria-label="Previous categories"
               title="Previous categories"
             >
@@ -72,7 +83,7 @@ export default function BrowseByCategory() {
             </button>
 
             <button
-              className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-full hover:bg-gray-100 transition-colors duration-200"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 text-black transition-colors duration-200 hover:bg-gray-100 sm:h-14 sm:w-14"
               aria-label="Next categories"
               title="Next categories"
             >
@@ -92,40 +103,42 @@ export default function BrowseByCategory() {
           </div>
         </div>
 
-        {}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {categories.map((category, index) => (
-            <Link
-              to={`/shop?category=${encodeURIComponent(category.name.toLowerCase())}`}
-              key={index}
-              className={`flex flex-col items-center justify-center p-6 border ${
-                category.available 
-                  ? "bg-[#EDEDED] hover:bg-gray-100 cursor-pointer" 
-                  : "bg-gray-50 opacity-60 cursor-not-allowed"
-              } border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-md transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-black`}
-              aria-label={`Browse ${category.name}`}
-              onClick={(e) => {
-                if (!category.available) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <div className="relative w-16 h-16 mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                {category.icon}
-              </div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6 lg:gap-5">
+          {categories.map((category) => {
+            const slug = category.slug || category.label || category.name?.toLowerCase();
+            const available = !category.isComingSoon;
+            const Icon = iconBySlug[slug] || Speaker;
 
-              <div className="text-center">
-                <h3 className="text-lg font-medium mb-1">{category.name}</h3>
-                <span className={`text-xs px-2 py-1 rounded ${
-                  category.available 
-                    ? "text-gray-500 bg-gray-100" 
-                    : "bg-yellow-100 text-yellow-800"
-                }`}>
-                  {category.available ? "Available" : "Coming Soon"}
-                </span>
+            return (
+            <Link
+              to={`/shop?category=${encodeURIComponent(slug)}`}
+              key={slug || category.name}
+              className={`group flex min-h-[180px] flex-col items-center justify-center rounded-xl border border-gray-200 text-center transition-all duration-200 ${
+                available
+                  ? "bg-[#eeeeee] text-black hover:-translate-y-1 hover:shadow-lg"
+                  : "bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <Icon
+                size={46}
+                strokeWidth={1.8}
+                className={available ? "mb-10 text-gray-700" : "mb-10 text-gray-400"}
+              />
+              <h3 className={`text-xl font-bold ${available ? "text-black" : "text-gray-600"}`}>
+                {category.name}
+              </h3>
+              <div
+                className={`mt-4 rounded-md px-3 py-1 text-sm ${
+                  available
+                    ? "bg-white/70 text-gray-600"
+                    : "bg-yellow-50 text-yellow-700"
+                }`}
+              >
+                {available ? "Available" : "Coming Soon"}
               </div>
             </Link>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

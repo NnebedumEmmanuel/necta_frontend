@@ -3,17 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '@/lib/api'
 import { useCart } from '@/context/CartContext'
 import { useToast } from '@/context/ToastProvider'
-import supabase from '@/lib/supabaseClient'
 
 const PaymentCallback = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { clearCart, state } = useCart()
+  const { clearCart } = useCart()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [verifiedSuccess, setVerifiedSuccess] = useState(false)
-  const navigatedRef = useRef(false)
   const ranRef = useRef(false)
 
   useEffect(() => {
@@ -33,15 +30,6 @@ const PaymentCallback = () => {
           return
         }
 
-        // Log whether user session exists (this helps debug Authorization header presence)
-        try {
-          const sessionRes = await supabase.auth.getSession()
-          const token = sessionRes?.data?.session?.access_token
-          console.info('PaymentCallback: supabase session token present?', !!token)
-        } catch (sErr) {
-          console.warn('Failed to read supabase session for debugging', sErr)
-        }
-
         // Call verify once and handle result safely
         const res = await api.get('/paystack/verify', { params: { reference } })
         const body = res?.data ?? res
@@ -49,9 +37,9 @@ const PaymentCallback = () => {
         console.info('Paystack verify response (frontend):', body)
 
         if (body?.success) {
-          // mark success and let redirect effect handle navigation after a short delay
-          try { showToast?.('Payment verified. Redirecting to orders...', { type: 'success' }) } catch (e) {}
-          setVerifiedSuccess(true)
+          try { clearCart() } catch (e) { }
+          showToast?.('Payment verified. Redirecting to orders...', { type: 'success' })
+          navigate('/dashboard?tab=orders&paystatus=success')
           return
         }
 
@@ -64,9 +52,10 @@ const PaymentCallback = () => {
               const ordersRes = await api.get('/me/orders')
               const orders = ordersRes?.data?.data || []
               const matched = orders.find(o => o.paystack_reference === reference || o.payment_status === 'paid' || (o.status && o.status === 'paid'))
-                if (matched) {
-                try { showToast?.('Payment confirmed. Redirecting to orders...', { type: 'success' }) } catch (e) {}
-                setVerifiedSuccess(true)
+              if (matched) {
+                try { clearCart() } catch (e) { }
+                showToast?.('Payment confirmed. Redirecting to orders...', { type: 'success' })
+                navigate('/dashboard?tab=orders&paystatus=success')
                 return true
               }
             } catch (pollErr) {
@@ -92,32 +81,6 @@ const PaymentCallback = () => {
     }
     verify()
   }, [location.search])
-
-  // Redirect effect: when verification is successful, wait 2s then clear cart (hard) and navigate
-  useEffect(() => {
-    if (!verifiedSuccess) return
-    if (navigatedRef.current) return
-    navigatedRef.current = true
-
-    const t = setTimeout(() => {
-      try {
-        // Hard cleanup: clear cart if still has items
-        try {
-          if (state && Array.isArray(state.items) && state.items.length > 0) {
-            // clearCart may be sync
-            clearCart()
-          }
-        } catch (e) {
-          console.warn('Failed to clear cart before navigation', e)
-        }
-  navigate('/dashboard', { replace: true, state: { activeTab: 'orders' } })
-      } finally {
-        // nothing
-      }
-    }, 2000)
-
-    return () => clearTimeout(t)
-  }, [verifiedSuccess, state, clearCart, navigate])
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -146,7 +109,7 @@ const PaymentCallback = () => {
               </button>
               <button
                 className="px-3 py-1 border rounded"
-                onClick={() => navigate('/dashboard', { replace: true, state: { activeTab: 'orders' } })}
+                onClick={() => navigate('/dashboard?tab=orders')}
               >
                 Go to Orders
               </button>

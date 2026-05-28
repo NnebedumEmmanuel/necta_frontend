@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from '../../../../context/AuthContext'
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signUp } = useAuth()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -87,48 +87,30 @@ const SignUp = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      // 1. Create the user in MongoDB via our new backend API
-      const res = await fetch("http://localhost:3000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          password: formData.password,
-        }),
-      });
+      const res = await signUp({
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.toLowerCase().trim(),
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        password: formData.password,
+      })
+      if (res?.error) throw res.error
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Registration failed');
-      }
-
-      // 2. Automatically log them in using our custom AuthContext
-      const loginRes = await login(formData.email, formData.password);
-
-      if (!loginRes || !loginRes.success) {
-        throw new Error(loginRes?.error || "Account created, but auto-login failed. Please sign in manually.");
-      }
-
-      toast.success('Registration successful!');
-      navigate('/dashboard', { replace: true });
-
+      const role = res?.data?.user?.role
+      toast.success('Registration successful. You are signed in')
+      navigate(role === 'admin' ? '/admin' : '/dashboard', { replace: true })
     } catch (err) {
-      console.error('Registration error:', err);
-      toast.error(err.message || 'Sign up failed. Please try again.');
+      console.error('Registration error:', err)
+      const message = err?.message || err?.error || err?.error_description || 'Sign up failed. Please try again.'
+      toast.error(message)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   };
 
@@ -180,7 +162,7 @@ const SignUp = () => {
                 </svg>
               </div>
               <div>
-                <p className="fonSign upt-semibold">Exclusive Community</p>
+                <p className="font-semibold">Exclusive Community</p>
                 <p className="text-sm text-slate-300">Join millions of happy customers</p>
               </div>
             </div>
@@ -212,7 +194,7 @@ const SignUp = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  First Name *Sign up
+                  First Name *
                 </label>
                 <input
                   name="firstName"

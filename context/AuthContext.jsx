@@ -1,85 +1,169 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { api, attachAuthToken } from '@/lib/api';
 
-const AuthContext = createContext({});
+const AuthContext = createContext(null);
+const TOKEN_KEY = 'necta_auth_token';
+const USER_KEY = 'necta_auth_user';
 
-// Configure axios to always send cookies (for NextAuth sessions)
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
-  withCredentials: true, 
-});
+function getStoredToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeAuth(token, user) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+
+    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+    else localStorage.removeItem(USER_KEY);
+  } catch {
+    // localStorage can be unavailable in private browsing; API defaults still carry the token.
+  }
+  attachAuthToken(token || null);
+}
+
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
+  const [user, setUser] = useState(() => getStoredUser());
   const [loading, setLoading] = useState(true);
 
-  // 1. Check if user is logged in on load
+  const applyAuth = useCallback((token, nextUser) => {
+    const authSession = token ? { access_token: token, accessToken: token, user: nextUser || null } : null;
+    storeAuth(token, nextUser || null);
+    setSession(authSession);
+    setUser(nextUser || null);
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token) {
+      applyAuth(null, null);
+      return null;
+    }
+
+    attachAuthToken(token);
+    const res = await api.get('/me');
+    const payload = res?.data?.data ?? res?.data ?? {};
+    const nextUser = payload.user || payload.profile || payload;
+    applyAuth(token, nextUser);
+    return nextUser;
+  }, [applyAuth]);
+
   useEffect(() => {
-    const fetchSession = async () => {
+    let mounted = true;
+
+    const init = async () => {
+      setLoading(true);
       try {
-        const { data } = await api.get('/api/auth/session');
-        if (data && Object.keys(data).length > 0 && data.user) {
-          setUser(data.user);
-        } else {
-          setUser(null);
+        const token = getStoredToken();
+        if (!token) {
+          if (mounted) applyAuth(null, null);
+          return;
         }
-      } catch (error) {
-        console.error("Session check failed:", error);
-        setUser(null);
+
+        attachAuthToken(token);
+        const cachedUser = getStoredUser();
+        if (cachedUser && mounted) {
+          setSession({ access_token: token, accessToken: token, user: cachedUser });
+          setUser(cachedUser);
+        }
+
+        const nextUser = await refreshUser();
+        if (!mounted) return;
+        if (!nextUser) applyAuth(null, null);
+      } catch (err) {
+        console.warn('Auth init failed', err);
+        if (mounted) applyAuth(null, null);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    fetchSession();
-  }, []);
+    init();
+    return () => {
+      mounted = false;
+    };
+  }, [applyAuth, refreshUser]);
 
-  // 2. Login Function (Hits NextAuth credentials provider)
-  const login = async (email, password) => {
+  const signUp = useCallback(async (payload) => {
+    setLoading(true);
     try {
-      // Get the CSRF token NextAuth requires for logins
-      const csrfRes = await api.get('/api/auth/csrf');
-      const csrfToken = csrfRes.data.csrfToken;
-
-      const res = await api.post('/api/auth/callback/credentials', {
-        email,
-        password,
-        csrfToken,
-        json: 'true',
-      });
-
-      if (res.data.url && !res.data.url.includes('error')) {
-        // Fetch the new session
-        const sessionRes = await api.get('/api/auth/session');
-        setUser(sessionRes.data.user);
-        return { success: true };
-      } else {
-        throw new Error('Invalid email or password');
-      }
-    } catch (error) {
-      return { success: false, error: error.message };
+      const res = await api.post('/auth/register', payload);
+      const data = res?.data?.data ?? {};
+      if (data.token) applyAuth(data.token, data.user);
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err?.response?.data || err };
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [applyAuth]);
 
-  // 3. Logout Function
-  const logout = async () => {
+  const signIn = useCallback(async ({ email, password }) => {
+    setLoading(true);
     try {
-      const csrfRes = await api.get('/api/auth/csrf');
-      await api.post('/api/auth/signout', {
-        csrfToken: csrfRes.data.csrfToken,
-        json: 'true'
-      });
-      setUser(null);
-    } catch (error) {
-      console.error("Logout failed", error);
+      const res = await api.post('/auth/login', { email, password });
+      const data = res?.data?.data ?? {};
+      if (data.token) applyAuth(data.token, data.user);
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err?.response?.data || err };
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [applyAuth]);
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  const signOut = useCallback(async () => {
+    setLoading(true);
+    try {
+      await api.post('/auth/logout').catch(() => null);
+      applyAuth(null, null);
+      window.location.href = '/login';
+      return { error: null };
+    } catch (err) {
+      applyAuth(null, null);
+      return { error: err };
+    } finally {
+      setLoading(false);
+    }
+  }, [applyAuth]);
+
+  const value = useMemo(() => ({
+    session,
+    user,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    refreshUser,
+    login: signIn,
+    logout: signOut,
+  }), [session, user, loading, signUp, signIn, signOut, refreshUser]);
+
+  if (loading) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (ctx === null) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return ctx;
+};

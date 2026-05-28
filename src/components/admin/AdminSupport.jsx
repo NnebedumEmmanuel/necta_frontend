@@ -1,48 +1,29 @@
 import React, { useEffect, useState } from 'react'
 import { useToast } from '../../../context/ToastProvider'
 
-// 🚨 DYNAMIC URL: Uses your deployed Next.js domain in production, or localhost in development
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function AdminSupport() {
   const { showToast } = useToast()
-
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
   const [updatingId, setUpdatingId] = useState(null)
   const [selectedTicket, setSelectedTicket] = useState(null)
-  const [replies, setReplies] = useState([])
-  const [repliesLoading, setRepliesLoading] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [sendingReply, setSendingReply] = useState(false)
 
-  // 🚨 AUTH HELPER: Customize this based on how you store your admin token
   const getAuthHeaders = () => {
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    
-    // IF YOU USE LOCALSTORAGE FOR TOKENS, UNCOMMENT THESE LINES:
-    // const token = localStorage.getItem('token'); // or whatever your token key is
-    // if (token) {
-    //   headers['Authorization'] = `Bearer ${token}`;
-    // }
-    
-    return headers;
+    return { 'Content-Type': 'application/json' };
   };
 
-  // IF YOU USE COOKIES FOR AUTH, KEEP THIS AS 'include'. OTHERWISE, REMOVE IT.
-  const fetchOptions = {
-    credentials: 'include', 
-  };
+  const fetchOptions = { credentials: 'include' };
 
   useEffect(() => {
     fetchTickets()
   }, [])
 
-  // 1. Fetch Tickets
   async function fetchTickets() {
     setLoading(true)
     setError(null)
@@ -69,20 +50,20 @@ export default function AdminSupport() {
     }
   }
 
-  const filtered = tickets.filter((t) => {
+  const filtered = tickets.filter((ticket) => {
     if (filter === 'all') return true
-    if (filter === 'open') return (t.status || 'open').toLowerCase() !== 'resolved'
-    if (filter === 'resolved') return (t.status || 'open').toLowerCase() === 'resolved'
+    if (filter === 'open') return (ticket.status || 'open').toLowerCase() !== 'resolved'
+    if (filter === 'resolved') return (ticket.status || 'open').toLowerCase() === 'resolved'
     return true
   })
 
-  const statusBadge = (s) => {
-    const key = (s || 'open').toLowerCase()
+  const statusBadge = (status) => {
+    const key = (status || 'open').toLowerCase()
     if (key === 'resolved') return <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">Resolved</span>
+    if (key === 'in_progress') return <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-medium">In Progress</span>
     return <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">Open</span>
   }
 
-  // 2. Change Status
   async function changeStatus(id, newStatus) {
     setUpdatingId(id)
     try {
@@ -109,40 +90,16 @@ export default function AdminSupport() {
     }
   }
 
-  // Open ticket details
-  async function openTicket(ticket) {
+  function openTicket(ticket) {
     setSelectedTicket(ticket)
-    await fetchReplies(ticket.id)
+    setReplyText('')
   }
 
   function closeTicket() {
     setSelectedTicket(null)
-    setReplies([])
     setReplyText('')
   }
 
-  // 3. Fetch Replies
-  async function fetchReplies(ticketId) {
-    setRepliesLoading(true)
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/support-tickets/${ticketId}/replies`, {
-        ...fetchOptions,
-        headers: getAuthHeaders(),
-      })
-      
-      if (!response.ok) throw new Error('Failed to fetch replies')
-
-      const result = await response.json()
-      setReplies(Array.isArray(result.data) ? result.data : [])
-    } catch (err) {
-      console.error('Failed to fetch replies', err)
-      setReplies([]) 
-    } finally {
-      setRepliesLoading(false)
-    }
-  }
-
-  // 4. Send Reply
   async function sendReply() {
     if (!selectedTicket) return
     if (!replyText.trim()) return showToast?.('Reply cannot be empty', 'error')
@@ -166,10 +123,14 @@ export default function AdminSupport() {
         await changeStatus(selectedTicket.id, 'in_progress')
       }
 
-      setReplies((r) => [...r, result.data])
+      // Fetch fresh tickets to update reply count UI if needed
+      await fetchTickets()
+      setSelectedTicket((prev) => ({
+        ...prev,
+        replies: [...(prev.replies || []), result.data]
+      }))
       setReplyText('')
       showToast?.('Reply sent', 'success')
-      await fetchTickets()
     } catch (err) {
       console.error('Failed to send reply', err)
       showToast?.(err?.message || 'Failed to send reply', 'error')
@@ -211,25 +172,15 @@ export default function AdminSupport() {
             ) : filtered.length === 0 ? (
               <tr><td colSpan={5} className="py-8 text-center text-slate-500">No tickets found.</td></tr>
             ) : (
-              filtered.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50">
-                  <td className="py-3 px-3">{statusBadge(t.status)}</td>
-                  <td className="py-3 px-3 font-medium">{t.subject}</td>
-                  <td className="py-3 px-3">{t.assigned_to || t.customer_email || '—'}</td>
-                  <td className="py-3 px-3">{t.createdAt || t.created_at ? new Date(t.createdAt || t.created_at).toLocaleString() : '—'}</td>
+              filtered.map((ticket) => (
+                <tr key={ticket.id} className="hover:bg-slate-50">
+                  <td className="py-3 px-3">{statusBadge(ticket.status)}</td>
+                  <td className="py-3 px-3 font-medium">{ticket.subject}</td>
+                  <td className="py-3 px-3">{ticket.assigned_to || ticket.users?.email || ticket.email || '-'}</td>
+                  <td className="py-3 px-3">{ticket.createdAt || ticket.created_at ? new Date(ticket.createdAt || ticket.created_at).toLocaleString() : '-'}</td>
                   <td className="py-3 px-3 flex items-center gap-2">
-                    <button
-                      onClick={() => openTicket(t)}
-                      className="text-sm px-3 py-1 rounded-md border hover:bg-gray-50"
-                    >
-                      View Details
-                    </button>
-                    <select
-                      value={(t.status || 'open').toLowerCase()}
-                      onChange={(e) => changeStatus(t.id, e.target.value)}
-                      disabled={updatingId === t.id}
-                      className="border p-2 rounded-md"
-                    >
+                    <button onClick={() => openTicket(ticket)} className="text-sm px-3 py-1 rounded-md border hover:bg-gray-50 transition-colors">View Details</button>
+                    <select value={(ticket.status || 'open').toLowerCase()} onChange={(e) => changeStatus(ticket.id, e.target.value)} disabled={updatingId === ticket.id} className="border p-2 rounded-md">
                       <option value="open">Open</option>
                       <option value="in_progress">In Progress</option>
                       <option value="resolved">Resolved</option>
@@ -241,19 +192,16 @@ export default function AdminSupport() {
           </tbody>
         </table>
       </div>
-      
+
       {selectedTicket && (
         <div className="fixed right-6 top-12 bottom-6 w-[480px] bg-white rounded-2xl shadow-xl border z-50 overflow-hidden flex flex-col">
           <div className="p-4 border-b flex items-start justify-between">
             <div>
               <h3 className="text-lg font-semibold">{selectedTicket.subject}</h3>
+              <div className="text-sm text-slate-500">{selectedTicket.assigned_to || selectedTicket.users?.name || selectedTicket.users?.email || selectedTicket.email}</div>
             </div>
             <div className="flex items-center gap-2">
-              <select
-                value={(selectedTicket.status || 'open').toLowerCase()}
-                onChange={(e) => changeStatus(selectedTicket.id, e.target.value)}
-                className="border p-2 rounded-md"
-              >
+              <select value={(selectedTicket.status || 'open').toLowerCase()} onChange={(e) => changeStatus(selectedTicket.id, e.target.value)} className="border p-2 rounded-md">
                 <option value="open">Open</option>
                 <option value="in_progress">In Progress</option>
                 <option value="resolved">Resolved</option>
@@ -265,20 +213,18 @@ export default function AdminSupport() {
           <div className="p-4 overflow-y-auto flex-1 space-y-4">
             <div className="text-sm text-slate-700">
               <div className="font-medium mb-2">Original Message</div>
-              <div className="whitespace-pre-wrap text-sm text-slate-600">{selectedTicket.message || selectedTicket.description || '—'}</div>
+              <div className="whitespace-pre-wrap text-sm text-slate-600">{selectedTicket.message || selectedTicket.description || '-'}</div>
             </div>
 
             <div className="space-y-3">
               <div className="font-medium">Replies</div>
-              {repliesLoading ? (
-                <div className="text-sm text-slate-500">Loading replies...</div>
-              ) : replies.length === 0 ? (
+              {(selectedTicket.replies || []).length === 0 ? (
                 <div className="text-sm text-slate-500">No replies yet.</div>
               ) : (
-                replies.map((r) => (
-                  <div key={r.id} className={`p-3 rounded-md ${r.is_admin_reply ? 'bg-blue-50 self-end' : 'bg-slate-100'}`}>
-                    <div className="text-xs text-slate-500">{r.is_admin_reply ? 'Admin' : 'Customer'} • {r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
-                    <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">{r.message}</div>
+                selectedTicket.replies.map((reply) => (
+                  <div key={reply.id || reply._id} className={`p-3 rounded-md ${reply.is_admin_reply ? 'bg-blue-50 self-end' : 'bg-slate-100'}`}>
+                    <div className="text-xs text-slate-500">{reply.is_admin_reply ? 'Admin' : 'Customer'} - {reply.createdAt || reply.created_at ? new Date(reply.createdAt || reply.created_at).toLocaleString() : ''}</div>
+                    <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">{reply.message}</div>
                   </div>
                 ))
               )}
@@ -287,18 +233,8 @@ export default function AdminSupport() {
 
           <div className="p-4 border-t">
             <div className="flex gap-2">
-              <input
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Write a reply..."
-                className="flex-1 border rounded px-3 py-2"
-                onKeyDown={(e) => e.key === 'Enter' && sendReply()}
-              />
-              <button
-                onClick={sendReply}
-                disabled={sendingReply}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-              >
+              <input value={replyText} onKeyDown={(e) => e.key === 'Enter' && sendReply()} onChange={(e) => setReplyText(e.target.value)} placeholder="Write a reply..." className="flex-1 border rounded px-3 py-2" />
+              <button onClick={sendReply} disabled={sendingReply} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
                 {sendingReply ? 'Sending...' : 'Send'}
               </button>
             </div>

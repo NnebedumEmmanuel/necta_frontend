@@ -5,23 +5,23 @@ import { motion } from "framer-motion";
 const images = [
   {
     src: "/px4.png",
-    title: "Title 1",
-    subtitle: "Subtitle for Image 1",
+    title: "Smart Watches",
+    subtitle: "Track time, calls, fitness, and everyday updates from your wrist.",
   },
   {
     src: "/px5.png",
-    title: "Title 2",
-    subtitle: "Subtitle for Image 2",
+    title: "Laptops & Workstations",
+    subtitle: "Reliable performance for work, study, streaming, and creative tasks.",
   },
   {
     src: "/px6.png",
-    title: "Title 3",
-    subtitle: "Subtitle for Image 3",
+    title: "Gaming Accessories",
+    subtitle: "Responsive controllers and gear built for smooth, comfortable play.",
   },
   {
     src: "/px7.png",
-    title: "Title 4",
-    subtitle: "Subtitle for Image 4",
+    title: "Headphones",
+    subtitle: "Immersive audio for music, calls, gaming, and daily listening.",
   },
 ];
 

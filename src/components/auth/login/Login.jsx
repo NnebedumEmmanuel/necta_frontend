@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuth } from '../../../context/AuthContext'; // Adjust path if necessary
+import { useAuth } from '@/context/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -9,66 +9,50 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [showForgot, setShowForgot] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [loginError, setLoginError] = useState('');
-  const [shake, setShake] = useState(false);
-
-  // 1. Pull user and login from our native AuthContext
-  const { user, login } = useAuth();
+  const { signIn, session, user } = useAuth();
   const navigate = useNavigate();
 
-  // 2. Watch for `user` (not session) to auto-redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
-
   const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    
+    e.preventDefault();
     if (!email || !password) {
-      setLoginError('Invalid email or password. Please try again.');
-      setShake(true);
-      setTimeout(() => setShake(false), 600);
+      toast.error("Please fill in all fields");
       return;
     }
-    
     setIsLoading(true);
-    
     try {
-      // 3. Call the native login function
-      const loginRes = await login(email, password);
-      
-      if (!loginRes || !loginRes.success) {
-        throw new Error(loginRes?.error || "Invalid credentials");
+      const res = await signIn({ email, password });
+      if (res?.error) {
+        if (res.error.message?.toLowerCase().includes("email not confirmed")) {
+          toast.info("Please check your email and confirm your account to sign in.");
+        } else {
+          toast.error(res.error.message || "Invalid email or password. Please try again.");
+        }
+        return;
       }
-      
       toast.success("Signed in successfully");
-      navigate('/dashboard', { replace: true });
+      const nextUser = res?.data?.user;
+      navigate(nextUser?.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
     } catch (err) {
       console.error("Login error:", err);
-      setLoginError('Invalid email or password. Please try again.');
-      setShake(true);
-      setTimeout(() => setShake(false), 600);
+      if (err?.message?.toLowerCase().includes("email not confirmed")) {
+        toast.info("Please check your email and confirm your account to sign in.");
+      } else {
+        const message = err?.message || (err?.error_description || "Invalid email or password. Please try again.");
+        toast.error(message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = () => {
-    setIsLoading(true);
-    toast.info('Redirecting to Google for authentication...');
-    // 4. Native NextAuth Google Redirect (No Supabase required)
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/signin/google`;
-  };
-
-  const handleResetPassword = async (e) => {
-    if (e) e.preventDefault();
-    toast.info("Password reset endpoint needs to be configured in Phase 3.");
-    setShowForgot(false);
-  };
+  useEffect(() => {
+    if (session) {
+      try {
+        navigate(user?.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+      } catch (e) {
+      }
+    }
+  }, [session, user, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -85,31 +69,8 @@ const Login = () => {
               Sign in to your account to continue shopping
             </p>
           </div>
-          
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-              className="w-full inline-flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 48 48">
-                <path fill="#EA4335" d="M24 9.5c3.5 0 6.4 1.2 8.4 2.9l6.2-6.2C34.4 3 29.6 1 24 1 14.8 1 6.9 6.6 3.4 14.6l7.8 6.1C12.7 16 18 9.5 24 9.5z"/>
-                <path fill="#34A853" d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.5 2.7-2 5-4.2 6.6l6.4 5c3.7-3.4 6-8.5 6-15z"/>
-                <path fill="#4A90E2" d="M10.9 29.4c-.6-1.8-1-3.8-1-5.9s.4-4.1 1-5.9L3.1 11.5C1.1 14.5 0 18.1 0 22s1.1 7.5 3.1 10.5l7.8-3.1z"/>
-                <path fill="#FBBC05" d="M24 46c6.1 0 11.2-2 15-5.4l-7.1-5.8c-2 1.3-4.6 2.1-7.9 2.1-6 0-11.3-6.5-13.1-9.9L3.1 33.5C6.6 41.4 14.5 46 24 46z"/>
-              </svg>
-              Continue with Google
-            </button>
-          </div>
-         
-          <div onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)} className="space-y-6">
-            <style>{`
-              @keyframes shakeX { 0% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } 100% { transform: translateX(0); } }
-              .animate-shake { animation: shakeX 0.6s ease-in-out; }
-            `}</style>
-            
-            <div className={shake ? 'animate-shake' : ''}>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
               </label>
@@ -121,14 +82,14 @@ const Login = () => {
                   autoComplete="email"
                   required
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); setLoginError(''); }}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
-            <div className={shake ? 'animate-shake' : ''}>
+            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
@@ -140,7 +101,7 @@ const Login = () => {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => { setPassword(e.target.value); setLoginError(''); }}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                   placeholder="Enter your password"
                 />
@@ -166,28 +127,19 @@ const Login = () => {
               </label>
 
               <div className="text-sm">
-                <button
-                  type="button"
-                  onClick={() => setShowForgot(s => !s)}
-                  className="font-medium text-orange-600 hover:text-orange-500"
-                >
+                <Link to="#" className="font-medium text-orange-600 hover:text-orange-500">
                   Forgot your password?
-                </button>
+                </Link>
               </div>
             </div>
 
-            {loginError && (
-              <div className="bg-red-50 text-red-600 p-3 rounded text-sm text-center">{loginError}</div>
-            )}
-            
             <div>
               <button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
                 disabled={isLoading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60"
               >
-                {isLoading ? 'Logging in...' : 'Sign in'}
+                {isLoading ? 'Signing in...' : 'Sign in'}
               </button>
             </div>
 
@@ -197,35 +149,8 @@ const Login = () => {
                 Create account
               </Link>
             </div>
-          </div>
-
-          {showForgot && (
-            <div className="p-4 bg-gray-50 rounded border mt-2">
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Enter email to reset</label>
-                  <input
-                    type="email"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="mt-1 block w-full px-3 py-2 border rounded-md"
-                    required
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleResetPassword}
-                    className="py-2 px-4 bg-orange-600 text-white rounded-md hover:bg-orange-700"
-                  >
-                    Send reset link
-                  </button>
-                  <button type="button" onClick={() => setShowForgot(false)} className="text-sm text-gray-600 underline">Cancel</button>
-                </div>
-              </div>
-            </div>
-          )}
+          </form>
+          {}
         </div>
       </div>
     </div>

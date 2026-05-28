@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import supabase from '../../../lib/supabaseClient'
+import { api } from '@/lib/api'
 import { useToast } from '@/context/ToastProvider'
 
 export default function ProfileTab({ user = null, onProfileUpdate = () => {} }) {
@@ -46,8 +46,7 @@ export default function ProfileTab({ user = null, onProfileUpdate = () => {} }) 
         updated_at: new Date().toISOString()
       }
 
-      const { data, error } = await supabase.from('users').update(payload).eq('id', user.id).select()
-      if (error) throw error
+      await api.patch('/me', payload)
       showToast?.('Profile updated', 'success')
       // call parent refresh handler
       try { onProfileUpdate && onProfileUpdate() } catch (err) { /* ignore */ }
