@@ -25,18 +25,14 @@ export const publicApi = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
-  // Important: do NOT send credentials to public endpoints (CORS wildcard)
   withCredentials: false,
 })
 
-// Keep `api` name for backwards compatibility with existing imports that
-// expect a credentialed client. Export `api` as the auth client.
+// Keep `api` name for backwards compatibility
 export { authApi as api }
-
-// local binding named `api` for convenience & default export consumers
 const api = authApi
 
-// Attach interceptor only to the credentialed/auth client (authApi)
+// Request Interceptor: Attach bearer token securely
 authApi.interceptors.request.use(async (config) => {
   try {
     const token = localStorage.getItem(TOKEN_KEY)
@@ -49,6 +45,26 @@ authApi.interceptors.request.use(async (config) => {
   }
   return config
 }, (error) => Promise.reject(error))
+
+// GLOBAL RESPONSE INTERCEPTOR: Catch structured failures gracefully
+authApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Intercept 401/403 Session Expired errors
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      if (window.location.pathname !== '/login') {
+        localStorage.removeItem(TOKEN_KEY)
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(handleApiError(error))
+  }
+)
+
+publicApi.interceptors.response.use(
+  (response) => response,
+  (error) => Promise.reject(handleApiError(error))
+)
 
 export function attachAuthToken(token) {
   try {
@@ -65,21 +81,25 @@ export function attachAuthToken(token) {
 
 export function handleApiError(error) {
   if (error?.response) {
-    const status = error.response.status;
-    const data = error.response.data;
-    const message = data?.message || data?.error || (typeof data === 'string' ? data : JSON.stringify(data)) || 'API request failed';
-    const err = new Error(message);
-    err.status = status;
-    err.data = data;
-    return err;
+    const status = error.response.status
+    const data = error.response.data
+    
+    // Extract deep error message strings or structured validations from backend
+    const message = data?.message || data?.error || (typeof data === 'string' ? data : null) || 'Something went wrong.'
+    const validationErrors = data?.errors || null
+
+    const err = new Error(message)
+    err.status = status
+    err.data = data
+    err.validationErrors = validationErrors
+    return err
   } else if (error?.request) {
-    const err = new Error('Network error. Please check your connection.');
-    err.status = null;
-    err.data = null;
-    return err;
+    const err = new Error('Network error. Check your connection or server status.')
+    err.status = null
+    err.data = null
+    return err
   }
-  return error;
+  return error
 }
 
-export default { api, attachAuthToken, handleApiError }
-
+export default { api, publicApi, attachAuthToken, handleApiError }
