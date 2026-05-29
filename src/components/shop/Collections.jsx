@@ -21,100 +21,98 @@ const CollectionsDropdown = () => {
       try {
         const res = await api.get('/collections', { params: undefined });
         const data = res.data || {};
-        if (!mounted) return
+        if (!mounted) return;
+        
         const cols = Array.isArray(data)
           ? data
           : Array.isArray(data?.collections)
           ? data.collections
           : Array.isArray(data?.data)
           ? data.data
-          : []
-        setCollections(cols.length ? cols : fallbackCollections)
+          : [];
+          
+        setCollections(cols.length ? cols : fallbackCollections);
       } catch (e) {
-        console.error('Failed to load collections', e)
-        setCollections(fallbackCollections)
+        console.error('Failed to load collections', e);
+        if (mounted) setCollections(fallbackCollections);
       } finally {
-        mounted && setLoading(false)
+        if (mounted) setLoading(false);
       }
-    }
+    };
 
-    fetchCollections()
-    return () => { mounted = false }
-  }, [])
+    fetchCollections();
+    return () => { mounted = false; };
+  }, []);
 
-  const hasCollections = Array.isArray(collections) && collections.length > 0
+  const sortedCollections = [...collections].sort((a, b) => {
+    const aSoon = a.isComingSoon || false;
+    const bSoon = b.isComingSoon || false;
+    if (aSoon === bSoon) return 0;
+    return aSoon ? 1 : -1;
+  });
+
+  const hasCollections = sortedCollections.length > 0;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
       >
         <span className="font-semibold text-gray-900">Collections</span>
-        {isOpen ? (
-          <ChevronUp className="text-gray-500" size={18} />
-        ) : (
-          <ChevronDown className="text-gray-500" size={18} />
-        )}
+        {isOpen ? <ChevronUp className="text-gray-500" size={18} /> : <ChevronDown className="text-gray-500" size={18} />}
       </button>
 
-      {}
       {isOpen && (
         <div className="border-t">
-          <div className="p-2">
+          <div className="p-2 space-y-1">
             {loading ? (
-              <div className="text-sm text-gray-500 p-2">Loading...</div>
+              <div className="text-sm text-gray-400 p-4 text-center">Loading collections...</div>
             ) : hasCollections ? (
-              collections.map((collection, idx) => {
-                const Icon = Tag
-                const id = collection?.id
-                const slug = collection?.slug ?? ''
-                const name = collection?.name ?? 'Untitled'
-                const count = Number(collection?.productCount ?? collection?.count ?? 0)
-                const available = !collection?.isComingSoon
+              sortedCollections.map((collection, idx) => {
+                const Icon = Tag;
+                const id = collection?.id || collection?._id;
+                const slug = collection?.slug ?? '';
+                const name = collection?.name ?? 'Untitled';
+                const count = Number(collection?.productCount ?? collection?.count ?? 0);
+                const isComingSoon = collection?.isComingSoon;
 
-                const href = slug ? `/shop?collection=${encodeURIComponent(slug)}` : '/shop'
-                const content = (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <Icon size={16} className={available ? "text-gray-600" : "text-gray-400"} />
-                      <span className={`text-sm ${available ? "text-gray-700 group-hover:text-black" : "text-gray-500"}`}>
-                        {name}
-                      </span>
-                    </div>
-                    {available && count > 0 && (
-                      <span className="text-xs text-gray-500">{count}</span>
-                    )}
-                    {!available && (
-                      <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">Coming Soon</span>
-                    )}
-                  </>
-                )
-
-                if (!available) {
-                  return (
-                    <div
-                      key={id ?? slug ?? `col-${idx}`}
-                      className="flex items-center justify-between p-2 rounded opacity-70"
-                    >
-                      {content}
-                    </div>
-                  )
-                }
+                const href = isComingSoon 
+                  ? `/coming-soon?category=${encodeURIComponent(name)}` 
+                  : (slug ? `/shop?collection=${encodeURIComponent(slug)}` : '/shop');
 
                 return (
                   <Link
                     key={id ?? slug ?? `col-${idx}`}
                     to={href}
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors group"
+                    className={`flex items-center justify-between p-2 rounded transition-colors group ${
+                      isComingSoon ? 'hover:bg-gray-50/50 opacity-70' : 'hover:bg-gray-50'
+                    }`}
                   >
-                    {content}
+                    <div className="flex items-center gap-3">
+                      <Icon size={16} className={isComingSoon ? 'text-gray-300' : 'text-gray-600 group-hover:text-black transition-colors'} />
+                      <span className={`text-sm ${
+                        isComingSoon 
+                          ? 'text-gray-500 font-normal' 
+                          : 'text-gray-700 font-medium group-hover:text-black transition-colors'
+                      }`}>
+                        {name}
+                      </span>
+                    </div>
+                    
+                    {!isComingSoon && count > 0 && (
+                      <span className="text-xs text-gray-500">{count}</span>
+                    )}
+                    {isComingSoon && (
+                      <span className="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium tracking-wide">
+                        COMING SOON
+                      </span>
+                    )}
                   </Link>
-                )
+                );
               })
             ) : (
-              <div className="text-sm text-gray-500 p-2">No collections</div>
+              <div className="text-sm text-gray-400 p-4 text-center">No collections found</div>
             )}
           </div>
         </div>

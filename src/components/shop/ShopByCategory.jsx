@@ -14,7 +14,7 @@ const fallbackCategories = [
 
 const ShopByCategoryDropdown = () => {
   const [isOpen, setIsOpen] = useState(true);
-  const [categories, setCategories] = useState(fallbackCategories);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     let mounted = true;
@@ -30,10 +30,11 @@ const ShopByCategoryDropdown = () => {
           ? data.data
           : [];
 
-        if (mounted && rows.length) setCategories(rows);
+        if (mounted) setCategories(rows.length ? rows : fallbackCategories);
       })
       .catch((error) => {
         console.error("Failed to load shop categories", error);
+        if (mounted) setCategories(fallbackCategories);
       });
 
     return () => {
@@ -41,9 +42,15 @@ const ShopByCategoryDropdown = () => {
     };
   }, []);
 
+  const sortedCategories = [...categories].sort((a, b) => {
+    const aSoon = a.isComingSoon || false;
+    const bSoon = b.isComingSoon || false;
+    if (aSoon === bSoon) return 0;
+    return aSoon ? 1 : -1;
+  });
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
@@ -59,33 +66,35 @@ const ShopByCategoryDropdown = () => {
         )}
       </button>
 
-      {}
       {isOpen && (
         <div className="border-t">
           <div className="p-2 max-h-60 overflow-y-auto">
-            {categories.map((category) => {
+            {sortedCategories.map((category) => {
               const slug = category.slug || category.name?.toLowerCase();
-              const available = !category.isComingSoon;
+              const isComingSoon = category.isComingSoon;
+              const href = isComingSoon 
+                  ? `/coming-soon?category=${encodeURIComponent(category.name)}` 
+                  : `/shop?category=${encodeURIComponent(slug)}`;
 
               return (
                 <Link
                   key={slug || category.name}
-                  to={`/shop?category=${encodeURIComponent(slug)}`}
+                  to={href}
                   className={`flex items-center justify-between p-2 rounded transition-colors group ${
-                    available ? "hover:bg-gray-50" : "opacity-70 hover:bg-yellow-50"
+                    !isComingSoon ? "hover:bg-gray-50" : "opacity-70 hover:bg-yellow-50"
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className={`text-sm ${
-                      available
-                        ? "text-gray-700 group-hover:text-black"
-                        : "text-gray-500"
+                      !isComingSoon
+                        ? "text-gray-700 font-medium group-hover:text-black"
+                        : "text-gray-500 font-normal"
                     }`}>
                       {category.name}
                     </span>
                   </div>
-                  {!available && (
-                    <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                  {isComingSoon && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold uppercase tracking-wider">
                       Coming Soon
                     </span>
                   )}

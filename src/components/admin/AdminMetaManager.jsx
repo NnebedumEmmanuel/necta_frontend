@@ -126,10 +126,12 @@ export default function AdminMetaManager() {
     setLoading(true);
     try {
       const res = await api.get(currentTab.path);
-      setItems(unwrapList(res, currentTab.responseKey));
+      const extractedItems = unwrapList(res, currentTab.responseKey);
+      setItems(Array.isArray(extractedItems) ? extractedItems : []);
     } catch (error) {
       console.error(`Failed to fetch ${activeTab}`, error);
       showToast(toastApi, `Failed to fetch ${currentTab.label}`, 'error');
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -142,7 +144,6 @@ export default function AdminMetaManager() {
     setShowAttachUI(false);
     setSearchQuery('');
     fetchItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const fetchProducts = async (limit = 100) => {
