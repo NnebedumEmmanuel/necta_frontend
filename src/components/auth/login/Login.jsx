@@ -57,8 +57,15 @@ const Login = ({ mode = 'customer' }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+<<<<<<< Updated upstream
   const [formError, setFormError] = useState('');
   const { signIn, signOut, session, user } = useAuth();
+=======
+  
+  const [fieldErrors, setFieldErrors] = useState({}); 
+  
+  const { signIn, session, user } = useAuth();
+>>>>>>> Stashed changes
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -73,18 +80,25 @@ const Login = ({ mode = 'customer' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+<<<<<<< Updated upstream
     setFormError('');
 
     if (!email || !password) {
       const message = 'Please fill in all fields.';
       setFormError(message);
       toast.error(message);
+=======
+    
+    if (fieldErrors.email) {
+      toast.error("Please fix the email error before submitting.");
+>>>>>>> Stashed changes
       return;
     }
 
     setIsLoading(true);
     try {
       const res = await signIn({ email, password });
+<<<<<<< Updated upstream
       if (res?.error) {
         if (res.error?.requiresVerification) {
           const verificationEmail = res.error?.data?.email || email.trim();
@@ -121,6 +135,28 @@ const Login = ({ mode = 'customer' }) => {
       const message = extractErrorMessage(err);
       setFormError(message);
       toast.error(message);
+=======
+      
+      // 🚨 THE FINAL FIX: res.error.error extracts the exact string from AuthContext
+      if (res?.error) {
+        const errMsg = res.error.error || res.error.message || (typeof res.error === 'string' ? res.error : "Invalid email or password");
+        
+        if (typeof errMsg === 'string' && errMsg.toLowerCase().includes("email not confirmed")) {
+          toast.info("Please check your email and confirm your account to sign in.");
+        } else {
+          toast.error(errMsg);
+        }
+        return; 
+      }
+
+      toast.success("Signed in successfully");
+      const nextUser = res?.data?.user;
+      navigate(nextUser?.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+      
+    } catch (err) {
+      const targetMessage = err?.response?.data?.error || err?.data?.error || err?.message || "Invalid email or password";
+      toast.error(String(targetMessage));
+>>>>>>> Stashed changes
     } finally {
       setIsLoading(false);
     }
@@ -167,6 +203,7 @@ const Login = ({ mode = 'customer' }) => {
               <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                 Email address
               </label>
+<<<<<<< Updated upstream
               <input
                 id="email"
                 name="email"
@@ -181,6 +218,37 @@ const Login = ({ mode = 'customer' }) => {
                 className="mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-100"
                 placeholder="you@example.com"
               />
+=======
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) {
+                      setFieldErrors(prev => ({ ...prev, email: "" })); 
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val && !/^\S+@\S+\.\S+$/.test(val)) {
+                      setFieldErrors(prev => ({ ...prev, email: "Please enter a valid email address." }));
+                    }
+                  }}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm sm:text-sm outline-none transition-colors ${
+                    fieldErrors?.email ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500'
+                  }`}
+                  placeholder="you@example.com"
+                />
+                {fieldErrors?.email && (
+                  <p className="text-xs text-red-600 mt-1 font-medium animate-pulse">{fieldErrors.email}</p>
+                )}
+              </div>
+>>>>>>> Stashed changes
             </div>
 
             <div>
