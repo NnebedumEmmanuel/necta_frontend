@@ -1,79 +1,78 @@
 import React from 'react';
-import { Truck, Headphones, Tag, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Headphones, RefreshCw, Tag, Truck } from 'lucide-react';
 
-const OurServices = () => {
-  const services = [
-    {
-      icon: <Truck className="w-8 h-8" />,
-      title: "Fast & Reliable Shipping",
-      description: "Offering expedited shipping options and ensuring timely delivery of orders, with tracking information available for customers.",
-    },
-    {
-      icon: <Headphones className="w-8 h-8" />,
-      title: "24/7 Customer Support",
-      description: "Providing multiple channels for customer support, including live chat, email, and phone support, to address any queries or issues promptly.",
-    },
-    {
-      icon: <Tag className="w-8 h-8" />,
-      title: "Special Offers & Discounts",
-      description: "Offering discounts, coupons, and promotional offers to incentivize purchases and reward loyal customers.",
-    },
-    {
-      icon: <RefreshCw className="w-8 h-8" />,
-      title: "Easy Returns & Refunds",
-      description: "Providing a hassle-free return policy and easy refund process for customers in case they are not satisfied with their purchases.",
-    },
-  ];
+const services = [
+  {
+    icon: Truck,
+    title: 'Packed for Dispatch Quickly',
+    description: 'Once checkout is complete, we move your order into fulfillment fast so it gets ready for delivery without unnecessary delay.',
+  },
+  {
+    icon: Headphones,
+    title: 'Support That Knows the Catalog',
+    description: 'Need help choosing a speaker, confirming an order, or checking delivery details? Our team is ready to help with real product knowledge.',
+  },
+  {
+    icon: Tag,
+    title: 'Curated Tech at Fair Prices',
+    description: 'Necta keeps the focus on gadgets, audio gear, watches, and accessories people use every day, priced to stay competitive.',
+  },
+  {
+    icon: RefreshCw,
+    title: 'Order Follow-Up Made Easy',
+    description: 'From delivery updates to post-purchase questions, we stay available after checkout so you are never left guessing.',
+  },
+];
 
+export default function OurServices() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 py-16 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Our Premium Services
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 px-4 py-16">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-16 text-center">
+          <h2 className="mb-4 text-4xl font-bold text-gray-900">
+            How Necta Supports Your Order
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            We're committed to providing exceptional service at every step of your shopping journey
+          <p className="mx-auto max-w-3xl text-lg text-gray-600">
+            We keep the Necta shopping flow simple from discovery to delivery, with help available before and after you buy.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {services.map((service, index) => (
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {services.map((service) => (
             <div
-              key={index}
-              className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 transform hover:-translate-y-2"
+              key={service.title}
+              className="group rounded-2xl bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl"
             >
-              {}
-              <div className="inline-flex items-center justify-center p-4 mb-6 rounded-xl bg-gradient-to-br from-blue-500 to-orange-500 text-white group-hover:from-blue-600 group-hover:to-orange-600 transition-all duration-300">
-                {service.icon}
+              <div className="mb-6 inline-flex rounded-xl bg-gradient-to-br from-blue-500 to-orange-500 p-4 text-white transition-all duration-300 group-hover:from-blue-600 group-hover:to-orange-600">
+                <service.icon className="h-8 w-8" />
               </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-orange-600 transition-colors duration-300">
+              <h3 className="mb-4 text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-orange-600">
                 {service.title}
               </h3>
-              
-              <p className="text-gray-600 leading-relaxed">
+
+              <p className="leading-relaxed text-gray-600">
                 {service.description}
               </p>
 
-              {}
-              <div className="mt-6 h-1 w-16 bg-gradient-to-r from-blue-500 to-orange-500 rounded-full"></div>
+              <div className="mt-6 h-1 w-16 rounded-full bg-gradient-to-r from-blue-500 to-orange-500"></div>
             </div>
           ))}
         </div>
 
-        {}
         <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-orange-500 rounded-full text-white font-semibold hover:from-blue-600 hover:to-orange-600 transition-all duration-300 cursor-pointer">
-            <span>Explore All Services</span>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <Link
+            to="/shop"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-orange-500 px-6 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-600 hover:to-orange-600"
+          >
+            <span>Browse the Shop</span>
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
             </svg>
-          </div>
+          </Link>
         </div>
       </div>
     </div>
   );
-};
-
-export default OurServices;
+}

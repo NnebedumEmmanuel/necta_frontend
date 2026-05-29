@@ -1,9 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { X, CheckCircle, AlertCircle } from 'lucide-react';
+import { ToastContext } from './ToastContext.js';
 
-const ToastContext = createContext(null);
-
-// 1. Named Export (keeps your other files working)
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
@@ -45,13 +43,4 @@ export function ToastProvider({ children }) {
   );
 }
 
-// 2. Named Hook Export
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) throw new Error('useToast must be used within a ToastProvider');
-  return context;
-};
-
-// 3. Default Export (This fixes your specific error!)
-// Default export kept for easy default-import usage
 export default ToastProvider;

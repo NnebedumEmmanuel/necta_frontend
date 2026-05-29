@@ -1,99 +1,201 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useAuth } from '@/context/AuthContext';
 
-const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+function extractErrorMessage(error) {
+  if (!error) return 'Invalid email or password. Please try again.';
+  if (typeof error === 'string') return error;
+
+  return (
+    error?.message ||
+    error?.error ||
+    error?.error_description ||
+    error?.data?.error ||
+    error?.data?.message ||
+    'Invalid email or password. Please try again.'
+  );
+}
+
+function buildRedirectTarget(location, fallback) {
+  const from = location?.state?.from;
+  if (!from || !from.pathname) return fallback;
+
+  const pathname = String(from.pathname || '');
+  if (pathname === '/login' || pathname === '/admin/login' || pathname === '/signup') {
+    return fallback;
+  }
+
+  return `${pathname}${from.search || ''}${from.hash || ''}`;
+}
+
+const copy = {
+  customer: {
+    eyebrow: 'Customer Portal',
+    title: 'Welcome back',
+    description: 'Sign in to continue shopping, track your orders, and manage your account.',
+    button: 'Sign in',
+    footnote: 'Need an account?',
+    footnoteLink: '/signup',
+    footnoteLinkLabel: 'Create one',
+  },
+  admin: {
+    eyebrow: 'Admin Access',
+    title: 'Admin login',
+    description: 'Use your admin credentials to access orders, products, support, and fulfillment tools.',
+    button: 'Open admin dashboard',
+    footnote: 'Need customer access instead?',
+    footnoteLink: '/login',
+    footnoteLinkLabel: 'Go to customer login',
+  },
+};
+
+const Login = ({ mode = 'customer' }) => {
+  const isAdminMode = mode === 'admin';
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { signIn, session, user } = useAuth();
+  const [formError, setFormError] = useState('');
+  const { signIn, signOut, session, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const targetPath = useMemo(() => {
+    const defaultPath = isAdminMode ? '/admin' : '/dashboard';
+    const fromPath = buildRedirectTarget(location, defaultPath);
+    if (isAdminMode) {
+      return fromPath.startsWith('/admin') ? fromPath : defaultPath;
+    }
+    return fromPath;
+  }, [isAdminMode, location]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
+
     if (!email || !password) {
-      toast.error("Please fill in all fields");
+      const message = 'Please fill in all fields.';
+      setFormError(message);
+      toast.error(message);
       return;
     }
+
     setIsLoading(true);
     try {
       const res = await signIn({ email, password });
       if (res?.error) {
-        if (res.error.message?.toLowerCase().includes("email not confirmed")) {
-          toast.info("Please check your email and confirm your account to sign in.");
-        } else {
-          toast.error(res.error.message || "Invalid email or password. Please try again.");
+        if (res.error?.requiresVerification) {
+          const verificationEmail = res.error?.data?.email || email.trim();
+          const message = res.error?.error || 'Verify your email address before signing in.';
+          setFormError(message);
+          toast.error(message);
+          navigate(`/verify-email?email=${encodeURIComponent(verificationEmail)}`, { replace: true });
+          return;
         }
+
+        const message = extractErrorMessage(res.error);
+        setFormError(message);
+        toast.error(message);
         return;
       }
-      toast.success("Signed in successfully");
+
       const nextUser = res?.data?.user;
-      navigate(nextUser?.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
-    } catch (err) {
-      console.error("Login error:", err);
-      if (err?.message?.toLowerCase().includes("email not confirmed")) {
-        toast.info("Please check your email and confirm your account to sign in.");
-      } else {
-        const message = err?.message || (err?.error_description || "Invalid email or password. Please try again.");
+      if (isAdminMode && nextUser?.role !== 'admin') {
+        await signOut(null);
+        const message = 'This account does not have admin access.';
+        setFormError(message);
         toast.error(message);
+        return;
       }
+
+      const destination = isAdminMode && nextUser?.role === 'admin'
+        ? targetPath
+        : targetPath || (nextUser?.role === 'admin' ? '/admin' : '/dashboard');
+
+      toast.success('Signed in successfully');
+      navigate(destination, { replace: true });
+    } catch (err) {
+      console.error('Login error:', err);
+      const message = extractErrorMessage(err);
+      setFormError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (session) {
-      try {
-        navigate(user?.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
-      } catch (e) {
-      }
-    }
+    if (!session) return;
+
+    const destination = user?.role === 'admin' ? '/admin' : '/dashboard';
+    navigate(destination, { replace: true });
   }, [session, user, navigate]);
 
+  const activeCopy = copy[isAdminMode ? 'admin' : 'customer'];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <div className="p-8 space-y-6">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-800">
-              NEC<span className="text-orange-500">TA</span>
-            </h1>
-            <h2 className="mt-4 text-xl font-semibold text-gray-800">
-              Welcome Back
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Sign in to your account to continue shopping
-            </p>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff7ed_0,#f8fafc_35%,#eef2ff_100%)] flex items-center justify-center p-4">
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.16)] backdrop-blur">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-orange-600 px-8 py-10 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-200">
+            {activeCopy.eyebrow}
+          </p>
+          <h1 className="mt-3 text-4xl font-black tracking-tight">
+            NEC<span className="text-orange-300">TA</span>
+          </h1>
+          <h2 className="mt-6 text-2xl font-semibold">{activeCopy.title}</h2>
+          <p className="mt-2 max-w-sm text-sm leading-6 text-slate-100">
+            {activeCopy.description}
+          </p>
+        </div>
+
+        <div className="p-8">
+          {formError && (
+            <div
+              className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              role="alert"
+              aria-live="polite"
+            >
+              {formError}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                 Email address
               </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                  placeholder="you@example.com"
-                />
-              </div>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (formError) setFormError('');
+                }}
+                className="mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-100"
+                placeholder="you@example.com"
+              />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1 relative">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-medium text-orange-600 hover:text-orange-700"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative mt-2">
                 <input
                   id="password"
                   name="password"
@@ -101,56 +203,68 @@ const Login = () => {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (formError) setFormError('');
+                  }}
+                  className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-20 text-slate-900 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-100"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-gray-500"
+                  className="absolute inset-y-0 right-3 text-sm font-medium text-slate-500 transition hover:text-slate-800"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <label className="flex items-center text-sm">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
                 />
-                <span className="ml-2 text-gray-600">Remember me</span>
+                <span className="ml-2 text-slate-600">Remember me</span>
               </label>
-
-              <div className="text-sm">
-                <Link to="#" className="font-medium text-orange-600 hover:text-orange-500">
-                  Forgot your password?
-                </Link>
-              </div>
+              {!isAdminMode && (
+                <span className="text-xs text-slate-400">
+                  Keep me signed in on this device
+                </span>
+              )}
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60"
-              >
-                {isLoading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-orange-600 to-orange-500 px-4 py-3.5 font-semibold text-white shadow-lg shadow-orange-200 transition hover:from-orange-700 hover:to-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? 'Signing in...' : activeCopy.button}
+            </button>
 
-            <div className="text-center text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/signup" className="font-medium text-orange-600 hover:text-orange-500">
-                Create account
-              </Link>
+            <div className="space-y-2 text-center text-sm text-slate-600">
+              {!isAdminMode && (
+                <p>
+                  {activeCopy.footnote}{' '}
+                  <Link to={activeCopy.footnoteLink} className="font-semibold text-orange-600 hover:text-orange-700">
+                    {activeCopy.footnoteLinkLabel}
+                  </Link>
+                </p>
+              )}
+
+              {isAdminMode && (
+                <p>
+                  {activeCopy.footnote}{' '}
+                  <Link to={activeCopy.footnoteLink} className="font-semibold text-orange-600 hover:text-orange-700">
+                    {activeCopy.footnoteLinkLabel}
+                  </Link>
+                </p>
+              )}
             </div>
           </form>
-          {}
         </div>
       </div>
     </div>

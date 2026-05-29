@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuth } from '../../../../context/AuthContext'
+import { useAuth } from '@/context/AuthContext'
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -101,6 +101,12 @@ const SignUp = () => {
         password: formData.password,
       })
       if (res?.error) throw res.error
+
+      if (res?.data?.requiresVerification) {
+        toast.success(res?.data?.message || 'Verification code sent to your email address.')
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email.toLowerCase().trim())}`, { replace: true })
+        return
+      }
 
       const role = res?.data?.user?.role
       toast.success('Registration successful. You are signed in')

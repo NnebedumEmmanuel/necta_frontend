@@ -25,16 +25,16 @@ const AdminProtectedRoute = ({ children }) => {
           return;
         }
         // fallback
-        navigate('/login', { replace: true });
+        navigate('/admin/login', { replace: true });
       } catch (err) {
         if (!mounted) return;
         const status = err?.response?.status;
         if (status === 401) {
-          navigate('/login', { replace: true });
+          navigate('/admin/login', { replace: true });
         } else if (status === 403) {
-          navigate('/', { replace: true });
+          navigate('/admin/login', { replace: true });
         } else {
-          navigate('/login', { replace: true });
+          navigate('/admin/login', { replace: true });
         }
       } finally {
         if (mounted) setValidating(false);

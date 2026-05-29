@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from '@/context/CartContext';
 import { NIGERIAN_STATES } from '@/lib/pricing';
 import { orderService } from "../../../services/orderService";
-import { useAuth } from '../../../context/AuthContext';
-import { useToast } from '../../../context/ToastProvider';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastProvider';
 
 const CheckoutPage = () => {
   // Use the cart context with the required destructured names for UI contract
@@ -22,6 +22,7 @@ const CheckoutPage = () => {
     phone: "",
     address: "",
     city: "",
+    lga: "",
     state: deliveryState || "",
   });
 
@@ -54,12 +55,6 @@ const CheckoutPage = () => {
 
   const grandTotal = subtotal + tax + shippingCost;
 
-  // Paystack config uses the freshly computed grandTotal (amount must be in kobo)
-  const paystackConfig = {
-    amount: Math.round(grandTotal * 100), // Kobo
-    currency: 'NGN'
-  };
-
   // Auto-fill form fields from authenticated user when available
   React.useEffect(() => {
     if (!user) return;
@@ -69,6 +64,7 @@ const CheckoutPage = () => {
       phone: prev.phone || user?.phone || user?.user_metadata?.phone || "",
       address: prev.address || user?.address || "",
       city: prev.city || user?.city || "",
+      lga: prev.lga || user?.lga || user?.address?.lga || "",
       state: prev.state || deliveryState || user?.state || "",
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,7 +86,7 @@ const CheckoutPage = () => {
   }, [formData.state]);
 
   const handlePlaceOrder = async () => {
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.address) {
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.lga) {
       showToast("Please fill in all required fields", "error");
       return;
     }
@@ -120,6 +116,8 @@ const CheckoutPage = () => {
       return;
     }
 
+    const shippingAddress = [formData.address, formData.city, formData.lga, formData.state].filter(Boolean).join(', ');
+
     const orderData = {
       customer: {
         userId: user?.id,
@@ -128,14 +126,16 @@ const CheckoutPage = () => {
         phone: formData.phone,
         address: formData.address,
         city: formData.city,
+        lga: formData.lga,
         state: formData.state
       },
         items: orderItems,
         subtotal: Number(subtotal).toFixed(2),
         tax: Number(tax).toFixed(2),
-        total: Number(grandTotal).toFixed(2),
-        amountKobo: Math.round(Number(grandTotal) * 100),
-      shippingAddress: `${formData.address}, ${formData.city}, ${formData.state}`,
+      total: Number(grandTotal).toFixed(2),
+      amountKobo: Math.round(Number(grandTotal) * 100),
+      shippingAddress,
+      lga: formData.lga,
       status: 'pending'
     };
 
@@ -156,7 +156,7 @@ const CheckoutPage = () => {
         if (order?.id) {
           clearCart();
           showToast(`Order placed successfully! Order Number: ${order.id}`, "success");
-          navigate(`/order-confirmation/${order.id}`);
+          navigate(`/order/${order.id}`);
           return;
         }
       }
@@ -166,10 +166,6 @@ const CheckoutPage = () => {
       console.error("Error placing order:", error);
       showToast(error?.message || "Failed to place order. Please try again.", "error");
     }
-  };
-
-  const currency = (value) => {
-    return Number(value).toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
   };
 
   const needsState = Number(shippingCost) === 0 && !formData.state;
@@ -215,7 +211,7 @@ const CheckoutPage = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">City</label>
                   <input
@@ -223,6 +219,16 @@ const CheckoutPage = () => {
                     value={formData.city}
                     onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
                     placeholder="City"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">LGA</label>
+                  <input
+                    className="w-full border p-2 rounded"
+                    value={formData.lga}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lga: e.target.value }))}
+                    placeholder="Local Government Area"
                   />
                 </div>
 

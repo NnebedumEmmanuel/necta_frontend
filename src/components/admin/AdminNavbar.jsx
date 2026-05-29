@@ -5,15 +5,17 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollapsed, onToggleCollapse }) {
   const { user: authUser, signOut } = useAuth();
-  const name = authUser?.firstName || 'Admin';
+  const name = authUser?.name || authUser?.firstName || authUser?.email || 'Admin';
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [now, setNow] = useState(0);
 
   const formatTimeAgo = (iso) => {
     try {
       const t = new Date(iso).getTime();
-      const diff = Date.now() - t;
+      if (!now) return '';
+      const diff = now - t;
       const sec = Math.floor(diff / 1000);
       if (sec < 60) return `${sec} sec${sec !== 1 ? 's' : ''} ago`;
       const min = Math.floor(sec / 60);
@@ -22,12 +24,15 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
       if (hr < 24) return `${hr} hr${hr !== 1 ? 's' : ''} ago`;
       const days = Math.floor(hr / 24);
       return `${days} day${days !== 1 ? 's' : ''} ago`;
-    } catch (e) {
+    } catch {
       return '';
     }
   };
 
   useEffect(() => {
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+
     let mounted = true;
 
     const load = async () => {
@@ -46,6 +51,7 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
     load();
     return () => {
       mounted = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -70,12 +76,15 @@ export default function AdminNavbar({ onLogout, onToggleSidebar, isSidebarCollap
 
   const handleLogout = async () => {
     try {
-      await signOut();
-    } catch (e) {
+      if (onLogout) {
+        await onLogout();
+        return;
+      }
+
+      await signOut('/admin/login');
+    } catch {
       // ignore signout errors here; route guard will handle session state
     }
-
-    if (onLogout) onLogout();
   };
 
   return (

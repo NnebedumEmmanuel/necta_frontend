@@ -18,8 +18,6 @@ const PaymentCallback = () => {
     ranRef.current = true
 
     async function verify() {
-      setLoading(true)
-      setError(null)
       try {
         const params = new URLSearchParams(location.search)
         const reference = params.get('reference')
@@ -37,7 +35,7 @@ const PaymentCallback = () => {
         console.info('Paystack verify response (frontend):', body)
 
         if (body?.success) {
-          try { clearCart() } catch (e) { }
+          try { clearCart() } catch {}
           showToast?.('Payment verified. Redirecting to orders...', { type: 'success' })
           navigate('/dashboard?tab=orders&paystatus=success')
           return
@@ -53,12 +51,12 @@ const PaymentCallback = () => {
               const orders = ordersRes?.data?.data || []
               const matched = orders.find(o => o.paystack_reference === reference || o.payment_status === 'paid' || (o.status && o.status === 'paid'))
               if (matched) {
-                try { clearCart() } catch (e) { }
+                try { clearCart() } catch {}
                 showToast?.('Payment confirmed. Redirecting to orders...', { type: 'success' })
                 navigate('/dashboard?tab=orders&paystatus=success')
                 return true
               }
-            } catch (pollErr) {
+            } catch {
               // ignore and retry until timeout
             }
             // wait

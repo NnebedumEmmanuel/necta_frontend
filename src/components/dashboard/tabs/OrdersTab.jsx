@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react'
 import { Package, Truck, Calendar, MapPin, Info, Copy, ExternalLink } from 'lucide-react'
 
+const ORDER_STEPS = ['pending', 'processing', 'shipped', 'delivered']
+
+function OrderStepper({ status }) {
+  const idx = Math.max(0, ORDER_STEPS.indexOf(status))
+  return (
+    <div className="flex items-center gap-4 mb-4">
+      {ORDER_STEPS.map((step, i) => (
+        <div key={step} className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${i <= idx ? 'bg-indigo-600' : 'bg-gray-200 text-gray-600'}`}>
+            {i + 1}
+          </div>
+          <div className={`text-xs ${i <= idx ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>{step.charAt(0).toUpperCase() + step.slice(1)}</div>
+          {i < ORDER_STEPS.length - 1 && <div className={`w-8 h-0.5 ${i < idx ? 'bg-indigo-600' : 'bg-gray-200'} mx-2`} />}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function OrdersTab({ orders = [], initialOrderId = null }) {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [copied, setCopied] = useState(false)
@@ -60,25 +79,6 @@ export default function OrdersTab({ orders = [], initialOrderId = null }) {
     setSelectedOrder(null)
   }
 
-  const steps = ['pending', 'processing', 'shipped', 'delivered']
-
-  const Stepper = ({ status }) => {
-    const idx = Math.max(0, steps.indexOf(status))
-    return (
-      <div className="flex items-center gap-4 mb-4">
-        {steps.map((s, i) => (
-          <div key={s} className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${i <= idx ? 'bg-indigo-600' : 'bg-gray-200 text-gray-600'}`}>
-              {i + 1}
-            </div>
-            <div className={`text-xs ${i <= idx ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>{s.charAt(0).toUpperCase() + s.slice(1)}</div>
-            {i < steps.length - 1 && <div className={`w-8 h-0.5 ${i < idx ? 'bg-indigo-600' : 'bg-gray-200'} mx-2`} />}
-          </div>
-        ))}
-      </div>
-    )
-  }
-
   if (selectedOrder) {
     const status = getStatus(selectedOrder)
     const tracking = selectedOrder.tracking_number || selectedOrder.trackingNumber || selectedOrder.__raw?.tracking_number
@@ -96,7 +96,7 @@ export default function OrdersTab({ orders = [], initialOrderId = null }) {
           </div>
         </div>
 
-        <Stepper status={status} />
+        <OrderStepper status={status} />
 
         { (status === 'shipped' || status === 'delivered') && tracking && (
           <div className="mb-4 p-4 bg-gray-50 rounded-lg">

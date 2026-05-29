@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 // ProtectedRoute: ensures a user is authenticated, and optionally is an admin
 export default function ProtectedRoute({ children, adminOnly = false }) {
@@ -14,14 +14,14 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  // If no user, redirect to login
+  // If no user, redirect admins to admin login and everyone else to customer login
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={adminOnly ? "/admin/login" : "/login"} state={{ from: location }} replace />;
   }
 
-  // If this route requires admin and the user is not admin, redirect to home
+  // If this route requires admin and the user is not admin, redirect to the admin login screen
   if (adminOnly && user?.role !== 'admin') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
   return children;

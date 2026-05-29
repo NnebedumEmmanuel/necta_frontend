@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './AdminSideBar';
 import AdminNavbar from './AdminNavbar';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -46,7 +46,6 @@ export default function AdminLayout() {
         }`}
       >
         <AdminNavbar
-          onLogout={() => {}}
           onToggleSidebar={() => setShowMobileSidebar(true)}
           isSidebarCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}

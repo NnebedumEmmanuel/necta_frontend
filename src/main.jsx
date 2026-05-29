@@ -7,7 +7,7 @@ import './index.css'
 import ToastProvider from './context/ToastProvider'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
-import WishlistProvider from './context/WishlistContext' // Make sure this matches the file name!
+import WishlistProvider from './context/SafeWishlistContext' // Safe wrapper around the active wishlist provider
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

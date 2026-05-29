@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { Menu, X, Heart, ShoppingCart, User, Search, Activity } from 'lucide-react';
+import { Menu, X, Heart, ShoppingCart, Search, Activity, User } from 'lucide-react';
 
 export default function Navbar() {
+  const { user, session } = useAuth() || {};
   const navigate = useNavigate();
-  const { user, session, signOut } = useAuth() || {};
+  const location = useLocation();
+  const accountPath = user?.role === 'admin' ? '/admin' : '/dashboard';
+  const displayName = String(user?.name || user?.firstName || user?.email || '').trim();
+  const displayInitial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Cart may expose different shapes; prefer cartItems but fall back to state.items
   const { cartItems, state } = useCart() || {};
@@ -18,6 +23,28 @@ export default function Navbar() {
   const wishlistCount = (wishlist && Array.isArray(wishlist)) ? wishlist.length : 0;
 
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.has('search')) {
+      setSearchQuery(params.get('search') || '');
+    } else if (location.pathname === '/shop') {
+      setSearchQuery('');
+    }
+  }, [location.pathname, location.search]);
+
+  const handleGlobalSearch = (e) => {
+    e.preventDefault();
+    const query = String(searchQuery || '').trim();
+    setMobileOpen(false);
+
+    if (!query) {
+      navigate('/shop');
+      return;
+    }
+
+    navigate(`/shop?search=${encodeURIComponent(query)}`);
+  };
 
   return (
     <nav className="bg-white border-b">
@@ -34,14 +61,23 @@ export default function Navbar() {
 
           {/* CENTER: Search (hidden on small screens) */}
           <div className="hidden md:flex flex-1 justify-center px-4">
-            <div className="w-full max-w-md relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <form onSubmit={handleGlobalSearch} className="w-full max-w-md relative">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="search"
                 placeholder="Search products, brands and more"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 border border-transparent focus:outline-none focus:ring-2 focus:ring-orange-200"
               />
-            </div>
+              <button
+                type="submit"
+                aria-label="Search"
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800"
+              >
+                Search
+              </button>
+            </form>
           </div>
 
           {/* RIGHT: Links and icons */}
@@ -71,14 +107,18 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* User avatar/icon only (no email). Clicking goes to /dashboard when logged in, otherwise to /login */}
+              {/* User avatar/icon only (no email). Clicking goes to the account area when logged in, otherwise to /login */}
               {session ? (
-                <Link to="/dashboard" className="ml-2">
-                  <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-                    {user?.user_metadata?.avatar_url ? (
-                      <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                <Link to={accountPath} className="ml-2">
+                  <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-slate-900 to-orange-500 text-white ring-2 ring-white shadow-sm">
+                    {(user?.avatar_url || user?.avatar || user?.user_metadata?.avatar_url) ? (
+                      <img
+                        src={user.avatar_url || user.avatar || user.user_metadata?.avatar_url}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <User size={18} className="text-gray-700" />
+                      <span className="text-sm font-bold">{displayInitial}</span>
                     )}
                   </div>
                 </Link>
@@ -109,13 +149,24 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t">
           <div className="px-4 py-3 space-y-3">
-            <div className="w-full">
-              <input
-                type="search"
-                placeholder="Search products"
-                className="w-full pl-3 pr-3 py-2 rounded bg-gray-100 border border-transparent"
-              />
-            </div>
+            <form onSubmit={handleGlobalSearch} className="w-full flex gap-2">
+              <div className="relative flex-1">
+                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  placeholder="Search products"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 rounded bg-gray-100 border border-transparent"
+                />
+              </div>
+              <button
+                type="submit"
+                className="shrink-0 rounded bg-black px-4 py-2 text-sm font-medium text-white"
+              >
+                Search
+              </button>
+            </form>
             <Link to="/" className="block text-gray-700">Home</Link>
             <Link to="/shop" className="block text-gray-700">Shop</Link>
             <Link to="/about" className="block text-gray-700">About</Link>
@@ -132,7 +183,7 @@ export default function Navbar() {
             </div>
 
             {session ? (
-              <Link to="/dashboard" className="block px-3 py-2 bg-gray-100 rounded text-center">Account</Link>
+              <Link to={accountPath} className="block px-3 py-2 bg-gray-100 rounded text-center">Account</Link>
             ) : (
               <Link to="/login" className="block px-3 py-2 bg-black text-white rounded text-center">Sign in</Link>
             )}

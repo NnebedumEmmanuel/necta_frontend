@@ -12,12 +12,15 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
-  Eye
+  Eye,
+  PencilLine,
+  Send
 } from "lucide-react";
 import { useToast } from '@/context/ToastProvider';
 import { useEffect, useState } from "react";
 import { api } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import SalesChart from './SalesChart'
 
 export default function AdminOrders() {
@@ -31,6 +34,7 @@ export default function AdminOrders() {
   const [error, setError] = useState(null);
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   // Order fulfillment modal state
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [updateStatus, setUpdateStatus] = useState('processing')
@@ -46,6 +50,24 @@ export default function AdminOrders() {
   const formatCurrency = (value) => {
     const n = Number(value || 0);
     return `₦${n.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+  }
+
+  const canDispatchOrder = (order) => {
+    const status = (order?.fulfillmentStatus || order?.status || '').toString().toLowerCase()
+    return status !== 'shipped' && status !== 'delivered'
+  }
+
+  const openOrderDetails = (order) => {
+    setSelectedOrder(order)
+  }
+
+  const openUpdateModal = (order) => {
+    if (!order) return
+    setSelectedOrder(order)
+    setUpdateStatus(((order.fulfillmentStatus || order.status) || 'processing').toLowerCase())
+    setTrackingNumber(order.tracking_number || '')
+    setCarrier(order.carrier || 'GIG Logistics')
+    setShowUpdateModal(true)
   }
 
   const formatShippingAddress = (shippingAddress) => {
@@ -104,12 +126,14 @@ export default function AdminOrders() {
       const status = err?.response?.status;
         if (status === 401) {
           showToast('Unauthorized. Please login.', 'error');
-          navigate('/login');
+          await signOut(null);
+          navigate('/admin/login');
           return;
         }
         if (status === 403) {
           showToast('Access denied: Admins only', 'error');
-          navigate('/');
+          await signOut(null);
+          navigate('/admin/login');
           return;
         }
       console.error('Error loading orders:', err);
@@ -140,6 +164,13 @@ export default function AdminOrders() {
         'success'
       )
     } catch (err) {
+      const status = err?.response?.status
+      if (status === 401 || status === 403) {
+        await signOut(null)
+        navigate('/admin/login')
+        return
+      }
+
       const message =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
@@ -286,13 +317,13 @@ export default function AdminOrders() {
   const MobileOrderCard = ({ order }) => {
     const statusInfo = getStatusInfo(order.fulfillmentStatus || order.status);
     const StatusIcon = statusInfo.icon;
-  const isExpanded = expandedOrderId === order.id;
+    const isExpanded = expandedOrderId === order.id;
 
-  return (
+    return (
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex justify-between items-start mb-3">
           <div>
-                  <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <Package className="w-4 h-4 text-slate-600" />
               <span className="font-semibold text-slate-900">{order.orderNumber}</span>
             </div>
@@ -301,17 +332,18 @@ export default function AdminOrders() {
           <button
             onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
             className="p-2 hover:bg-slate-100 rounded-lg"
+            aria-label={isExpanded ? 'Collapse order details' : 'Expand order details'}
           >
             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
         </div>
 
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-slate-600" />
-            <span className="text-sm font-medium">{order.customer?.name}</span>
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <User className="w-4 h-4 text-slate-600 shrink-0" />
+            <span className="text-sm font-medium truncate">{order.customer?.name || 'Customer'}</span>
           </div>
-          <div className={`px-3 py-1 rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium flex items-center gap-1`}>
+          <div className={`px-3 py-1 rounded-full ${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium flex items-center gap-1 shrink-0`}>
             <StatusIcon size={12} />
             {(order.fulfillmentStatus || order.status) && (order.fulfillmentStatus || order.status).toString().charAt(0).toUpperCase() + (order.fulfillmentStatus || order.status).toString().slice(1)}
           </div>
@@ -327,19 +359,55 @@ export default function AdminOrders() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => openOrderDetails(order)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-white"
+          >
+            <Eye className="w-4 h-4" />
+            View
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openUpdateModal(order)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+          >
+            <PencilLine className="w-4 h-4" />
+            Update status
+          </button>
+
+          {canDispatchOrder(order) ? (
+            <button
+              type="button"
+              onClick={() => handleDispatchWithGig(order)}
+              disabled={dispatchingOrderId === order.id}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1"
+            >
+              <Send className="w-4 h-4" />
+              {dispatchingOrderId === order.id ? 'Dispatching...' : 'Dispatch'}
+            </button>
+          ) : (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-sm font-medium text-emerald-700 sm:col-span-1">
+              Already dispatched
+            </div>
+          )}
+        </div>
+
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
             <div className="text-sm">
               <div className="font-medium text-slate-700 mb-1">Customer Email</div>
-              <div className="text-slate-600">{order.customer?.email}</div>
+              <div className="text-slate-600 break-words">{order.customer?.email || '-'}</div>
             </div>
-            
+
             <div className="text-sm">
               <div className="font-medium text-slate-700 mb-1">Items</div>
               <div className="space-y-1">
                 {(order.items || []).slice(0, 3).map((item, index) => (
-                  <div key={index} className="flex justify-between">
-                    <span className="text-slate-600">{item.name} × {item.quantity}</span>
+                  <div key={index} className="flex justify-between gap-2">
+                    <span className="text-slate-600">{item.name} x {item.quantity}</span>
                     <span className="font-medium">{formatCurrency(item.total)}</span>
                   </div>
                 ))}
@@ -354,12 +422,12 @@ export default function AdminOrders() {
             <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
               <div className="text-sm">
                 <div className="font-medium text-slate-700 mb-1">Payment Status</div>
-                <div className="text-slate-600">{order.paymentStatus}</div>
+                <div className="text-slate-600">{order.paymentStatus || '-'}</div>
               </div>
 
               <div className="text-sm">
-                <div className="font-medium text-slate-700 mb-1">Customer Email</div>
-                <div className="text-slate-600">{order.customer?.email}</div>
+                <div className="font-medium text-slate-700 mb-1">Shipping Address</div>
+                <div className="text-slate-600 break-words">{order.shippingAddress || '-'}</div>
               </div>
             </div>
           </div>
@@ -738,6 +806,13 @@ export default function AdminOrders() {
                     await loadOrders()
                     if (updated) setSelectedOrder(normalizeOrder(updated))
                   } catch (err) {
+                    const status = err?.response?.status
+                    if (status === 401 || status === 403) {
+                      await signOut(null)
+                      navigate('/admin/login')
+                      return
+                    }
+
                     console.error('Failed to update order', err)
                     showToast?.(err?.message || 'Failed to update order', 'error')
                   } finally {

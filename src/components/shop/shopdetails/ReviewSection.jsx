@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/context/ToastProvider';
 
 export default function ReviewSection({ productId, onReviewSubmitted }) {
-  if (!productId) return null;
-
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(1);
   // localReviews is the UI source of truth and is refreshed from the backend.
   const [localReviews, setLocalReviews] = useState([]);
@@ -29,8 +27,6 @@ export default function ReviewSection({ productId, onReviewSubmitted }) {
   const displayAverage = arrayCount > 0
     ? reviewsArray.reduce((s, r) => s + (Number(r.rating) || 0), 0) / arrayCount
     : null;
-
-  const displayTotal = arrayCount;
 
   const renderStars = (rating) => {
     const stars = [];
@@ -83,9 +79,12 @@ export default function ReviewSection({ productId, onReviewSubmitted }) {
   }
 
   useEffect(() => {
+    if (!productId) return;
     loadReviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
+
+  if (!productId) return null;
 
   return (
     <section className="mt-12 bg-[#FAFAFA] p-6">

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { useAuth } from '../../../../context/AuthContext'
-import { useToast } from '../../../../context/ToastProvider'
+import { useAuth } from '@/context/AuthContext'
+import { useToast } from '@/context/ToastProvider'
 
 export default function SupportTab() {
   const { user } = useAuth()
@@ -138,7 +138,7 @@ export default function SupportTab() {
                 <div className="text-sm text-slate-500">No replies yet.</div>
               ) : (
                 replies.map((reply) => (
-                  <div key={reply.id} className={`flex ${reply.is_admin_reply ? 'justify-start' : 'justify-end'}`}>
+                  <div key={`${reply.id || 'reply'}-${reply.created_at || 'item'}`} className={`flex ${reply.is_admin_reply ? 'justify-start' : 'justify-end'}`}>
                     <div className={`max-w-[80%] p-3 text-sm ${reply.is_admin_reply ? 'bg-gray-100 text-black rounded-lg rounded-tr-none' : 'bg-blue-600 text-white rounded-lg rounded-tl-none'}`}>
                       {reply.is_admin_reply && <div className="text-xs text-slate-500 mb-1">Support Agent</div>}
                       <div className="whitespace-pre-wrap">{reply.message}</div>

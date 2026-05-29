@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 
 // ✅ COMPONENTS
 import Navbar from './components/Navbar'; // Using the fixed Navbar
@@ -20,6 +20,10 @@ import OrderDetailsPage from './pages/order/OrderDetailsPage';
 
 // ✅ AUTH & CHECKOUT
 import LoginPage from './pages/account/LoginPage';
+import AdminLoginPage from './pages/account/AdminLoginPage';
+import ForgotPasswordPage from './pages/account/ForgotPasswordPage';
+import ResetPasswordPage from './pages/account/ResetPasswordPage';
+import VerifyEmailPage from './pages/account/VerifyEmailPage';
 import SignUp from './components/auth/signup/Signup';
 import CheckoutPage from './pages/Checkout/Checkoutpage';
 import PaymentCallback from './pages/PaymentCallback';
@@ -42,7 +46,7 @@ function AppContent() {
   const location = useLocation();
   
   // Paths where Navbar/Footer should be HIDDEN
-  const hideNavPaths = ['/login', '/signup', '/admin'];
+  const hideNavPaths = ['/login', '/admin/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/admin'];
   
   // Check if current path starts with any of the hidden paths
   const shouldShowNav = !hideNavPaths.some(path => 
@@ -65,6 +69,10 @@ function AppContent() {
           <Route path="/contact" element={<ContactPage />} />
           
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/signup" element={<SignUp />} />
 
           {/* --- PROTECTED USER ROUTES --- */}
@@ -96,6 +104,7 @@ function AppContent() {
           />
           {/* Order details (individual order view) */}
           <Route path="/order/:id" element={<OrderDetailsPage />} />
+          <Route path="/order-confirmation/:id" element={<LegacyOrderConfirmationRedirect />} />
           
           {/* /account redirects to /dashboard */}
           <Route path="/account" element={<Navigate to="/dashboard" replace />} />
@@ -129,6 +138,11 @@ function AppContent() {
       {shouldShowNav && <Footer />}
     </div>
   );
+}
+
+function LegacyOrderConfirmationRedirect() {
+  const { id } = useParams();
+  return <Navigate to={id ? `/order/${id}` : '/dashboard'} replace />;
 }
 
 export default function App() {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
-import { useToast } from '../../../context/ToastProvider'
+import { useToast } from '@/context/ToastProvider'
 
 export default function AdminSupport() {
   const { showToast } = useToast()
@@ -49,7 +49,7 @@ export default function AdminSupport() {
   async function changeStatus(id, newStatus) {
     setUpdatingId(id)
     try {
-      const res = await api.patch('/admin/support-tickets', { id, status: (newStatus || 'open').toLowerCase() })
+      const res = await api.patch(`/admin/support-tickets/${id}`, { status: (newStatus || 'open').toLowerCase() })
       const updated = res?.data?.data
       setTickets((rows) => rows.map((ticket) => ticket.id === id ? (updated || { ...ticket, status: newStatus }) : ticket))
       if (selectedTicket?.id === id) setSelectedTicket(updated || { ...selectedTicket, status: newStatus })
@@ -176,7 +176,7 @@ export default function AdminSupport() {
                 <div className="text-sm text-slate-500">No replies yet.</div>
               ) : (
                 selectedTicket.replies.map((reply) => (
-                  <div key={reply.id} className={`p-3 rounded-md ${reply.is_admin_reply ? 'bg-blue-50' : 'bg-slate-100'}`}>
+                  <div key={`${reply.id || 'reply'}-${reply.created_at || 'item'}`} className={`p-3 rounded-md ${reply.is_admin_reply ? 'bg-blue-50' : 'bg-slate-100'}`}>
                     <div className="text-xs text-slate-500">{reply.is_admin_reply ? 'Admin' : 'Customer'} - {reply.created_at ? new Date(reply.created_at).toLocaleString() : ''}</div>
                     <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">{reply.message}</div>
                   </div>

@@ -1,7 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, attachAuthToken } from '@/lib/api';
-
-const AuthContext = createContext(null);
+import { AuthContext } from './AuthContextCore';
 const TOKEN_KEY = 'necta_auth_token';
 const USER_KEY = 'necta_auth_user';
 
@@ -102,7 +101,13 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await api.post('/auth/register', payload);
-      const data = res?.data?.data ?? {};
+      const response = res?.data ?? {};
+      const data = {
+        ...(response?.data ?? {}),
+        requiresVerification: Boolean(response?.requiresVerification),
+        message: response?.message || '',
+      };
+
       if (data.token) applyAuth(data.token, data.user);
       return { data, error: null };
     } catch (err) {
@@ -126,12 +131,14 @@ export const AuthProvider = ({ children }) => {
     }
   }, [applyAuth]);
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (redirectTo = '/login') => {
     setLoading(true);
     try {
       await api.post('/auth/logout').catch(() => null);
       applyAuth(null, null);
-      window.location.href = '/login';
+      if (redirectTo) {
+        window.location.href = redirectTo;
+      }
       return { error: null };
     } catch (err) {
       applyAuth(null, null);
@@ -160,10 +167,4 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (ctx === null) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return ctx;
-};
+export default AuthProvider;

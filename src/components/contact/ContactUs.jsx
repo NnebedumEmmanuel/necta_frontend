@@ -1,114 +1,196 @@
 import React, { useState } from 'react';
-import { 
-  Phone, 
-  Mail, 
-  MapPin, 
+import {
+  ChevronDown,
+  Mail,
+  MapPin,
   MessageSquare,
+  Phone,
   Send,
-  ChevronDown
 } from 'lucide-react';
+import { publicApi } from '@/lib/api';
+
+const BUSINESS_PHONE = '09157053789';
+const BUSINESS_EMAIL = 'nectagadget@hotmail.com';
+const BUSINESS_LOCATION = 'Owerri, Imo State, Nigeria';
+
+const subjectOptions = [
+  'General inquiry',
+  'Product support',
+  'Billing questions',
+  'Partnership opportunities',
+  'Feedback',
+];
+
+const contactInfo = [
+  {
+    icon: MessageSquare,
+    title: 'Need help with an order?',
+    description: 'Send the message here and it goes straight to the support inbox.',
+  },
+  {
+    icon: Phone,
+    title: BUSINESS_PHONE,
+    description: 'Call for order questions, product guidance, or delivery updates.',
+  },
+  {
+    icon: Mail,
+    title: BUSINESS_EMAIL,
+    description: 'Prefer email? We will get back to you as soon as possible.',
+  },
+  {
+    icon: MapPin,
+    title: BUSINESS_LOCATION,
+    description: 'Serving customers across Nigeria with delivery support and follow-up.',
+  },
+];
+
+const initialForm = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  subject: 'General inquiry',
+  message: '',
+};
 
 const ContactUs = () => {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    subject: 'General inquiry',
-    message: ''
-  });
-
-  const contactInfo = [
-    { icon: <MessageSquare className="w-5 h-5" />, title: "Say something to start a live chat!" },
-    { icon: <Phone className="w-5 h-5" />, title: "09157053789" },
-    { icon: <Mail className="w-5 h-5" />, title: "nectagadget@hotmail.com" },
-    { icon: <MapPin className="w-5 h-5" />, title: "1) To Communicate Street", description: "Boston, Massachusetts (9786) United States" }
-  ];
-
-  const subjectOptions = [
-    'General inquiry',
-    'Technical support',
-    'Billing questions',
-    'Partnership opportunities',
-    'Feedback'
-  ];
+  const [formData, setFormData] = useState(initialForm);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (error) setError('');
+    if (success) setSuccess('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    setError('');
+    setSuccess('');
+
+    if (
+      !formData.firstName.trim() ||
+      !formData.lastName.trim() ||
+      !formData.email.trim() ||
+      !formData.message.trim()
+    ) {
+      setError('Please complete the required fields before sending your message.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        subject: formData.subject,
+        message: formData.message.trim(),
+      };
+
+      const res = await publicApi.post('/contact', payload);
+      setSuccess(res?.data?.message || 'Your message has been sent successfully.');
+      setFormData(initialForm);
+    } catch (err) {
+      const message = err?.response?.data?.error || err?.message || 'Failed to submit your message';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickContact = () => {
+    window.location.href = `mailto:${BUSINESS_EMAIL}?subject=${encodeURIComponent('Support request')}`;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {}
-          <div className="bg-white rounded-xl shadow-md p-6 lg:p-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Contact Information</h2>
+    <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="rounded-xl bg-white p-6 shadow-md lg:p-8">
+            <h2 className="mb-6 text-xl font-bold text-gray-800">Contact Information</h2>
             <div className="space-y-6">
-              {contactInfo.map((item, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <div className="text-orange-600">{item.icon}</div>
+              {contactInfo.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <div key={item.title} className="flex items-start space-x-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100">
+                      <div className="text-orange-600">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-800">{item.title}</h3>
+                      <p className="text-sm text-gray-600">{item.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-medium text-gray-800">{item.title}</h3>
-                    {item.description && <p className="text-gray-600 text-sm">{item.description}</p>}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {}
-            <div className="mt-8 p-4 bg-orange-50 rounded-lg">
+            <div className="mt-8 rounded-lg bg-orange-50 p-4">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                  <MessageSquare className="w-4 h-4 text-white" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-600">
+                  <MessageSquare className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-800 text-sm">Live Chat Support</h3>
-                  <p className="text-gray-600 text-xs">Available 24/7 for instant assistance</p>
+                  <h3 className="text-sm font-semibold text-gray-800">Quick contact</h3>
+                  <p className="text-xs text-gray-600">Use this if you want a fast response by email.</p>
                 </div>
               </div>
-              <button className="mt-3 w-full py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 transition duration-200">
+              <button
+                type="button"
+                onClick={handleQuickContact}
+                className="mt-3 w-full rounded-lg bg-orange-600 py-2 text-sm text-white transition duration-200 hover:bg-orange-700"
+              >
                 Start Live Chat
               </button>
             </div>
           </div>
 
-          {}
-          <div className="bg-white rounded-xl shadow-md p-6 lg:p-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Contact Us</h1>
-            <p className="text-gray-600 text-sm mb-6">Any question or remarks? Just write us a message!</p>
+          <div className="rounded-xl bg-white p-6 shadow-md lg:p-8">
+            <h1 className="mb-2 text-2xl font-bold text-gray-800">Contact Us</h1>
+            <p className="mb-6 text-sm text-gray-600">Any question or remarks? Just write us a message!</p>
+
+            {error && (
+              <div className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-6 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700" role="status">
+                {success}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">First Name *</label>
                   <input
                     type="text"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-sm"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
                     placeholder="John"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Last Name *</label>
                   <input
                     type="text"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-sm"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
                     placeholder="Doe"
                     required
                   />
@@ -116,74 +198,76 @@ const ContactUs = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Email *</label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-sm"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
                   placeholder="john@example.com"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Phone Number</label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-sm"
-                  placeholder="+102 3468 789"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                  placeholder="+234..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Subject</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Select Subject</label>
                 <div className="relative">
                   <select
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-sm appearance-none bg-white"
+                    className="w-full appearance-none rounded-md border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
                   >
                     {subjectOptions.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Message *</label>
                 <textarea
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
                   rows="4"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-sm resize-none"
-                  placeholder="Write your message here.."
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                  placeholder="Write your message here..."
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2 bg-orange-600 text-white font-medium rounded-md hover:bg-orange-700 transition duration-200 flex items-center justify-center space-x-1 text-sm"
+                disabled={loading}
+                className="flex w-full items-center justify-center space-x-1 rounded-md bg-orange-600 py-2 text-sm font-medium text-white transition duration-200 hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span>Send Message</span>
-                <Send className="w-4 h-4" />
+                <span>{loading ? 'Sending...' : 'Send Message'}</span>
+                <Send className="h-4 w-4" />
               </button>
             </form>
           </div>
         </div>
 
-        {}
-        <div className="mt-8 text-center text-gray-500 text-sm">
-          <p>© 2025 Your Company. All rights reserved.</p>
+        <div className="mt-8 text-center text-sm text-gray-500">
+          <p>Questions about a product, a delivery, or a payment? This form is the fastest way to reach the team.</p>
         </div>
       </div>
     </div>

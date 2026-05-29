@@ -5,26 +5,23 @@ import AdminOrders from "./AdminOrders";
 import AdminSidebar from "./AdminSideBar";
 import AdminUsers from "./AdminUsers";
 import AdminOverview from "./AdminOverview";
-import { useAuth } from '../../context/AuthContext';
-import { api } from '../..//lib/api';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '../../lib/api';
 
 export default function AdminPanel() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-  const { user: authUser, session, loading: authLoading, signOut } = useAuth();
+  const { user: authUser, signOut } = useAuth();
   const [orders, setOrders] = useState([])
   const [activeTab, setActiveTab] = useState('dashboard')
-  const navigate = useNavigate();0
 
   // Authentication & authorization are handled by AdminProtectedRoute.
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
-      signOut();
-    } catch (e) {
+      await signOut('/admin/login');
+    } catch {
     }
-    navigate('/login');
   };
 
   useEffect(() => {
@@ -40,13 +37,12 @@ export default function AdminPanel() {
     }
     load()
   }, [])
-0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50">
       {}
       {showMobileSidebar && (
-        <div className="fixed inset-0 z-40 lg:hidden">0
+        <div className="fixed inset-0 z-40 lg:hidden">
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" 
             onClick={() => setShowMobileSidebar(false)}
@@ -59,7 +55,7 @@ export default function AdminPanel() {
                 user={authUser}
                 activePage={activeTab}
                 setActivePage={setActiveTab}
-            />0
+            />
           </div>
         </div>
       )}

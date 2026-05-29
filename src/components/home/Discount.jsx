@@ -90,9 +90,24 @@ const DiscountPage = () => {
           : [];
 
         if (mounted && rows.length) {
-          setSpeakers(rows.slice(0, 4).map((product, index) => (
+          const normalizedRows = rows.slice(0, 4).map((product, index) => (
             normalizePremiumAudioProduct(product, premiumAudioFallback[index] || {})
-          )));
+          ));
+          const seen = new Set(
+            normalizedRows.map((item) => String(item.id || item.slug || item.name || ''))
+          );
+          const nextSpeakers = [...normalizedRows];
+
+          premiumAudioFallback.forEach((fallback) => {
+            if (nextSpeakers.length >= 4) return;
+            const key = String(fallback.id || fallback.slug || fallback.name || '');
+            if (!seen.has(key)) {
+              nextSpeakers.push(fallback);
+              seen.add(key);
+            }
+          });
+
+          setSpeakers(nextSpeakers.slice(0, 4));
         }
       })
       .catch((error) => {

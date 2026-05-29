@@ -19,11 +19,11 @@ import {
   TrendingUp,
   DollarSign
 } from "lucide-react";
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 // orderService not used here; use api directly for per-tab requests
 import { useWishlist } from '@/context/WishlistContext';
 import { api, attachAuthToken, handleApiError } from '../../../src/lib/api';
-import { useToast } from '../../../context/ToastProvider';
+import { useToast } from '@/context/ToastProvider';
 import SupportTab from '../../components/dashboard/tabs/SupportTab'
 import OrdersTab from '../../components/dashboard/tabs/OrdersTab'
 import ProfileTab from '../../components/dashboard/tabs/ProfileTab'
