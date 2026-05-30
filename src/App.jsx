@@ -40,6 +40,7 @@ import AdminOrders from './components/admin/AdminOrders';
 import AdminUsers from './components/admin/AdminUsers';
 import AdminSupport from './components/admin/AdminSupport';
 import AdminMetaManager from './components/admin/AdminMetaManager';
+import AdminNewsletter from './components/admin/AdminNewsletter'; 
 
 // ✅ USER DASHBOARD (Check if file exists, if not, Route will error)
 import UserDashboard from './pages/dashboard/UserDashboard'; 
@@ -132,6 +133,7 @@ function AppContent() {
              <Route path="users" element={<AdminUsers />} />
              <Route path="support" element={<AdminSupport />} />
              <Route path="manage-tags" element={<AdminMetaManager />} />
+             <Route path="newsletter" element={<AdminNewsletter />} />
           </Route>
 
           {/* Fallback */}

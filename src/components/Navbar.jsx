@@ -88,7 +88,7 @@ export default function Navbar() {
               <Link to="/shop" className="text-gray-600 hover:text-black">Shop</Link>
               <Link to="/about" className="text-gray-600 hover:text-black">About</Link>
               <Link to="/contact" className="text-gray-600 hover:text-black">Contact Us</Link>
-              <Link to="/blog" className="text-gray-600 hover:text-black">Blog</Link>
+              {/* <Link to="/blog" className="text-gray-600 hover:text-black">Blog</Link> */}
             </div>
 
             {/* Icons */}

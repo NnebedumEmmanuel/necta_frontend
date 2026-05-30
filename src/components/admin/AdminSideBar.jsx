@@ -7,7 +7,8 @@ import {
   Users, 
   HelpCircle, 
   X,
-  Settings
+  Settings,
+  Mail // 🚨 IMPORTED THE MAIL ICON
 } from 'lucide-react';
 
 const AdminSidebar = ({ isCollapsed, onClose, user }) => {
@@ -19,6 +20,7 @@ const AdminSidebar = ({ isCollapsed, onClose, user }) => {
     { icon: ShoppingCart, label: 'Orders', path: '/admin/orders' },
     { icon: Settings, label: 'Store Tags', path: '/admin/manage-tags' },
     { icon: Users, label: 'Users', path: '/admin/users' },
+    { icon: Mail, label: 'Newsletter', path: '/admin/newsletter' }, // 🚨 ADDED NEWSLETTER TAB
     { icon: HelpCircle, label: 'Support', path: '/admin/support' },
   ];
 
