@@ -37,7 +37,10 @@ function getStoredUser() {
 export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(() => getStoredUser());
-  const [loading, setLoading] = useState(true);
+  
+  // 🚨 THE FIX: Split loading into two distinct states
+  const [isInitializing, setIsInitializing] = useState(true); 
+  const [loading, setLoading] = useState(false);
 
   const applyAuth = useCallback((token, nextUser) => {
     const authSession = token ? { access_token: token, accessToken: token, user: nextUser || null } : null;
@@ -54,18 +57,22 @@ export const AuthProvider = ({ children }) => {
     }
 
     attachAuthToken(token);
-    const res = await api.get('/me');
-    const payload = res?.data?.data ?? res?.data ?? {};
-    const nextUser = payload.user || payload.profile || payload;
-    applyAuth(token, nextUser);
-    return nextUser;
+    try {
+      const res = await api.get('/me');
+      const payload = res?.data?.data ?? res?.data ?? {};
+      const nextUser = payload.user || payload.profile || payload;
+      applyAuth(token, nextUser);
+      return nextUser;
+    } catch {
+      return null;
+    }
   }, [applyAuth]);
 
   useEffect(() => {
     let mounted = true;
 
     const init = async () => {
-      setLoading(true);
+      setIsInitializing(true); // Only blocks the screen on initial website load
       try {
         const token = getStoredToken();
         if (!token) {
@@ -87,7 +94,7 @@ export const AuthProvider = ({ children }) => {
         console.warn('Auth init failed', err);
         if (mounted) applyAuth(null, null);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setIsInitializing(false); // Done initializing
       }
     };
 
@@ -98,7 +105,7 @@ export const AuthProvider = ({ children }) => {
   }, [applyAuth, refreshUser]);
 
   const signUp = useCallback(async (payload) => {
-    setLoading(true);
+    setLoading(true); // Tells the UI a network request is happening, but does NOT unmount the DOM
     try {
       const res = await api.post('/auth/register', payload);
       const response = res?.data ?? {};
@@ -160,7 +167,8 @@ export const AuthProvider = ({ children }) => {
     logout: signOut,
   }), [session, user, loading, signUp, signIn, signOut, refreshUser]);
 
-  if (loading) {
+  // 🚨 THE FIX: Only block the UI if the website is doing its very first initial load. 
+  if (isInitializing) {
     return <div className="h-screen flex items-center justify-center">Loading...</div>;
   }
 

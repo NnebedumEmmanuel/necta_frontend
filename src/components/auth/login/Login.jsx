@@ -1,20 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify'; // 🚨 IMPORTED LOCALLY
+import 'react-toastify/dist/ReactToastify.css'; // 🚨 IMPORTED LOCALLY
 import { useAuth } from '@/context/AuthContext';
 
 function extractErrorMessage(error) {
   if (!error) return 'Invalid email or password. Please try again.';
+  
+  if (error instanceof Error || error.message) {
+    return error.message || 'Invalid email or password. Please try again.';
+  }
+  
   if (typeof error === 'string') return error;
 
-  return (
-    error?.message ||
-    error?.error ||
-    error?.error_description ||
+  const foundMessage =
+    error?.response?.data?.error ||
     error?.data?.error ||
-    error?.data?.message ||
-    'Invalid email or password. Please try again.'
-  );
+    error?.error ||
+    error?.error_description;
+
+  if (typeof foundMessage === 'string' && foundMessage.trim() !== '') {
+    return foundMessage;
+  }
+
+  return 'Invalid email or password. Please try again.';
 }
 
 function buildRedirectTarget(location, fallback) {
@@ -57,15 +66,11 @@ const Login = ({ mode = 'customer' }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-<<<<<<< Updated upstream
-  const [formError, setFormError] = useState('');
-  const { signIn, signOut, session, user } = useAuth();
-=======
   
+  const [formError, setFormError] = useState(''); 
   const [fieldErrors, setFieldErrors] = useState({}); 
   
-  const { signIn, session, user } = useAuth();
->>>>>>> Stashed changes
+  const { signIn, signOut, session, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -80,39 +85,32 @@ const Login = ({ mode = 'customer' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     setFormError('');
+
+    if (fieldErrors.email) {
+      toast.error("Please fix the email error before submitting.");
+      return;
+    }
 
     if (!email || !password) {
       const message = 'Please fill in all fields.';
       setFormError(message);
       toast.error(message);
-=======
-    
-    if (fieldErrors.email) {
-      toast.error("Please fix the email error before submitting.");
->>>>>>> Stashed changes
-=======
-    
-    if (fieldErrors.email) {
-      toast.error("Please fix the email error before submitting.");
->>>>>>> Stashed changes
-=======
-    
-    if (fieldErrors.email) {
-      toast.error("Please fix the email error before submitting.");
->>>>>>> Stashed changes
       return;
     }
 
     setIsLoading(true);
     try {
       const res = await signIn({ email, password });
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+      
+      if (res?.data && res.data.success === false) {
+        const msg = extractErrorMessage(res.data.error || res.data);
+        console.log("🔥 Setting UI Error:", msg);
+        setFormError(msg);
+        toast.error(msg);
+        return;
+      }
+
       if (res?.error) {
         if (res.error?.requiresVerification) {
           const verificationEmail = res.error?.data?.email || email.trim();
@@ -123,10 +121,16 @@ const Login = ({ mode = 'customer' }) => {
           return;
         }
 
-        const message = extractErrorMessage(res.error);
-        setFormError(message);
-        toast.error(message);
-        return;
+        const errMsg = extractErrorMessage(res.error);
+        console.log("🔥 Setting UI Error:", errMsg);
+        
+        if (typeof errMsg === 'string' && errMsg.toLowerCase().includes("email not confirmed")) {
+          toast.info("Please check your email and confirm your account to sign in.");
+        } else {
+          setFormError(errMsg);
+          toast.error(errMsg);
+        }
+        return; 
       }
 
       const nextUser = res?.data?.user;
@@ -144,49 +148,13 @@ const Login = ({ mode = 'customer' }) => {
 
       toast.success('Signed in successfully');
       navigate(destination, { replace: true });
-    } catch (err) {
-      console.error('Login error:', err);
-      const message = extractErrorMessage(err);
-      setFormError(message);
-      toast.error(message);
-=======
-      
-      // 🚨 THE FINAL FIX: res.error.error extracts the exact string from AuthContext
-      if (res?.error) {
-=======
-      
-      // 🚨 THE FINAL FIX: res.error.error extracts the exact string from AuthContext
-      if (res?.error) {
->>>>>>> Stashed changes
-=======
-      
-      // 🚨 THE FINAL FIX: res.error.error extracts the exact string from AuthContext
-      if (res?.error) {
->>>>>>> Stashed changes
-        const errMsg = res.error.error || res.error.message || (typeof res.error === 'string' ? res.error : "Invalid email or password");
-        
-        if (typeof errMsg === 'string' && errMsg.toLowerCase().includes("email not confirmed")) {
-          toast.info("Please check your email and confirm your account to sign in.");
-        } else {
-          toast.error(errMsg);
-        }
-        return; 
-      }
-
-      toast.success("Signed in successfully");
-      const nextUser = res?.data?.user;
-      navigate(nextUser?.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
       
     } catch (err) {
-      const targetMessage = err?.response?.data?.error || err?.data?.error || err?.message || "Invalid email or password";
-      toast.error(String(targetMessage));
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+      console.error('Login error block caught:', err);
+      const targetMessage = extractErrorMessage(err);
+      console.log("🔥 Setting UI Error Catch Block:", targetMessage);
+      setFormError(targetMessage);
+      toast.error(targetMessage);
     } finally {
       setIsLoading(false);
     }
@@ -194,7 +162,6 @@ const Login = ({ mode = 'customer' }) => {
 
   useEffect(() => {
     if (!session) return;
-
     const destination = user?.role === 'admin' ? '/admin' : '/dashboard';
     navigate(destination, { replace: true });
   }, [session, user, navigate]);
@@ -203,7 +170,12 @@ const Login = ({ mode = 'customer' }) => {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff7ed_0,#f8fafc_35%,#eef2ff_100%)] flex items-center justify-center p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.16)] backdrop-blur">
+      
+      {/* 🚨 LOCAL TOAST CONTAINER INJECTED DIRECTLY INTO THE COMPONENT */}
+      <ToastContainer position="top-right" autoClose={5000} zIndex={99999} />
+
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.16)] backdrop-blur relative z-10">
+        
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-orange-600 px-8 py-10 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-200">
             {activeCopy.eyebrow}
@@ -218,9 +190,13 @@ const Login = ({ mode = 'customer' }) => {
         </div>
 
         <div className="p-8">
+          
+         
+
+          {/* Existing Tailwind Error Banner */}
           {formError && (
             <div
-              className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-semibold"
               role="alert"
               aria-live="polite"
             >
@@ -233,22 +209,6 @@ const Login = ({ mode = 'customer' }) => {
               <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                 Email address
               </label>
-<<<<<<< Updated upstream
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (formError) setFormError('');
-                }}
-                className="mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-100"
-                placeholder="you@example.com"
-              />
-=======
               <div className="mt-1">
                 <input
                   id="email"
@@ -269,16 +229,15 @@ const Login = ({ mode = 'customer' }) => {
                       setFieldErrors(prev => ({ ...prev, email: "Please enter a valid email address." }));
                     }
                   }}
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm sm:text-sm outline-none transition-colors ${
-                    fieldErrors?.email ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500'
+                  className={`mt-2 block w-full rounded-2xl border bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:bg-white focus:ring-4 ${
+                    fieldErrors?.email ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : 'border-slate-200 focus:border-orange-500 focus:ring-orange-100'
                   }`}
                   placeholder="you@example.com"
                 />
                 {fieldErrors?.email && (
-                  <p className="text-xs text-red-600 mt-1 font-medium animate-pulse">{fieldErrors.email}</p>
+                  <p className="text-xs text-red-600 mt-2 font-medium animate-pulse">{fieldErrors.email}</p>
                 )}
               </div>
->>>>>>> Stashed changes
             </div>
 
             <div>
@@ -303,7 +262,6 @@ const Login = ({ mode = 'customer' }) => {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (formError) setFormError('');
                   }}
                   className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-20 text-slate-900 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-100"
                   placeholder="Enter your password"
@@ -344,23 +302,12 @@ const Login = ({ mode = 'customer' }) => {
             </button>
 
             <div className="space-y-2 text-center text-sm text-slate-600">
-              {!isAdminMode && (
-                <p>
-                  {activeCopy.footnote}{' '}
-                  <Link to={activeCopy.footnoteLink} className="font-semibold text-orange-600 hover:text-orange-700">
-                    {activeCopy.footnoteLinkLabel}
-                  </Link>
-                </p>
-              )}
-
-              {isAdminMode && (
-                <p>
-                  {activeCopy.footnote}{' '}
-                  <Link to={activeCopy.footnoteLink} className="font-semibold text-orange-600 hover:text-orange-700">
-                    {activeCopy.footnoteLinkLabel}
-                  </Link>
-                </p>
-              )}
+              <p>
+                {activeCopy.footnote}{' '}
+                <Link to={activeCopy.footnoteLink} className="font-semibold text-orange-600 hover:text-orange-700">
+                  {activeCopy.footnoteLinkLabel}
+                </Link>
+              </p>
             </div>
           </form>
         </div>

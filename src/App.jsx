@@ -1,6 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 
+// 🚨 ADDED: Toastify Imports
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 // ✅ COMPONENTS
 import Navbar from './components/Navbar'; // Using the fixed Navbar
 import ProtectedRoute from './components/ProtectedRoute'; // The safe route guard
@@ -133,6 +137,7 @@ function AppContent() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        
       </main>
 
       {shouldShowNav && <Footer />}
@@ -152,6 +157,20 @@ export default function App() {
          Do NOT add them here again, or the app will break!
       */}
       <AppContent />
+      
+      {/* 🚨 ADDED: The Toast Container catches all error/success popups globally */}
+      <ToastContainer 
+        position="top-right" 
+        autoClose={4000} 
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </BrowserRouter>
   );
 }
