@@ -82,6 +82,7 @@ const Login = ({ mode = 'customer' }) => {
     e.preventDefault();
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     setFormError('');
 
     if (!email || !password) {
@@ -98,12 +99,18 @@ const Login = ({ mode = 'customer' }) => {
     if (fieldErrors.email) {
       toast.error("Please fix the email error before submitting.");
 >>>>>>> Stashed changes
+=======
+    
+    if (fieldErrors.email) {
+      toast.error("Please fix the email error before submitting.");
+>>>>>>> Stashed changes
       return;
     }
 
     setIsLoading(true);
     try {
       const res = await signIn({ email, password });
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
       if (res?.error) {
@@ -151,6 +158,11 @@ const Login = ({ mode = 'customer' }) => {
       // 🚨 THE FINAL FIX: res.error.error extracts the exact string from AuthContext
       if (res?.error) {
 >>>>>>> Stashed changes
+=======
+      
+      // 🚨 THE FINAL FIX: res.error.error extracts the exact string from AuthContext
+      if (res?.error) {
+>>>>>>> Stashed changes
         const errMsg = res.error.error || res.error.message || (typeof res.error === 'string' ? res.error : "Invalid email or password");
         
         if (typeof errMsg === 'string' && errMsg.toLowerCase().includes("email not confirmed")) {
@@ -169,6 +181,9 @@ const Login = ({ mode = 'customer' }) => {
       const targetMessage = err?.response?.data?.error || err?.data?.error || err?.message || "Invalid email or password";
       toast.error(String(targetMessage));
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
