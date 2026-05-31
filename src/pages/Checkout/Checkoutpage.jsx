@@ -71,15 +71,16 @@ const CheckoutPage = () => {
     return acc + (price * qty);
   }, 0);
 
-  const SHIPPING_RATES = { Lagos: 2500, Default: 4500, FreeThreshold: 5000000 };
+  // 🚨 FIXED: Adjusted accurate Lagos & National rates, completely removing the Free threshold
+  const SHIPPING_RATES = { Lagos: 2000, Default: 4500 };
 
   const shippingCost = React.useMemo(() => {
     const stateSelected = formData?.state || '';
     if (!stateSelected) return 0;
-    if (subtotal > (SHIPPING_RATES.FreeThreshold / 100)) return 0;
+    
     if (String(stateSelected).toLowerCase() === 'lagos') return SHIPPING_RATES.Lagos;
     return SHIPPING_RATES.Default;
-  }, [formData?.state, subtotal]);
+  }, [formData?.state]);
 
   const tax = subtotal * 0.075;
   const grandTotal = subtotal + tax + shippingCost;
@@ -154,7 +155,7 @@ const CheckoutPage = () => {
         userId: user?.id,
         name: formData.fullName,
         email: formData.email,
-        phone: cleanPhone, // Save the cleaned, validated number
+        phone: cleanPhone,
         address: formData.address,
         city: formData.city,
         lga: formData.lga,
@@ -328,7 +329,7 @@ const CheckoutPage = () => {
 
             <div className="flex justify-between">
               <span>Shipping</span>
-              <span className="font-medium">{Number(shippingCost) === 0 ? 'Free' : Number(shippingCost).toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 2 })}</span>
+              <span className="font-medium">{Number(shippingCost) === 0 ? 'Select State' : Number(shippingCost).toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 2 })}</span>
             </div>
 
             <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t">
