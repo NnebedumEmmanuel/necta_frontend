@@ -4,19 +4,19 @@ import { Link } from "react-router-dom";
 
 const categories = [
   {
-    src: "/px4.png", // Tip: Swap this with a badass Bluetooth Speaker image
+    src: "/speaker.jpeg", // Tip: Swap this with a badass Bluetooth Speaker image
     title: "Premium Audio",
     subtitle: "Room-filling Bluetooth speakers and heavy-duty sound systems.",
     link: "/shop?category=Speakers"
   },
   {
-    src: "/px5.png", // Tip: Swap this with a Power Bank/Charger image
+    src: "/power_bank.jpeg", // Tip: Swap this with a Power Bank/Charger image
     title: "Power Solutions",
     subtitle: "High-capacity power banks and fast chargers so you never go dark.",
     link: "/shop?category=Power"
   },
   {
-    src: "/px6.png", // Tip: Swap this with a Smartphone image
+    src: "/smart_phone.jpeg", // Tip: Swap this with a Smartphone image
     title: "Smart Devices",
     subtitle: "Latest phones, smart wearables, and everyday tech essentials.",
     link: "/shop?category=Phones"
