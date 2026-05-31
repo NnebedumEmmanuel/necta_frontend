@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from '@/context/AuthContext'
@@ -64,8 +64,6 @@ const SignUp = () => {
       newErrors.city = "City is required";
     }
 
-    // state is optional for now
-
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
@@ -99,6 +97,7 @@ const SignUp = () => {
         city: formData.city,
         state: formData.state,
         password: formData.password,
+        newsletter: formData.newsletter, // 🚨 Now properly sending the preference
       })
       if (res?.error) throw res.error
 
@@ -120,12 +119,10 @@ const SignUp = () => {
     }
   };
 
-  // country list removed — not used anymore
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl flex bg-white rounded-2xl shadow-2xl overflow-hidden">
-        {}
+        
         <div className="hidden lg:flex flex-col justify-between w-1/2 bg-gradient-to-br from-slate-800 to-slate-900 p-10 text-white">
           <div>
             <h1 className="text-4xl font-bold">
@@ -185,7 +182,6 @@ const SignUp = () => {
           </div>
         </div>
 
-        {}
         <div className="w-full lg:w-1/2 p-8 md:p-10">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-slate-800">
