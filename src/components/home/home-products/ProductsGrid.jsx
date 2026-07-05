@@ -80,6 +80,9 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
         // Ensure price is a number
         const validPrice = Number(product.price) || Number(product.priceValue) || 0;
 
+        // 🚨 Safely extract old price to catch snake_case from DB
+        const oldPrice = product.oldPrice || product.old_price || null;
+
   const rating = getProductRating(product) || 0;
   const activeStars = Math.floor(rating);
   // Debug output to verify source of rating and reviews
@@ -137,9 +140,10 @@ const ProductGrid = ({ products, toggleWishlist: externalToggleWishlist, wishlis
                       <span className="text-base font-bold text-gray-900">
                         {typeof product.price === 'number' || typeof product.priceValue === 'number' ? (`₦${validPrice.toLocaleString()}`) : product.price || `₦${validPrice.toLocaleString()}`}
                       </span>
-                      {product.oldPrice && (
+                      {/* 🚨 Properly render and format the oldPrice */}
+                      {oldPrice > 0 && (
                         <span className="text-sm text-gray-400 line-through">
-                          {product.oldPrice}
+                          ₦{Number(oldPrice).toLocaleString()}
                         </span>
                       )}
                     </div>

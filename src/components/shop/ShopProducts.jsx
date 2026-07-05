@@ -11,8 +11,6 @@ const ProductCard = ({
  }) => {
   const { showToast } = useToast();
 
-  // Simplified data reading: trust the normalized props passed from parent (do not re-calculate)
-  // product.rating and product.reviewCount should already be normalized by upstream code
   let rating = Number(product?.rating);
   if (!Number.isFinite(rating)) rating = 0;
 
@@ -23,10 +21,12 @@ const ProductCard = ({
     brand,
     name,
     price,
-    oldPrice,
     discount,
     isNew
   } = product;
+
+  // 🚨 Map old_price safely to catch snake_case from the database
+  const oldPrice = product.oldPrice || product.old_price || null;
 
   // Robust Image Getter
   const getValidImage = (prod) => {
@@ -52,7 +52,6 @@ const ProductCard = ({
 
   return (
     <div className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300">
-      {}
       <div className="relative h-64 bg-gray-50 overflow-hidden">
         <img
           src={displayImage}
@@ -60,7 +59,6 @@ const ProductCard = ({
           className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
         />
         
-        {}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {isNew && (
             <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
@@ -74,7 +72,6 @@ const ProductCard = ({
           )}
         </div>
 
-        {}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -95,21 +92,17 @@ const ProductCard = ({
         </button>
       </div>
 
-      {}
       <div className="p-5">
-        {}
         <div className="mb-2">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
             {brand}
           </span>
         </div>
 
-        {}
         <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 h-14">
           {name}
         </h3>
 
-        {}
         <div className="flex items-center mb-4">
           <StarRating 
             rating={rating} 
@@ -124,24 +117,20 @@ const ProductCard = ({
           )}
         </div>
 
-        {}
         <div className="mb-5">
           <div className="flex items-center gap-3">
             <span className="text-2xl font-bold text-gray-900">
               {price}
             </span>
-            {oldPrice && (
-              <>
-                <span className="text-lg text-gray-400 line-through">
-                  {oldPrice}
-                </span>
-
-              </>
+            {/* 🚨 Properly render and format the oldPrice */}
+            {oldPrice > 0 && (
+              <span className="text-lg text-gray-400 line-through">
+                ₦{Number(oldPrice).toLocaleString()}
+              </span>
             )}
           </div>
         </div>
 
-        {}
         <button
           onClick={() => {
             onAddToCart?.(product);

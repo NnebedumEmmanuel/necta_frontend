@@ -16,7 +16,7 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
   const [formData, setFormData] = useState({
     name: '',
     price: '',
-    discount: '',
+    old_price: '', // 🚨 Replaced discount with old_price
     stock: '',
     collection_id: '',
     category_id: '',
@@ -38,7 +38,7 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
     setFormData({
       name: initialData.name || initialData.title || '',
       price: initialData.price ?? '',
-      discount: initialData.discount ?? '',
+      old_price: initialData.old_price ?? '', // 🚨 Pulling old_price from DB
       stock: initialData.stock ?? '',
       collection_id: initialData.collection_id || '',
       category_id: initialData.category_id || initialData.category || '',
@@ -140,7 +140,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
     const name = window.prompt('Enter new collection name')
     if (!name || !name.trim()) return
     try {
-      // POST to admin collections endpoint
       const res = await api.post('/admin/collections', { name: name.trim() })
       const created = res?.data?.collection ?? res?.data
       if (created && created.id) {
@@ -176,7 +175,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
     setUploading(true)
     const uploaded = []
     try {
-      // Upload files via server-side proxy to avoid client-side CORS issues
       for (const file of Array.from(files)) {
         try {
           const fd = new FormData()
@@ -225,7 +223,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
     e.preventDefault()
     setLoading(true)
     try {
-      // build specs object
       const specsJson = specs.reduce((acc, cur) => {
         if (cur.key && cur.key.trim()) acc[cur.key.trim()] = cur.value
         return acc
@@ -236,13 +233,13 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
         ...formData,
         brand: selectedBrand?.name || formData.brand || '',
         price: formData.price === '' ? null : Number(formData.price),
-        discount: formData.discount === '' ? 0 : Number(formData.discount),
+        old_price: formData.old_price === '' ? null : Number(formData.old_price), // 🚨 Sending old_price safely
+        discount: 0, // Hardcoded to 0 to prevent legacy schema issues
         stock: formData.stock === '' ? 0 : Number(formData.stock),
         specs: specsJson,
         images: formData.images
       }
 
-      // Validation: category required
       if (!payload.category_id || String(payload.category_id).trim() === '') {
         alert('Please select a Category for the product.')
         setLoading(false)
@@ -263,7 +260,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
 
   return (
     <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl flex flex-col max-h-[85vh] overflow-hidden">
-      {/* Header */}
       <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl">
         <h2 className="text-2xl font-extrabold text-black tracking-tight">{initialData ? 'Edit Product' : 'Add New Product'}</h2>
         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
@@ -291,7 +287,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        {/* Category & Collection side-by-side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Category <span className="text-red-500">*</span></label>
@@ -320,15 +315,15 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        {/* Price / Discount / Stock grid */}
+        {/* 🚨 Price Grid Updated */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Price (₦)</label>
-            <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" className="w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[#FF6B00] focus:border-[#FF6B00]" />
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Sales Price (₦) <span className="text-red-500">*</span></label>
+            <input type="number" name="price" required value={formData.price} onChange={handleChange} placeholder="e.g. 80000" className="w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[#FF6B00] focus:border-[#FF6B00]" />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Discount (%)</label>
-            <input type="number" name="discount" value={formData.discount} onChange={handleChange} placeholder="0" className="w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[#FF6B00] focus:border-[#FF6B00]" />
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Global Price (₦) <span className="normal-case text-gray-400 font-normal">(Slashed)</span></label>
+            <input type="number" name="old_price" value={formData.old_price} onChange={handleChange} placeholder="e.g. 100000" className="w-full rounded-xl bg-gray-50 p-3 outline-none transition focus:bg-white focus:ring-2 focus:ring-[#FF6B00] focus:border-[#FF6B00]" />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">Stock</label>
@@ -336,7 +331,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        {/* Image dropzone */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-3">Product Images</label>
           <div
@@ -370,7 +364,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full rounded-xl bg-gray-50 p-4 outline-none transition focus:bg-white focus:ring-2 focus:ring-[#FF6B00] focus:border-[#FF6B00]" />
         </div>
 
-        {/* Specs */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="block text-sm font-semibold uppercase tracking-wider text-gray-700">Specifications</label>
@@ -387,7 +380,6 @@ export default function AdminProductForm({ onClose, onSuccess, initialData = nul
           </div>
         </div>
 
-        {/* Footer actions inside form so it scrolls into view */}
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} className="px-6 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-xl transition">Cancel</button>
           <button type="submit" disabled={loading || uploading} style={{ background: ORANGE }} className="px-6 py-2 text-white font-bold rounded-xl hover:opacity-95 transition disabled:opacity-50 flex items-center gap-2">{loading ? 'Saving...' : 'Save Product'}</button>
