@@ -52,7 +52,7 @@ export default function Footer() {
             <div className="mt-4 space-y-2 text-sm text-slate-400">
               <p className="flex items-center justify-center gap-2 md:justify-start"><Mail size={16} />nectagadget@hotmail.com</p>
               <p className="flex items-center justify-center gap-2 md:justify-start"><Phone size={16} />09157053789</p>
-              <p className="flex items-center justify-center gap-2 md:justify-start"><MapPin size={16} />Owerri, Imo State, Nigeria</p>
+              <p className="flex items-center justify-center gap-2 md:justify-start"><MapPin size={16} />Ikeja, Lagos State, Nigeria</p>
             </div>
           </div>
 

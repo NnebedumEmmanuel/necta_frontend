@@ -11,7 +11,7 @@ import { publicApi } from '@/lib/api';
 
 const BUSINESS_PHONE = '09157053789';
 const BUSINESS_EMAIL = 'nectagadget@hotmail.com';
-const BUSINESS_LOCATION = 'Owerri, Imo State, Nigeria';
+const BUSINESS_LOCATION = 'Ikeja, Lagos State, Nigeria';
 
 const subjectOptions = [
   'General inquiry',
@@ -196,6 +196,8 @@ const ContactUs = () => {
                   />
                 </div>
               </div>
+
+              
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Email *</label>
